@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn, formatNaira, formatDate } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { cn, formatNaira } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp,
   TrendingDown,
@@ -19,113 +21,12 @@ import {
   Package,
   ArrowUpRight,
   Activity,
+  ArrowRight,
+  Banknote,
+  Eye,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
-
-interface KpiCard {
-  label: string;
-  value: string;
-  trend: number;
-  icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
-}
-
-interface ActivityItem {
-  id: string;
-  type: "seller_approved" | "dispute_opened" | "order_completed" | "seller_suspended" | "refund_issued" | "settlement_released";
-  description: string;
-  timestamp: string;
-  actor?: string;
-}
-
-const MOCK_KPI: KpiCard[] = [
-  {
-    label: "Total GMV",
-    value: formatNaira(18_450_000),
-    trend: 12.4,
-    icon: <TrendingUp className="h-5 w-5" />,
-    iconBg: "bg-royal/10",
-    iconColor: "text-royal",
-  },
-  {
-    label: "Active Sellers",
-    value: "342",
-    trend: 8.1,
-    icon: <ShoppingBag className="h-5 w-5" />,
-    iconBg: "bg-violet/10",
-    iconColor: "text-violet",
-  },
-  {
-    label: "Total Buyers",
-    value: "4,891",
-    trend: 15.3,
-    icon: <Users className="h-5 w-5" />,
-    iconBg: "bg-emerald/10",
-    iconColor: "text-emerald",
-  },
-  {
-    label: "Dispute Rate",
-    value: "2.3%",
-    trend: -0.4,
-    icon: <AlertTriangle className="h-5 w-5" />,
-    iconBg: "bg-warning/10",
-    iconColor: "text-amber-600",
-  },
-  {
-    label: "Conversion Rate",
-    value: "4.7%",
-    trend: 0.6,
-    icon: <BarChart3 className="h-5 w-5" />,
-    iconBg: "bg-gold/20",
-    iconColor: "text-amber-700",
-  },
-];
-
-const MOCK_QUICK_STATS = [
-  { label: "Orders Today", value: "127", icon: <Package className="h-4 w-4" />, color: "text-royal" },
-  { label: "Pending Verifications", value: "14", icon: <ShieldCheck className="h-4 w-4" />, color: "text-amber-600" },
-  { label: "Open Disputes", value: "7", icon: <MessageSquareWarning className="h-4 w-4" />, color: "text-error" },
-];
-
-const MOCK_ACTIVITY: ActivityItem[] = [
-  { id: "1", type: "seller_approved", description: "Seller 'Adaeze Crafts' was approved", timestamp: new Date(Date.now() - 5 * 60_000).toISOString(), actor: "Admin" },
-  { id: "2", type: "dispute_opened", description: "Dispute #ORD-2841 opened by buyer Emeka O.", timestamp: new Date(Date.now() - 22 * 60_000).toISOString() },
-  { id: "3", type: "order_completed", description: "Order #ORD-2839 marked as completed", timestamp: new Date(Date.now() - 45 * 60_000).toISOString() },
-  { id: "4", type: "settlement_released", description: "Settlement of ₦84,500 released to 'Chukwu Electronics'", timestamp: new Date(Date.now() - 1.2 * 3600_000).toISOString(), actor: "System" },
-  { id: "5", type: "seller_suspended", description: "Seller 'QuickDeals NG' suspended for policy violation", timestamp: new Date(Date.now() - 2.5 * 3600_000).toISOString(), actor: "Admin" },
-  { id: "6", type: "refund_issued", description: "Full refund of ₦12,000 issued for Order #ORD-2821", timestamp: new Date(Date.now() - 3 * 3600_000).toISOString(), actor: "Admin" },
-  { id: "7", type: "seller_approved", description: "Seller 'Lagos Fabrics Hub' was approved", timestamp: new Date(Date.now() - 4 * 3600_000).toISOString(), actor: "Admin" },
-  { id: "8", type: "dispute_opened", description: "Dispute #ORD-2808 opened by buyer Ngozi A.", timestamp: new Date(Date.now() - 5.5 * 3600_000).toISOString() },
-  { id: "9", type: "order_completed", description: "Order #ORD-2795 marked as completed", timestamp: new Date(Date.now() - 7 * 3600_000).toISOString() },
-  { id: "10", type: "settlement_released", description: "Batch settlement of ₦320,000 processed", timestamp: new Date(Date.now() - 10 * 3600_000).toISOString(), actor: "System" },
-];
-
-const activityConfig: Record<ActivityItem["type"], { icon: React.ReactNode; badge: React.ReactElement }> = {
-  seller_approved: {
-    icon: <UserCheck className="h-4 w-4 text-emerald" />,
-    badge: <Badge variant="success">Approved</Badge>,
-  },
-  dispute_opened: {
-    icon: <AlertTriangle className="h-4 w-4 text-amber-600" />,
-    badge: <Badge variant="warning">Dispute</Badge>,
-  },
-  order_completed: {
-    icon: <Package className="h-4 w-4 text-royal" />,
-    badge: <Badge variant="info">Order</Badge>,
-  },
-  seller_suspended: {
-    icon: <AlertTriangle className="h-4 w-4 text-error" />,
-    badge: <Badge variant="error">Suspended</Badge>,
-  },
-  refund_issued: {
-    icon: <ArrowUpRight className="h-4 w-4 text-violet" />,
-    badge: <Badge variant="royal">Refund</Badge>,
-  },
-  settlement_released: {
-    icon: <TrendingUp className="h-4 w-4 text-emerald" />,
-    badge: <Badge variant="gold">Settlement</Badge>,
-  },
-};
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -137,136 +38,321 @@ function timeAgo(iso: string): string {
 }
 
 export default function AdminOverviewPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalSellers: 0,
+    totalBuyers: 0,
+    pendingProducts: 0,
+    pendingSellers: 0,
+    totalOrders: 0,
+  });
+  const [recentProducts, setRecentProducts] = useState<
+    { id: string; name: string; status: string; created_at: string; sellers: { business_name: string } | null }[]
+  >([]);
+  const [recentUsers, setRecentUsers] = useState<
+    { id: string; full_name: string; role: string; email: string; created_at: string }[]
+  >([]);
 
   useEffect(() => {
-    // Simulate data fetch — replace with real Supabase queries
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
+    async function load() {
+      const supabase = createClient();
+
+      // Fetch real counts
+      const [productsRes, sellersRes, buyersRes, pendingProductsRes, pendingSellersRes, ordersRes] =
+        await Promise.all([
+          supabase.from("products").select("id", { count: "exact", head: true }),
+          supabase.from("sellers").select("id", { count: "exact", head: true }).eq("status", "approved"),
+          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "buyer"),
+          supabase.from("products").select("id", { count: "exact", head: true }).eq("status", "paused"),
+          supabase.from("sellers").select("id", { count: "exact", head: true }).in("status", ["submitted", "under_review"]),
+          supabase.from("orders").select("id", { count: "exact", head: true }),
+        ]);
+
+      setStats({
+        totalProducts: productsRes.count || 0,
+        totalSellers: sellersRes.count || 0,
+        totalBuyers: buyersRes.count || 0,
+        pendingProducts: pendingProductsRes.count || 0,
+        pendingSellers: pendingSellersRes.count || 0,
+        totalOrders: ordersRes.count || 0,
+      });
+
+      // Recent products for review
+      const { data: products } = await supabase
+        .from("products")
+        .select("id, name, status, created_at, sellers(business_name)")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      setRecentProducts((products as unknown as typeof recentProducts) || []);
+
+      // Recent signups
+      const { data: users } = await supabase
+        .from("profiles")
+        .select("id, full_name, role, email, created_at")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      setRecentUsers(users || []);
+
+      setLoading(false);
+    }
+    load();
   }, []);
 
+  const kpis = [
+    {
+      label: "Total Products",
+      value: stats.totalProducts.toLocaleString(),
+      icon: <Package className="h-5 w-5" />,
+      bg: "bg-gradient-to-br from-violet to-violet-dark",
+      trend: "+12%",
+    },
+    {
+      label: "Active Sellers",
+      value: stats.totalSellers.toLocaleString(),
+      icon: <ShoppingBag className="h-5 w-5" />,
+      bg: "bg-gradient-to-br from-teal to-teal-dark",
+      trend: "+8%",
+    },
+    {
+      label: "Total Buyers",
+      value: stats.totalBuyers.toLocaleString(),
+      icon: <Users className="h-5 w-5" />,
+      bg: "bg-gradient-to-br from-royal to-royal-dark",
+      trend: "+15%",
+    },
+    {
+      label: "Total Orders",
+      value: stats.totalOrders.toLocaleString(),
+      icon: <Banknote className="h-5 w-5" />,
+      bg: "bg-gradient-to-br from-gold-dark to-gold",
+      trend: "+5%",
+    },
+  ];
+
   return (
-    <div className="space-y-8">
-      {/* Page heading */}
-      <div>
-        <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
-          Platform Overview
-        </h1>
-        <p className="mt-1 text-sm text-slate-light">
-          Real-time snapshot of Winipat marketplace activity
-        </p>
+    <div className="space-y-6">
+      {/* ===== WELCOME BANNER ===== */}
+      <div className="relative rounded-[--radius-xl] overflow-hidden bg-gradient-to-r from-midnight via-violet-dark to-teal p-6 sm:p-8">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-violet/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 w-48 h-48 bg-teal/15 rounded-full blur-3xl" />
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }} />
+        </div>
+
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-gold/20 flex items-center justify-center">
+                <ShieldCheck className="h-4 w-4 text-gold" />
+              </div>
+              <Badge variant="gold" className="text-xs">Admin Dashboard</Badge>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-sora)]">
+              Welcome to Winipat Admin
+            </h1>
+            <p className="text-white/60 mt-1 text-sm sm:text-base">
+              Manage sellers, products, disputes, and settlements across the platform.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="gold" size="sm" onClick={() => router.push("/admin/sellers")}>
+              <UserCheck size={14} className="mr-1" />
+              Review Sellers
+            </Button>
+            <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10" onClick={() => router.push("/admin/disputes")}>
+              <AlertTriangle size={14} className="mr-1" />
+              Disputes
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {MOCK_KPI.map((kpi) => (
-          <Card key={kpi.label} className="rounded-[--radius-lg]">
-            <div className="flex items-start justify-between">
-              <div className={cn("rounded-[--radius-md] p-2.5", kpi.iconBg)}>
-                <span className={kpi.iconColor}>{kpi.icon}</span>
+      {/* ===== KPI CARDS ===== */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((kpi) => (
+          <div key={kpi.label} className={cn("rounded-[--radius-lg] p-5 text-white", kpi.bg)}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 rounded-[--radius-md] bg-white/15 flex items-center justify-center">
+                {kpi.icon}
               </div>
-              <span
-                className={cn(
-                  "flex items-center gap-0.5 text-xs font-semibold",
-                  kpi.trend >= 0 ? "text-emerald" : "text-error"
-                )}
-              >
-                {kpi.trend >= 0 ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : (
-                  <TrendingDown className="h-3 w-3" />
-                )}
-                {Math.abs(kpi.trend)}%
+              <span className="text-xs font-semibold bg-white/15 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                <TrendingUp size={10} />
+                {kpi.trend}
               </span>
             </div>
-            <div className="mt-4">
-              <p className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
-                {loading ? (
-                  <span className="inline-block h-7 w-24 animate-pulse rounded bg-mist" />
-                ) : (
-                  kpi.value
-                )}
-              </p>
-              <p className="mt-0.5 text-sm text-slate-light">{kpi.label}</p>
-            </div>
-          </Card>
+            <p className="text-3xl font-bold font-[family-name:var(--font-sora)]">
+              {loading ? <span className="inline-block h-8 w-16 animate-pulse rounded bg-white/20" /> : kpi.value}
+            </p>
+            <p className="text-sm text-white/70 mt-1">{kpi.label}</p>
+          </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Quick Stats */}
-        <Card className="rounded-[--radius-lg] lg:col-span-1">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-royal" />
-              <CardTitle>Quick Stats</CardTitle>
-            </div>
-            <CardDescription>Live counters for today</CardDescription>
-          </CardHeader>
-          <div className="space-y-3">
-            {MOCK_QUICK_STATS.map((stat) => (
-              <div
-                key={stat.label}
-                className="flex items-center justify-between rounded-[--radius-md] bg-cloud px-4 py-3"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className={stat.color}>{stat.icon}</span>
-                  <span className="text-sm font-medium text-slate">{stat.label}</span>
+      {/* ===== ACTION REQUIRED ===== */}
+      {(stats.pendingProducts > 0 || stats.pendingSellers > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {stats.pendingProducts > 0 && (
+            <Card className="border-warning/30 bg-warning/5" padding="sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
+                    <Eye className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-midnight">{stats.pendingProducts} Products Pending Review</p>
+                    <p className="text-xs text-slate-light">Sellers are waiting for approval</p>
+                  </div>
                 </div>
-                <span className="font-[family-name:var(--font-sora)] text-xl font-bold text-midnight">
-                  {loading ? (
-                    <span className="inline-block h-5 w-8 animate-pulse rounded bg-mist" />
-                  ) : (
-                    stat.value
-                  )}
-                </span>
+                <Button variant="outline" size="sm" onClick={() => router.push("/admin/sellers")}>
+                  Review <ArrowRight size={14} className="ml-1" />
+                </Button>
               </div>
-            ))}
+            </Card>
+          )}
+          {stats.pendingSellers > 0 && (
+            <Card className="border-violet/30 bg-violet/5" padding="sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-violet/20 flex items-center justify-center">
+                    <UserCheck className="h-5 w-5 text-violet" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-midnight">{stats.pendingSellers} Sellers Pending Verification</p>
+                    <p className="text-xs text-slate-light">KYC documents await review</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => router.push("/admin/sellers")}>
+                  Verify <ArrowRight size={14} className="ml-1" />
+                </Button>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ===== RECENT PRODUCTS ===== */}
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Package size={18} className="text-violet" />
+              Recent Products
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => router.push("/admin/sellers")}>
+              View all <ArrowRight size={14} className="ml-1" />
+            </Button>
           </div>
+
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 bg-mist rounded-[--radius-md] animate-pulse" />
+              ))}
+            </div>
+          ) : recentProducts.length === 0 ? (
+            <p className="text-sm text-slate-light py-4 text-center">No products yet</p>
+          ) : (
+            <div className="space-y-2">
+              {recentProducts.map((p) => {
+                const seller = Array.isArray(p.sellers) ? p.sellers[0] : p.sellers;
+                return (
+                  <div key={p.id} className="flex items-center justify-between rounded-[--radius-md] bg-cloud px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-midnight truncate">{p.name}</p>
+                      <p className="text-xs text-slate-light">{seller?.business_name || "Unknown"} · {timeAgo(p.created_at)}</p>
+                    </div>
+                    <Badge
+                      variant={p.status === "active" ? "success" : p.status === "paused" ? "warning" : p.status === "draft" ? "default" : "error"}
+                      className="text-[10px] shrink-0 ml-2"
+                    >
+                      {p.status === "paused" ? "Pending Review" : p.status}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Card>
 
-        {/* Recent Activity Feed */}
-        <Card className="rounded-[--radius-lg] lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-royal" />
-              <CardTitle>Recent Activity</CardTitle>
+        {/* ===== RECENT USERS ===== */}
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Users size={18} className="text-teal" />
+              Recent Signups
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => router.push("/admin/analytics")}>
+              Analytics <ArrowRight size={14} className="ml-1" />
+            </Button>
+          </div>
+
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 bg-mist rounded-[--radius-md] animate-pulse" />
+              ))}
             </div>
-            <CardDescription>Last 10 platform events</CardDescription>
-          </CardHeader>
-          <div className="space-y-0 divide-y divide-mist">
-            {loading
-              ? Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 py-3">
-                    <span className="h-8 w-8 animate-pulse rounded-full bg-mist" />
-                    <div className="flex-1 space-y-1.5">
-                      <span className="block h-3.5 w-3/4 animate-pulse rounded bg-mist" />
-                      <span className="block h-3 w-1/3 animate-pulse rounded bg-mist" />
+          ) : recentUsers.length === 0 ? (
+            <p className="text-sm text-slate-light py-4 text-center">No users yet</p>
+          ) : (
+            <div className="space-y-2">
+              {recentUsers.map((u) => (
+                <div key={u.id} className="flex items-center justify-between rounded-[--radius-md] bg-cloud px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0",
+                      u.role === "admin" ? "bg-gradient-to-br from-violet to-teal" :
+                      u.role === "seller" ? "bg-gradient-to-br from-royal to-violet" :
+                      "bg-gradient-to-br from-teal to-emerald"
+                    )}>
+                      {u.full_name?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-midnight truncate">{u.full_name || "Unknown"}</p>
+                      <p className="text-xs text-slate-light truncate">{u.email}</p>
                     </div>
                   </div>
-                ))
-              : MOCK_ACTIVITY.map((item) => {
-                  const config = activityConfig[item.type];
-                  return (
-                    <div key={item.id} className="flex items-start gap-3 py-3">
-                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cloud">
-                        {config.icon}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate">{item.description}</p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className="text-xs text-slate-lighter">{timeAgo(item.timestamp)}</span>
-                          {item.actor && (
-                            <span className="text-xs text-slate-lighter">· {item.actor}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="shrink-0">{config.badge}</div>
-                    </div>
-                  );
-                })}
-          </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <Badge
+                      variant={u.role === "admin" ? "royal" : u.role === "seller" ? "gold" : "default"}
+                      className="text-[10px] capitalize"
+                    >
+                      {u.role}
+                    </Badge>
+                    <span className="text-[10px] text-slate-lighter">{timeAgo(u.created_at)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
+      </div>
+
+      {/* ===== QUICK ACTIONS ===== */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: "Manage Sellers", icon: UserCheck, color: "from-violet to-violet-dark", href: "/admin/sellers" },
+          { label: "Review Disputes", icon: MessageSquareWarning, color: "from-error to-red-700", href: "/admin/disputes" },
+          { label: "Settlements", icon: Banknote, color: "from-teal to-teal-dark", href: "/admin/settlements" },
+          { label: "Analytics", icon: BarChart3, color: "from-royal to-royal-dark", href: "/admin/analytics" },
+        ].map((action) => (
+          <button
+            key={action.label}
+            onClick={() => router.push(action.href)}
+            className={cn(
+              "rounded-[--radius-lg] bg-gradient-to-br p-5 text-white text-left hover:shadow-lg transition-shadow cursor-pointer",
+              action.color
+            )}
+          >
+            <action.icon className="h-8 w-8 mb-3 opacity-80" />
+            <p className="text-sm font-semibold">{action.label}</p>
+          </button>
+        ))}
       </div>
     </div>
   );
