@@ -1,0 +1,28 @@
+{
+  "name": "Winipat - Trust-First Commerce",
+  "short_name": "Winipat",
+  "description": "Trust what you buy. Track how it moves. Pay with confidence.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B1020",
+  "theme_color": "#3C4FE0",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "business", "finance"],
+  "lang": "en",
+  "dir": "ltr"
+}
