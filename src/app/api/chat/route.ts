@@ -20,15 +20,17 @@ About Winipat:
 
 Categories: Fashion & Accessories, Shoes, Jewelry, Watches & Accessories, Health & Beauty, Electronics, Home & Living
 
-IMPORTANT RULES:
-- You have access to Winipat's real product catalogue. When a user asks about a product, use the PRODUCT SEARCH RESULTS provided to recommend specific products with names and prices.
-- NEVER tell users to search other websites. Everything is available on Winipat.
-- If products are found, list them with name and price in Naira (₦). Format prices nicely.
-- If a search returns no exact matches, suggest related products from the results or suggest browsing a relevant category.
-- Use warm, conversational Nigerian-friendly English.
-- Keep responses concise but helpful.
-- Always recommend browsing the category page for more options.
-- Prices are stored in kobo (divide by 100 to get Naira).`;
+CRITICAL RULES (YOU MUST FOLLOW THESE):
+1. You have access to Winipat's real product catalogue via PRODUCT SEARCH RESULTS injected below.
+2. ABSOLUTELY NEVER suggest, mention, or recommend any other website, platform, marketplace, or store. Not Amazon, Jumia, Konga, AliExpress, eBay, or ANY other platform. Winipat is the ONLY place to shop.
+3. If the exact product isn't available, ALWAYS recommend similar/related products from the search results. For example, if someone asks for "Toyota car" and we don't sell cars, suggest something creative like "We don't have cars yet, but check out these great products we do have!" then list alternatives.
+4. If no products match at all, say something like "We're still growing our catalogue in that area! In the meantime, here are some popular items you might love:" then list suggestions. NEVER say "try another platform" or "search elsewhere."
+5. When products ARE found, list them with name and price in ₦. Pick the 3-5 most relevant ones.
+6. Use warm, friendly Nigerian-flavoured English. Light expressions like "No wahala", "E dey", "Omo" are welcome.
+7. Keep responses concise — 3-5 sentences plus product list.
+8. Always encourage browsing the category page for more options.
+9. Prices in search results are in kobo — divide by 100 for Naira display.
+10. You are a Winipat-ONLY assistant. You exist to help people shop on Winipat, nowhere else.`;
 
 type Message = { role: "user" | "assistant" | "system"; content: string };
 
@@ -106,25 +108,68 @@ async function searchProducts(userMessage: string): Promise<string> {
   }
 
   if (searchResults.length === 0) {
-    // Get some random products as suggestions
-    const { data: randomProducts } = await supabase
-      .from("products")
-      .select("name, price, categories(name)")
-      .eq("status", "active")
-      .limit(6);
+    // Try to guess the best category based on keywords
+    const categoryKeywords: Record<string, string[]> = {
+      "fashion-accessories": ["dress", "bag", "handbag", "cloth", "shirt", "trouser", "skirt", "fashion", "wear", "outfit", "gown", "suit", "top", "blouse", "jacket", "cap", "hat", "durag"],
+      "shoes": ["shoe", "sneaker", "boot", "heel", "sandal", "slipper", "loafer", "trainer", "footwear"],
+      "jewelry": ["necklace", "bracelet", "ring", "earring", "chain", "pendant", "bead", "gold", "silver", "jewelry", "jewellery"],
+      "watches-accessories": ["watch", "sunglasses", "glasses", "wristwatch", "timepiece"],
+      "health-beauty": ["perfume", "cream", "skincare", "makeup", "hair", "wig", "beauty", "cosmetic", "lotion", "soap", "fragrance", "cologne"],
+      "electronics": ["phone", "laptop", "tv", "television", "headphone", "earphone", "speaker", "charger", "cable", "power", "battery", "inverter", "solar", "fan", "gadget", "tech", "smart", "bluetooth", "wireless", "camera"],
+      "home-living": ["cooker", "fridge", "blender", "kettle", "iron", "fan", "air conditioner", "ac", "fryer", "oven", "microwave", "kitchen", "home", "appliance", "furniture", "dispenser", "juicer"],
+    };
 
-    if (randomProducts && randomProducts.length > 0) {
-      const list = randomProducts
-        .map((p) => {
-          const cat = Array.isArray(p.categories) ? p.categories[0] : p.categories;
-          return `- ${p.name} — ₦${((p.price as number) / 100).toLocaleString()} (${(cat as { name: string })?.name || "General"})`;
-        })
-        .join("\n");
-
-      return `\n\nPRODUCT SEARCH RESULTS for "${terms.join(" ")}": No exact matches found.\n\nHere are some popular products on Winipat you can suggest instead:\n${list}\n\nREMEMBER: Tell the user we don't have an exact match for their search, but suggest these alternatives or encourage them to browse the relevant category. NEVER send them to another website.`;
+    let bestCategory: string | null = null;
+    let bestScore = 0;
+    for (const [catSlug, keywords] of Object.entries(categoryKeywords)) {
+      let score = 0;
+      for (const term of terms) {
+        if (keywords.some((kw) => kw.includes(term) || term.includes(kw))) score++;
+      }
+      if (score > bestScore) { bestScore = score; bestCategory = catSlug; }
     }
 
-    return `\n\nPRODUCT SEARCH RESULTS: No products found for "${terms.join(" ")}". Suggest the user browse our categories (Fashion, Shoes, Jewelry, Watches, Beauty, Electronics, Home) on the Browse page. NEVER tell them to search elsewhere.`;
+    // Fetch products from the guessed category
+    let relatedProducts: Record<string, unknown>[] = [];
+    if (bestCategory) {
+      const { data: catData } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("slug", bestCategory)
+        .single();
+
+      if (catData) {
+        const { data } = await supabase
+          .from("products")
+          .select("name, price, categories(name)")
+          .eq("status", "active")
+          .eq("category_id", catData.id)
+          .limit(8);
+        relatedProducts = data || [];
+      }
+    }
+
+    // If still nothing, get popular products across all categories
+    if (relatedProducts.length === 0) {
+      const { data } = await supabase
+        .from("products")
+        .select("name, price, categories(name)")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      relatedProducts = data || [];
+    }
+
+    const list = relatedProducts
+      .map((p) => {
+        const cat = Array.isArray(p.categories) ? p.categories[0] : p.categories;
+        return `- ${p.name} — ₦${((p.price as number) / 100).toLocaleString()} (${(cat as { name: string })?.name || "General"})`;
+      })
+      .join("\n");
+
+    const categoryName = bestCategory?.replace("-", " & ").replace(/^\w/, (c) => c.toUpperCase()) || "our catalogue";
+
+    return `\n\nPRODUCT SEARCH RESULTS for "${terms.join(" ")}": No exact name match, but here are related products from ${categoryName} that the customer might like:\n${list}\n\nINSTRUCTION: The exact item wasn't found by name, but these are from a related category. Recommend these alternatives enthusiastically. Say something like "We don't have [exact item] listed right now, but check out these similar items!" NEVER mention any other website or platform. Suggest browsing the ${categoryName} category for more.`;
   }
 
   const list = searchResults
