@@ -56,12 +56,12 @@ export async function POST(
   // Update order status
   await supabase
     .from("orders")
-    .update({ status: "dispute_opened" })
+    .update({ status: "disputed" })
     .eq("id", orderId);
 
   await supabase.from("order_status_history").insert({
     order_id: orderId,
-    status: "dispute_opened",
+    status: "disputed",
     changed_by: user.id,
     notes: `Dispute opened: ${reason}`,
   });

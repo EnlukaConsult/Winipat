@@ -1,10 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { formatNaira, formatDate } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/utils";
 import {
@@ -12,14 +10,13 @@ import {
   MapPin,
   CreditCard,
   CheckCircle2,
-  AlertTriangle,
-  Star,
   ArrowLeft,
   Clock,
   Truck,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { OrderDetailActions } from "./order-detail-actions";
 
 // Snapshot of an item at order time (price/name frozen so product changes don't
 // affect historical orders). product_id is kept for an optional best-effort
@@ -254,7 +251,7 @@ export default async function OrderDetailPage({
       {/* Disputed / cancelled banner */}
       {["disputed", "cancelled", "refunded"].includes(o.status) && (
         <div className="flex items-start gap-3 rounded-[--radius-lg] border border-error/20 bg-error/5 p-4">
-          <AlertTriangle size={20} className="flex-shrink-0 text-error mt-0.5" />
+          <span className="text-error mt-0.5">⚠</span>
           <div>
             <p className="font-semibold text-error">
               {o.status === "disputed"
@@ -417,56 +414,19 @@ export default async function OrderDetailPage({
         </div>
       </Card>
 
-      {/* Action buttons */}
+      {/* Action buttons (interactive — extracted to a client component so
+          we can call the proper API routes with feedback / error handling) */}
       {!isTerminal && (
         <Card padding="md">
           <CardHeader>
             <CardTitle>Actions</CardTitle>
           </CardHeader>
-          <div className="flex flex-wrap gap-3">
-            {canConfirmDelivery && (
-              <form
-                action={async () => {
-                  "use server";
-                  // TODO Phase 3 Step 3: replace with POST to /api/orders/[id]/confirm-delivery
-                  // so escrow release + commission split run in the proper place.
-                  const supabase = await createClient();
-                  await supabase.from("orders").update({ status: "completed" }).eq("id", id);
-                }}
-              >
-                <Button variant="primary" size="md" type="submit">
-                  <CheckCircle2 size={16} className="mr-2" />
-                  Confirm Delivery
-                </Button>
-              </form>
-            )}
-
-            {isDisputable && (
-              <Button variant="outline" size="md">
-                <AlertTriangle size={16} className="mr-2" />
-                Open Dispute
-              </Button>
-            )}
-
-            {o.status === "completed" && (
-              <Button variant="gold" size="md">
-                <Star size={16} className="mr-2" />
-                Leave Review
-              </Button>
-            )}
-          </div>
-
-          {isDisputable && (
-            <div className="mt-4 rounded-[--radius-md] border border-warning/20 bg-warning/5 p-4">
-              <p className="mb-3 text-sm font-semibold text-amber-700">Open a Dispute</p>
-              <Textarea
-                label="Describe the issue"
-                placeholder="Please explain what went wrong with your order…"
-                className="mb-3"
-              />
-              <Button variant="danger" size="sm">Submit Dispute</Button>
-            </div>
-          )}
+          <OrderDetailActions
+            orderId={o.id}
+            canConfirmDelivery={canConfirmDelivery}
+            canOpenDispute={isDisputable}
+            canLeaveReview={o.status === "completed"}
+          />
         </Card>
       )}
     </div>

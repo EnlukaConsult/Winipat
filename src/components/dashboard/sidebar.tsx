@@ -48,6 +48,7 @@ const sellerNav: NavItem[] = [
   { label: "Products", href: "/seller/products", icon: Store },
   { label: "Add Product", href: "/seller/products/new", icon: Plus },
   { label: "Orders", href: "/seller/orders", icon: Package },
+  { label: "Disputes", href: "/seller/disputes", icon: AlertTriangle },
   { label: "Earnings", href: "/seller/earnings", icon: DollarSign },
 ];
 
