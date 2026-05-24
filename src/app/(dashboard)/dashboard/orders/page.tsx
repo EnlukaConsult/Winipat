@@ -14,13 +14,9 @@ type Order = {
   order_number: string;
   created_at: string;
   status: OrderStatus;
-  total_amount: number;
-  items: Array<{
-    product: { name: string };
-  }>;
-  seller: {
-    full_name: string;
-  };
+  total: number;                  // kobo (schema column is `total`, not `total_amount`)
+  items: Array<{ product_name: string; quantity: number }>;
+  seller: { business_name: string | null } | null;
 };
 
 type TabFilter = "all" | "active" | "completed" | "disputed";
@@ -61,16 +57,22 @@ export default function OrdersPage() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
+    // orders.seller_id is FK to sellers.id (not profiles.id) — use sellers!seller_id
+    // order_items snapshots product_name + quantity at order time, so no need to
+    // join products for the list view.
+    const { data, error } = await supabase
       .from("orders")
-      .select(
-        `id, order_number, created_at, status, total_amount,
-         seller:profiles!seller_id(full_name),
-         items:order_items(product:products(name))`
-      )
+      .select(`
+        id, order_number, created_at, status, total,
+        seller:sellers!seller_id ( business_name ),
+        items:order_items ( product_name, quantity )
+      `)
       .eq("buyer_id", user.id)
       .order("created_at", { ascending: false });
 
+    if (error) {
+      console.error("[orders] failed to load:", error.message);
+    }
     setOrders((data as unknown as Order[]) || []);
     setLoading(false);
   }
@@ -177,7 +179,7 @@ export default function OrdersPage() {
                         Order #{order.order_number}
                       </p>
                       <p className="mt-0.5 text-sm text-slate-light truncate">
-                        {order.seller?.full_name} •{" "}
+                        {order.seller?.business_name ?? "Unknown seller"} •{" "}
                         {order.items?.length ?? 0} item
                         {(order.items?.length ?? 0) !== 1 ? "s" : ""}
                       </p>
@@ -190,7 +192,7 @@ export default function OrdersPage() {
                       {formatDate(order.created_at)}
                     </span>
                     <span className="font-bold text-royal">
-                      {formatNaira(order.total_amount)}
+                      {formatNaira(order.total)}
                     </span>
                   </div>
                 </div>

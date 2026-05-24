@@ -18,33 +18,30 @@ import {
   Trash2,
   Save,
   Check,
-  Truck,
-  Building2,
 } from "lucide-react";
 
+// Matches the addresses table in schema.sql exactly — no postal_code column.
+// (Nigerian addresses rarely use postcodes in practice; delivery is by street + city + state.)
 type Address = {
   id: string;
   label: string;
   street: string;
   city: string;
   state: string;
-  postal_code: string;
+  country: string;
   is_default: boolean;
 };
 
+// Matches the profiles table — no delivery_preference column.
+// Buyers choose delivery mode per-order at checkout (FR-BYR-024), so no
+// "default preference" is needed here.
 type Profile = {
   id: string;
   full_name: string;
   email: string;
   phone: string | null;
   avatar_url: string | null;
-  delivery_preference: string | null;
 };
-
-const DELIVERY_PREFS = [
-  { value: "door_to_door", label: "Door-to-Door Delivery" },
-  { value: "pickup_office", label: "Pickup at Office" },
-];
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
@@ -64,7 +61,6 @@ export default function ProfilePage() {
   // Form state
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [deliveryPref, setDeliveryPref] = useState("door_to_door");
 
   // Address form
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -74,7 +70,6 @@ export default function ProfilePage() {
     street: "",
     city: "",
     state: "",
-    postal_code: "",
     is_default: false,
   });
 
@@ -91,7 +86,7 @@ export default function ProfilePage() {
 
     const { data: prof } = await supabase
       .from("profiles")
-      .select("id, full_name, phone, avatar_url, delivery_preference")
+      .select("id, full_name, phone, avatar_url")
       .eq("id", user.id)
       .single();
 
@@ -103,7 +98,6 @@ export default function ProfilePage() {
     setProfile(profileData);
     setFullName(profileData.full_name || "");
     setPhone(profileData.phone || "");
-    setDeliveryPref(profileData.delivery_preference || "door_to_door");
 
     const { data: addrs } = await supabase
       .from("addresses")
@@ -125,7 +119,6 @@ export default function ProfilePage() {
       .update({
         full_name: fullName,
         phone,
-        delivery_preference: deliveryPref,
       })
       .eq("id", profile.id);
 
@@ -160,7 +153,6 @@ export default function ProfilePage() {
       street: "",
       city: "",
       state: "",
-      postal_code: "",
       is_default: false,
     });
   }
@@ -200,7 +192,6 @@ export default function ProfilePage() {
       street: addr.street,
       city: addr.city,
       state: addr.state,
-      postal_code: addr.postal_code,
       is_default: addr.is_default,
     });
     setShowAddressForm(true);
@@ -323,7 +314,6 @@ export default function ProfilePage() {
                   street: "",
                   city: "",
                   state: "",
-                  postal_code: "",
                   is_default: false,
                 });
                 setShowAddressForm(true);
@@ -361,8 +351,7 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <p className="mt-1 text-sm text-slate-light">
-                    {addr.street}, {addr.city}, {addr.state}{" "}
-                    {addr.postal_code}
+                    {addr.street}, {addr.city}, {addr.state}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -434,18 +423,6 @@ export default function ProfilePage() {
                   }
                 />
               </div>
-              <Input
-                label="Postal Code"
-                placeholder="100001"
-                value={addressForm.postal_code}
-                onChange={(e) =>
-                  setAddressForm((f) => ({
-                    ...f,
-                    postal_code: e.target.value,
-                  }))
-                }
-              />
-
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -482,62 +459,9 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {/* Delivery preferences */}
-      <Card padding="md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck size={18} className="text-royal" />
-            Delivery Preferences
-          </CardTitle>
-          <CardDescription>
-            Set your preferred delivery method for new orders
-          </CardDescription>
-        </CardHeader>
-
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            {
-              value: "door_to_door",
-              label: "Door-to-Door",
-              desc: "Delivered to your address",
-              icon: Truck,
-            },
-            {
-              value: "pickup_office",
-              label: "Pickup Office",
-              desc: "Collect at a partner location",
-              icon: Building2,
-            },
-          ].map(({ value, label, desc, icon: Icon }) => (
-            <button
-              key={value}
-              onClick={() => setDeliveryPref(value)}
-              className={`flex items-start gap-3 rounded-[--radius-md] border-2 p-4 text-left transition-all duration-200 ${
-                deliveryPref === value
-                  ? "border-royal bg-royal/5 text-royal"
-                  : "border-mist-dark text-slate hover:border-royal/50"
-              }`}
-            >
-              <Icon size={20} className="flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold">{label}</p>
-                <p className="text-xs text-slate-light mt-0.5">{desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        <Button
-          variant="primary"
-          size="md"
-          className="mt-4"
-          onClick={saveProfile}
-          loading={saving}
-        >
-          <Save size={16} className="mr-2" />
-          Save Preferences
-        </Button>
-      </Card>
+      {/* Delivery preferences removed — buyer picks delivery mode per-order at
+          checkout (FR-BYR-024); the previous card wrote to a column that
+          doesn't exist on the profiles table. */}
     </div>
   );
 }
