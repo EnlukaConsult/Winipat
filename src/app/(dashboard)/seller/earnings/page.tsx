@@ -13,36 +13,55 @@ import {
   CheckCircle2,
   BarChart3,
   Info,
-  Loader2,
 } from "lucide-react";
 
-const COMMISSION_RATE = 0.12;
+// Default commission rate per FRD (BR-040). Falls back to this when no
+// commissions row exists yet for a given order (e.g. an order that
+// hasn't completed yet, or pre-commissions-table data).
+const DEFAULT_COMMISSION_RATE = 0.12;
 
 interface EarningsSummary {
-  grossSales: number;
-  commissionDeducted: number;
-  netEarnings: number;
-  pendingSettlement: number;
-  totalPaidOut: number;
+  grossSales: number;          // kobo
+  commissionDeducted: number;  // kobo
+  netEarnings: number;         // kobo
+  pendingSettlement: number;   // kobo (in-flight orders, net of commission)
+  totalPaidOut: number;        // kobo
 }
+
+// Matches Postgres payout_status enum exactly.
+type PayoutStatus = "pending" | "processing" | "completed" | "failed";
 
 interface Payout {
   id: string;
   created_at: string;
-  amount: number;
-  status: "pending" | "processing" | "paid" | "failed";
+  amount: number;            // kobo
+  status: PayoutStatus;
   reference: string | null;
+  processed_at: string | null;
 }
 
 const payoutStatusConfig: Record<
-  Payout["status"],
+  PayoutStatus,
   { label: string; variant: "warning" | "info" | "success" | "error" }
 > = {
-  pending: { label: "Pending", variant: "warning" },
+  pending:    { label: "Pending",    variant: "warning" },
   processing: { label: "Processing", variant: "info" },
-  paid: { label: "Paid", variant: "success" },
-  failed: { label: "Failed", variant: "error" },
+  completed:  { label: "Paid",       variant: "success" },
+  failed:     { label: "Failed",     variant: "error" },
 };
+
+// Orders considered "settled" — escrow released, commission paid, money
+// owed to the seller. (delivered counts because buyer can still confirm-or-auto-confirm.)
+const SETTLED_ORDER_STATUSES = ["completed", "delivered"] as const;
+
+// Orders considered "in flight" — money will eventually be owed but escrow
+// hasn't released yet.
+const IN_FLIGHT_ORDER_STATUSES = [
+  "seller_preparing",
+  "awaiting_pickup",
+  "picked_up",
+  "in_transit",
+] as const;
 
 export default function SellerEarningsPage() {
   const [summary, setSummary] = useState<EarningsSummary>({
@@ -59,57 +78,62 @@ export default function SellerEarningsPage() {
     async function load() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { setLoading(false); return; }
 
-      const [{ data: completedOrders }, { data: pendingOrders }, { data: payoutData }] =
-        await Promise.all([
-          supabase
-            .from("orders")
-            .select("total_amount, commission_amount, net_seller_amount")
-            .eq("seller_id", user.id)
-            .in("status", ["completed", "delivered"]),
-          supabase
-            .from("orders")
-            .select("net_seller_amount, total_amount")
-            .eq("seller_id", user.id)
-            .in("status", ["seller_preparing", "awaiting_pickup", "picked_up", "in_transit"]),
-          supabase
-            .from("seller_payouts")
-            .select("id, created_at, amount, status, reference")
-            .eq("seller_id", user.id)
-            .order("created_at", { ascending: false }),
-        ]);
+      // Pull settled + in-flight orders alongside their commission rows.
+      // commissions.order_id is UNIQUE so the join is 1:0..1.
+      const [settledResult, inFlightResult, payoutsResult] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("id, total, commissions ( amount )")
+          .eq("seller_id", user.id)
+          .in("status", SETTLED_ORDER_STATUSES as unknown as string[]),
+        supabase
+          .from("orders")
+          .select("id, total")
+          .eq("seller_id", user.id)
+          .in("status", IN_FLIGHT_ORDER_STATUSES as unknown as string[]),
+        supabase
+          .from("payouts")
+          .select("id, created_at, amount, status, reference, processed_at")
+          .eq("seller_id", user.id)
+          .order("created_at", { ascending: false }),
+      ]);
 
-      const grossSales = (completedOrders || []).reduce(
-        (sum, o) => sum + (o.total_amount || 0),
-        0
-      );
-      const commissionDeducted = (completedOrders || []).reduce(
-        (sum, o) => sum + (o.commission_amount || o.total_amount * COMMISSION_RATE || 0),
-        0
-      );
-      const netEarningsFromCompleted = (completedOrders || []).reduce(
-        (sum, o) => sum + (o.net_seller_amount || o.total_amount * (1 - COMMISSION_RATE) || 0),
-        0
-      );
-      const pendingSettlement = (pendingOrders || []).reduce(
-        (sum, o) =>
-          sum + (o.net_seller_amount || o.total_amount * (1 - COMMISSION_RATE) || 0),
-        0
-      );
-      const totalPaidOut = ((payoutData || []) as Payout[])
-        .filter((p) => p.status === "paid")
-        .reduce((sum, p) => sum + p.amount, 0);
+      type SettledRow = { id: string; total: number; commissions: { amount: number } | { amount: number }[] | null };
+      type InFlightRow = { id: string; total: number };
 
-      setSummary({
-        grossSales,
-        commissionDeducted,
-        netEarnings: netEarningsFromCompleted,
-        pendingSettlement,
-        totalPaidOut,
-      });
+      const settled  = (settledResult.data  ?? []) as SettledRow[];
+      const inFlight = (inFlightResult.data ?? []) as InFlightRow[];
+      const payoutList = (payoutsResult.data ?? []) as Payout[];
 
-      setPayouts((payoutData as Payout[]) || []);
+      // ── Gross sales = sum of totals on settled orders ─────────────
+      const grossSales = settled.reduce((s, o) => s + (o.total ?? 0), 0);
+
+      // ── Commission = use commissions.amount when present, else 12% fallback ──
+      const commissionDeducted = settled.reduce((sum, o) => {
+        // Supabase may return the joined relation as an object OR a single-element array
+        const c = Array.isArray(o.commissions) ? o.commissions[0] : o.commissions;
+        if (c?.amount) return sum + c.amount;
+        return sum + Math.round((o.total ?? 0) * DEFAULT_COMMISSION_RATE);
+      }, 0);
+
+      // ── Net = gross - commission ──
+      const netEarnings = grossSales - commissionDeducted;
+
+      // ── Pending settlement = in-flight orders, net of 12% ──
+      const pendingSettlement = inFlight.reduce(
+        (sum, o) => sum + Math.round((o.total ?? 0) * (1 - DEFAULT_COMMISSION_RATE)),
+        0,
+      );
+
+      // ── Total paid out = sum of completed payout amounts ──
+      const totalPaidOut = payoutList
+        .filter((p) => p.status === "completed")
+        .reduce((sum, p) => sum + (p.amount ?? 0), 0);
+
+      setSummary({ grossSales, commissionDeducted, netEarnings, pendingSettlement, totalPaidOut });
+      setPayouts(payoutList);
       setLoading(false);
     }
     load();
@@ -122,7 +146,7 @@ export default function SellerEarningsPage() {
       icon: TrendingUp,
       color: "text-royal",
       bg: "bg-royal/10",
-      hint: "Total value of completed orders",
+      hint: "Total value of delivered + completed orders",
     },
     {
       label: "Commission (12%)",
@@ -130,7 +154,7 @@ export default function SellerEarningsPage() {
       icon: Percent,
       color: "text-error",
       bg: "bg-error/10",
-      hint: "Platform fee deducted",
+      hint: "Platform fee deducted at settlement",
     },
     {
       label: "Net Earnings",
@@ -138,7 +162,7 @@ export default function SellerEarningsPage() {
       icon: Wallet,
       color: "text-emerald",
       bg: "bg-emerald/10",
-      hint: "After commission deduction",
+      hint: "Total earned after commission",
     },
     {
       label: "Pending Settlement",
@@ -146,7 +170,7 @@ export default function SellerEarningsPage() {
       icon: Clock,
       color: "text-amber-600",
       bg: "bg-warning/10",
-      hint: "Orders in progress, not yet released",
+      hint: "In-flight orders, not yet released from escrow",
     },
     {
       label: "Total Paid Out",
@@ -154,7 +178,7 @@ export default function SellerEarningsPage() {
       icon: CheckCircle2,
       color: "text-emerald-dark",
       bg: "bg-emerald/15",
-      hint: "Funds transferred to your bank",
+      hint: "Funds successfully transferred to your bank",
     },
   ];
 
@@ -176,8 +200,8 @@ export default function SellerEarningsPage() {
         <div>
           <p className="text-sm font-semibold text-midnight">Platform Commission Rate: 12%</p>
           <p className="text-sm text-slate-light mt-0.5">
-            Winipat deducts 12% from each completed order. The remaining 88% is yours. Payouts are
-            processed every Friday to your registered bank account.
+            Winipat deducts 12% from each delivered order. The remaining 88% is yours. Payouts are
+            processed in daily batches to your registered bank account, 48 hours after delivery confirmation.
           </p>
         </div>
       </div>
@@ -268,7 +292,7 @@ export default function SellerEarningsPage() {
                   return (
                     <tr key={payout.id} className="hover:bg-cloud transition-colors">
                       <td className="px-6 py-4 text-slate whitespace-nowrap">
-                        {formatDate(payout.created_at)}
+                        {formatDate(payout.processed_at ?? payout.created_at)}
                       </td>
                       <td className="px-6 py-4 text-right font-semibold text-midnight whitespace-nowrap">
                         {formatNaira(payout.amount)}
