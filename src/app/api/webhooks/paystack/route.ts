@@ -60,16 +60,16 @@ async function handleChargeSuccess(data: {
     })
     .eq("reference", reference);
 
-  // Update order status to paid
+  // Update order status -> payment_confirmed (matches Postgres order_status enum)
   await supabaseAdmin
     .from("orders")
-    .update({ status: "paid" })
+    .update({ status: "payment_confirmed" })
     .eq("id", orderId);
 
-  // Create order status history entry
+  // Create order status history entry (audit trail)
   await supabaseAdmin.from("order_status_history").insert({
     order_id: orderId,
-    status: "paid",
+    status: "payment_confirmed",
     notes: `Payment confirmed via Paystack. Reference: ${reference}`,
   });
 

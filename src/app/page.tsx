@@ -129,70 +129,43 @@ export default function HomePage() {
 
       {/* ===== WHAT IS WINIPAT ===== */}
       <section className="py-16 sm:py-24 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="relative flex justify-center">
-              {/* Circular photo with gradient ring — matching brand profile style */}
-              <div className="relative w-[280px] h-[280px] sm:w-[380px] sm:h-[380px]">
-                {/* Animated gradient ring */}
-                <div className="absolute inset-0 rounded-full p-[5px] bg-[conic-gradient(#d4a853,#4338ca,#7c3aed,#14B8A6,#d4a853)] shadow-[0_0_50px_rgba(67,56,202,0.35),0_0_100px_rgba(212,168,83,0.15)] animate-spin" style={{ animationDuration: "8s" }}>
-                  <div className="w-full h-full rounded-full overflow-hidden border-[5px] border-midnight">
-                    <Image
-                      src="/images/profile-photo.png"
-                      alt="Winipat - Trust-first commerce"
-                      width={400}
-                      height={400}
-                      className="w-full h-full object-cover object-[center_top] brightness-[1.04] contrast-[1.1] saturate-[1.06]"
-                      priority
-                    />
-                  </div>
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 rounded-[--radius-full] bg-royal/10 px-4 py-2 mb-6">
+            <Sparkles className="h-4 w-4 text-royal" />
+            <span className="text-sm text-royal font-medium">What is Winipat?</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-6 max-w-3xl mx-auto">
+            Not just another marketplace. A trust infrastructure for African commerce.
+          </h2>
+          <p className="text-slate-light text-base sm:text-lg mb-6 leading-relaxed max-w-2xl mx-auto">
+            Winipat solves the biggest problem in Nigerian online commerce: <strong className="text-midnight">trust</strong>.
+            Too many buyers have paid for products they never received, or received something completely different
+            from what was advertised. Sellers struggle to prove their legitimacy.
+          </p>
+          <p className="text-slate-light text-base sm:text-lg mb-12 leading-relaxed max-w-2xl mx-auto">
+            Winipat changes this by combining <strong className="text-midnight">verified sellers</strong>,
+            <strong className="text-midnight"> escrow-backed payments</strong>,
+            <strong className="text-midnight"> buyer-chosen logistics</strong>, and a
+            <strong className="text-midnight"> proof-based delivery flow</strong> into one platform.
+            Your money is protected until you confirm you received exactly what you ordered.
+          </p>
+
+          {/* 4-column trust pillars — wider grid now that we've removed the photo */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            {[
+              { icon: ShieldCheck, label: "Verified Sellers", desc: "KYC + ID verified" },
+              { icon: Lock, label: "Escrow Payments", desc: "Funds held safely" },
+              { icon: Truck, label: "You Choose Delivery", desc: "Your preferred logistics" },
+              { icon: Star, label: "Real Reviews", desc: "Only from real buyers" },
+            ].map((item) => (
+              <div key={item.label} className="flex flex-col items-center text-center gap-2 p-5 rounded-[--radius-md] bg-cloud border border-mist">
+                <div className="h-10 w-10 rounded-[--radius-md] bg-royal/10 flex items-center justify-center">
+                  <item.icon className="h-5 w-5 text-royal" />
                 </div>
+                <p className="text-sm font-semibold text-midnight mt-1">{item.label}</p>
+                <p className="text-xs text-slate-light">{item.desc}</p>
               </div>
-              {/* 0% Scam Rate badge */}
-              <div className="absolute -bottom-2 right-1/4 sm:right-1/4 bg-royal rounded-[--radius-lg] p-4 sm:p-5 shadow-xl z-10">
-                <p className="text-white text-2xl sm:text-3xl font-bold font-[family-name:var(--font-sora)]">0%</p>
-                <p className="text-white/70 text-xs sm:text-sm">Scam Rate</p>
-              </div>
-            </div>
-
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-[--radius-full] bg-royal/10 px-4 py-2 mb-6">
-                <Sparkles className="h-4 w-4 text-royal" />
-                <span className="text-sm text-royal font-medium">What is Winipat?</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-6">
-                Not just another marketplace. A trust infrastructure for African commerce.
-              </h2>
-              <p className="text-slate-light text-base sm:text-lg mb-6 leading-relaxed">
-                Winipat solves the biggest problem in Nigerian online commerce: <strong className="text-midnight">trust</strong>.
-                Too many buyers have paid for products they never received, or received something completely different
-                from what was advertised. Sellers struggle to prove their legitimacy.
-              </p>
-              <p className="text-slate-light text-base sm:text-lg mb-8 leading-relaxed">
-                Winipat changes this by combining <strong className="text-midnight">verified sellers</strong>,
-                <strong className="text-midnight"> escrow-backed payments</strong>,
-                <strong className="text-midnight"> buyer-chosen logistics</strong>, and a
-                <strong className="text-midnight"> proof-based delivery flow</strong> into one platform.
-                Your money is protected until you confirm you received exactly what you ordered.
-              </p>
-
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { icon: ShieldCheck, label: "Verified Sellers", desc: "KYC + ID verified" },
-                  { icon: Lock, label: "Escrow Payments", desc: "Funds held safely" },
-                  { icon: Truck, label: "You Choose Delivery", desc: "Your preferred logistics" },
-                  { icon: Star, label: "Real Reviews", desc: "Only from real buyers" },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-start gap-3 p-3 rounded-[--radius-md] bg-cloud">
-                    <item.icon className="h-5 w-5 text-royal shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold text-midnight">{item.label}</p>
-                      <p className="text-xs text-slate-light">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -7,48 +8,20 @@ interface LogoProps {
   theme?: "light" | "dark";
 }
 
-const iconSizes = { sm: 26, md: 34, lg: 46 };
+const iconSizes = { sm: 28, md: 36, lg: 50 };
 const textSizes = { sm: "text-lg", md: "text-xl", lg: "text-2xl" };
 
-function ShieldIcon({ size = 34 }: { size?: number }) {
+function LogoIcon({ size = 36 }: { size?: number }) {
   return (
-    <svg
+    <Image
+      src="/images/winipat-logo.png"
+      alt="Winipat"
       width={size}
       height={size}
-      viewBox="0 0 80 80"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <linearGradient id="shield-bg" x1="10" y1="5" x2="70" y2="75" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#7C3AED" />
-          <stop offset="45%" stopColor="#4F46E5" />
-          <stop offset="100%" stopColor="#14B8A6" />
-        </linearGradient>
-      </defs>
-      {/* Shield shape */}
-      <path
-        d="M40 6L12 20v18c0 17.6 11.9 34 28 40 16.1-6 28-22.4 28-40V20L40 6z"
-        fill="url(#shield-bg)"
-      />
-      {/* W + checkmark swoosh */}
-      <path
-        d="M24 34l8 16 8-12 8 12 8-16"
-        stroke="white"
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <path
-        d="M32 50l-4 6"
-        stroke="white"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.7"
-      />
-    </svg>
+      priority
+      className="object-contain"
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -57,13 +30,14 @@ export function Logo({ className, size = "md", variant = "full", theme = "dark" 
 
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
-      {variant !== "text" && <ShieldIcon size={iconSizes[size]} />}
+      {variant !== "text" && <LogoIcon size={iconSizes[size]} />}
       {variant !== "icon" && (
         <div className="flex flex-col leading-none">
           <span
             className={cn(
               "font-bold font-[family-name:var(--font-sora)] tracking-tight",
               textSizes[size],
+              textColor,
             )}
           >
             <span className="text-violet">wini</span>
@@ -80,4 +54,5 @@ export function Logo({ className, size = "md", variant = "full", theme = "dark" 
   );
 }
 
-export { ShieldIcon };
+// Kept as a backwards-compatible re-export in case any callers import it directly.
+export { LogoIcon as ShieldIcon };

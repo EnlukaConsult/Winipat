@@ -27,7 +27,7 @@ type TabFilter = "all" | "active" | "completed" | "disputed";
 
 const ACTIVE_STATUSES: OrderStatus[] = [
   "pending_payment",
-  "paid",
+  "payment_confirmed",
   "seller_preparing",
   "awaiting_pickup",
   "picked_up",
@@ -35,7 +35,7 @@ const ACTIVE_STATUSES: OrderStatus[] = [
 ];
 
 const COMPLETED_STATUSES: OrderStatus[] = ["delivered", "completed", "refunded"];
-const DISPUTED_STATUSES: OrderStatus[] = ["dispute_opened", "cancelled"];
+const DISPUTED_STATUSES: OrderStatus[] = ["disputed", "cancelled"];
 
 const TABS: { key: TabFilter; label: string }[] = [
   { key: "all", label: "All" },

@@ -53,7 +53,7 @@ type Order = {
 
 const STATUS_STEPS: OrderStatus[] = [
   "pending_payment",
-  "paid",
+  "payment_confirmed",
   "seller_preparing",
   "awaiting_pickup",
   "picked_up",
@@ -63,25 +63,25 @@ const STATUS_STEPS: OrderStatus[] = [
 ];
 
 const STEP_LABELS: Partial<Record<OrderStatus, string>> = {
-  pending_payment: "Payment Pending",
-  paid: "Payment Confirmed",
-  seller_preparing: "Seller Preparing",
-  awaiting_pickup: "Ready for Pickup",
-  picked_up: "Picked Up",
-  in_transit: "In Transit",
-  delivered: "Delivered",
-  completed: "Completed",
+  pending_payment:   "Payment Pending",
+  payment_confirmed: "Payment Confirmed",
+  seller_preparing:  "Seller Preparing",
+  awaiting_pickup:   "Ready for Pickup",
+  picked_up:         "Picked Up",
+  in_transit:        "In Transit",
+  delivered:         "Delivered",
+  completed:         "Completed",
 };
 
 const STEP_ICONS: Partial<Record<OrderStatus, React.ElementType>> = {
-  pending_payment: Clock,
-  paid: CreditCard,
-  seller_preparing: Package,
-  awaiting_pickup: Package,
-  picked_up: Truck,
-  in_transit: Truck,
-  delivered: CheckCircle2,
-  completed: ShieldCheck,
+  pending_payment:   Clock,
+  payment_confirmed: CreditCard,
+  seller_preparing:  Package,
+  awaiting_pickup:   Package,
+  picked_up:         Truck,
+  in_transit:        Truck,
+  delivered:         CheckCircle2,
+  completed:         ShieldCheck,
 };
 
 export default async function OrderDetailPage({
@@ -118,7 +118,7 @@ export default async function OrderDetailPage({
   const currentStepIndex = STATUS_STEPS.indexOf(o.status);
   const isDisputable = ["delivered", "in_transit", "picked_up"].includes(o.status);
   const canConfirmDelivery = o.status === "delivered";
-  const isTerminal = ["completed", "refunded", "cancelled", "dispute_opened"].includes(o.status);
+  const isTerminal = ["completed", "refunded", "cancelled", "disputed"].includes(o.status);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -146,7 +146,7 @@ export default async function OrderDetailPage({
       </div>
 
       {/* Order timeline */}
-      {!["dispute_opened", "refunded", "cancelled"].includes(o.status) && (
+      {!["disputed", "refunded", "cancelled"].includes(o.status) && (
         <Card padding="md">
           <CardHeader>
             <CardTitle>Order Progress</CardTitle>
@@ -207,19 +207,19 @@ export default async function OrderDetailPage({
       )}
 
       {/* Disputed / cancelled banner */}
-      {["dispute_opened", "cancelled", "refunded"].includes(o.status) && (
+      {["disputed", "cancelled", "refunded"].includes(o.status) && (
         <div className="flex items-start gap-3 rounded-[--radius-lg] border border-error/20 bg-error/5 p-4">
           <AlertTriangle size={20} className="flex-shrink-0 text-error mt-0.5" />
           <div>
             <p className="font-semibold text-error">
-              {o.status === "dispute_opened"
+              {o.status === "disputed"
                 ? "Dispute Opened"
                 : o.status === "refunded"
                 ? "Order Refunded"
                 : "Order Cancelled"}
             </p>
             <p className="mt-0.5 text-sm text-slate-light">
-              {o.status === "dispute_opened"
+              {o.status === "disputed"
                 ? "This order is currently under review. Our team will contact you."
                 : "This order has been resolved."}
             </p>

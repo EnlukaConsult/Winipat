@@ -38,9 +38,11 @@ interface RecentOrder {
   buyer_name: string;
 }
 
+type SellerStatus = "draft" | "submitted" | "under_review" | "approved" | "rejected" | null;
+
 interface SellerProfile {
   business_name: string | null;
-  verification_status: "unverified" | "pending" | "verified" | "rejected" | null;
+  status: SellerStatus;
 }
 
 export default function SellerDashboardPage() {
@@ -61,22 +63,32 @@ export default function SellerDashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [{ data: profile }, { data: seller }] = await Promise.all([
+      const [{ data: profile }, { data: seller }, { data: trust }] = await Promise.all([
         supabase.from("profiles").select("full_name").eq("id", user.id).single(),
         supabase
           .from("sellers")
-          .select("business_name, verification_status, avg_rating")
+          .select("business_name, status")
+          .eq("id", user.id)
+          .maybeSingle(),
+        // Average rating lives in trust_scores per schema, not on sellers
+        supabase
+          .from("trust_scores")
+          .select("avg_rating")
           .eq("user_id", user.id)
-          .single(),
+          .maybeSingle(),
       ]);
 
       if (profile) setUserName(profile.full_name || "Seller");
       if (seller) {
         setSellerProfile({
           business_name: seller.business_name,
-          verification_status: seller.verification_status,
+          status: seller.status,
         });
-        setStats((prev) => ({ ...prev, avgRating: seller.avg_rating || 0 }));
+      } else {
+        setSellerProfile({ business_name: null, status: null });
+      }
+      if (trust?.avg_rating) {
+        setStats((prev) => ({ ...prev, avgRating: trust.avg_rating || 0 }));
       }
 
       const [{ count: activeProducts }, { count: pendingOrders }, { data: orders }] =
@@ -90,10 +102,10 @@ export default function SellerDashboardPage() {
             .from("orders")
             .select("*", { count: "exact", head: true })
             .eq("seller_id", user.id)
-            .eq("status", "paid"),
+            .in("status", ["payment_confirmed", "seller_preparing"]),
           supabase
             .from("orders")
-            .select("id, order_number, created_at, total_amount, status, buyer_id")
+            .select("id, order_number, created_at, total, status, buyer_id")
             .eq("seller_id", user.id)
             .order("created_at", { ascending: false })
             .limit(5),
@@ -101,18 +113,18 @@ export default function SellerDashboardPage() {
 
       const { data: salesData } = await supabase
         .from("orders")
-        .select("total_amount")
+        .select("total")
         .eq("seller_id", user.id)
         .in("status", ["completed", "delivered"]);
 
-      const totalSales = salesData?.reduce((sum, o) => sum + (o.total_amount || 0), 0) ?? 0;
+      const totalSales = salesData?.reduce((sum, o) => sum + (o.total || 0), 0) ?? 0;
 
-      setStats({
+      setStats((prev) => ({
+        ...prev,
         totalSales,
         activeProducts: activeProducts || 0,
         pendingOrders: pendingOrders || 0,
-        avgRating: seller?.avg_rating || 0,
-      });
+      }));
 
       if (orders && orders.length > 0) {
         const buyerIds = [...new Set(orders.map((o) => o.buyer_id))];
@@ -128,7 +140,7 @@ export default function SellerDashboardPage() {
             id: o.id,
             order_number: o.order_number,
             created_at: o.created_at,
-            total_amount: o.total_amount,
+            total_amount: o.total,
             status: o.status as OrderStatus,
             buyer_name: buyerMap[o.buyer_id]?.split(" ")[0] || "Customer",
           }))
@@ -181,53 +193,47 @@ export default function SellerDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Verification Banner */}
-      {sellerProfile && sellerProfile.verification_status !== "verified" && (
-        <div
-          className={`rounded-[--radius-lg] border px-5 py-4 flex items-start gap-3 ${
-            sellerProfile.verification_status === "pending"
-              ? "bg-warning/8 border-warning/30"
-              : sellerProfile.verification_status === "rejected"
-              ? "bg-error/8 border-error/30"
-              : "bg-royal/8 border-royal/30"
-          }`}
-        >
-          <AlertTriangle
-            className={`mt-0.5 shrink-0 ${
-              sellerProfile.verification_status === "pending"
-                ? "text-amber-600"
-                : sellerProfile.verification_status === "rejected"
-                ? "text-error"
-                : "text-royal"
-            }`}
-            size={18}
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-midnight">
-              {sellerProfile.verification_status === "pending"
-                ? "Verification under review"
-                : sellerProfile.verification_status === "rejected"
-                ? "Verification rejected"
-                : "Complete your seller setup"}
-            </p>
-            <p className="text-sm text-slate-light mt-0.5">
-              {sellerProfile.verification_status === "pending"
-                ? "We're reviewing your documents. This usually takes 1–2 business days."
-                : sellerProfile.verification_status === "rejected"
-                ? "Your documents were not accepted. Please resubmit with valid information."
-                : "Finish onboarding to start selling and receiving payouts."}
-            </p>
+      {/* Verification Banner — covers all 5 seller_status states */}
+      {sellerProfile && sellerProfile.status !== "approved" && (() => {
+        const status = sellerProfile.status;
+        const isPending = status === "submitted" || status === "under_review";
+        const isRejected = status === "rejected";
+        const isDraft = status === null || status === "draft";
+
+        const bg = isPending ? "bg-warning/8 border-warning/30"
+                 : isRejected ? "bg-error/8 border-error/30"
+                 : "bg-royal/8 border-royal/30";
+        const iconColor = isPending ? "text-amber-600"
+                         : isRejected ? "text-error"
+                         : "text-royal";
+        const title = isPending ? "Verification under review"
+                    : isRejected ? "Verification rejected"
+                    : "Complete your seller setup";
+        const body = isPending
+                      ? "We're reviewing your documents. This usually takes 1–2 business days."
+                    : isRejected
+                      ? "Your documents were not accepted. Open your application to view feedback and resubmit (1 appeal allowed)."
+                    : "Finish onboarding to start selling and receiving payouts.";
+        const ctaLabel = isDraft ? "Complete Setup" : isRejected ? "Resubmit" : null;
+
+        return (
+          <div className={`rounded-[--radius-lg] border px-5 py-4 flex items-start gap-3 ${bg}`}>
+            <AlertTriangle className={`mt-0.5 shrink-0 ${iconColor}`} size={18} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-midnight">{title}</p>
+              <p className="text-sm text-slate-light mt-0.5">{body}</p>
+            </div>
+            {ctaLabel && (
+              <Link href="/seller/onboarding">
+                <Button size="sm" variant="outline">
+                  {ctaLabel}
+                  <ChevronRight size={14} className="ml-1" />
+                </Button>
+              </Link>
+            )}
           </div>
-          {sellerProfile.verification_status !== "pending" && (
-            <Link href="/seller/onboarding">
-              <Button size="sm" variant="outline">
-                {sellerProfile.verification_status === "rejected" ? "Resubmit" : "Complete Setup"}
-                <ChevronRight size={14} className="ml-1" />
-              </Button>
-            </Link>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

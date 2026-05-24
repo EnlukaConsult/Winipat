@@ -26,34 +26,36 @@ export function truncate(str: string, length: number): string {
 
 export type UserRole = "buyer" | "seller" | "admin" | "logistics";
 
+// Mirrors the Postgres order_status enum exactly (schema.sql).
+// Add 'seller_preparing' is included via migration 002 (2026-05-24).
 export const ORDER_STATUSES = [
   "pending_payment",
-  "paid",
+  "payment_confirmed",
   "seller_preparing",
   "awaiting_pickup",
   "picked_up",
   "in_transit",
   "delivered",
+  "disputed",
   "completed",
-  "dispute_opened",
-  "refunded",
   "cancelled",
+  "refunded",
 ] as const;
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  pending_payment: "Pending Payment",
-  paid: "Paid",
-  seller_preparing: "Seller Preparing",
-  awaiting_pickup: "Awaiting Pickup",
-  picked_up: "Picked Up",
-  in_transit: "In Transit",
-  delivered: "Delivered",
-  completed: "Completed",
-  dispute_opened: "Dispute Opened",
-  refunded: "Refunded",
-  cancelled: "Cancelled",
+  pending_payment:   "Pending Payment",
+  payment_confirmed: "Paid",
+  seller_preparing:  "Seller Preparing",
+  awaiting_pickup:   "Awaiting Pickup",
+  picked_up:         "Picked Up",
+  in_transit:        "In Transit",
+  delivered:         "Delivered",
+  disputed:          "Disputed",
+  completed:         "Completed",
+  cancelled:         "Cancelled",
+  refunded:          "Refunded",
 };
 
 export const ESCROW_STATUSES = [

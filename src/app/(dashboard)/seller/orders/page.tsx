@@ -19,10 +19,14 @@ import {
   Upload,
 } from "lucide-react";
 
+// Maps each UI tab to the order_status values from the schema enum.
+// Per FRD: payment_confirmed (just paid) -> seller_preparing (seller accepted)
+// -> awaiting_pickup (seller marked ready) -> picked_up/in_transit/delivered
+// -> completed.
 const TAB_STATUSES: Record<string, OrderStatus[]> = {
-  Pending: ["paid"],
+  Pending:   ["payment_confirmed"],
   Preparing: ["seller_preparing"],
-  Ready: ["awaiting_pickup"],
+  Ready:     ["awaiting_pickup", "picked_up", "in_transit"],
   Completed: ["delivered", "completed"],
 };
 
@@ -32,7 +36,7 @@ const SLA_SECONDS = 15 * 60; // 15 minutes to accept
 interface OrderItem {
   product_name: string;
   quantity: number;
-  unit_price: number;
+  product_price: number;   // schema column name (kobo)
 }
 
 interface Order {
@@ -212,7 +216,7 @@ interface OrderCardProps {
 
 function OrderCard({ order, onAction, onPhoto, actionLoading }: OrderCardProps) {
   const isLoading = actionLoading === order.id;
-  const isPending = order.status === "paid";
+  const isPending = order.status === "payment_confirmed";
   const isPreparing = order.status === "seller_preparing";
   const isReady = order.status === "awaiting_pickup";
 
@@ -242,7 +246,7 @@ function OrderCard({ order, onAction, onPhoto, actionLoading }: OrderCardProps) 
               {item.product_name}{" "}
               <span className="text-slate-light">× {item.quantity}</span>
             </span>
-            <span className="text-slate font-medium">{formatNaira(item.unit_price * item.quantity)}</span>
+            <span className="text-slate font-medium">{formatNaira(item.product_price * item.quantity)}</span>
           </div>
         ))}
       </div>
@@ -307,15 +311,20 @@ export default function SellerOrdersPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [photoOrderId, setPhotoOrderId] = useState<string | null>(null);
 
-  async function fetchOrders() {
+  const fetchOrders = useCallback(async () => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
 
     const statuses = Object.values(TAB_STATUSES).flat();
+    // Inner-join order_items via Supabase nested-select syntax. Schema:
+    // orders → order_items[] (one-to-many).
     const { data: rawOrders } = await supabase
       .from("orders")
-      .select("id, order_number, created_at, total_amount, status, buyer_id, order_items")
+      .select(`
+        id, order_number, created_at, total, status, buyer_id,
+        order_items ( product_name, product_price, quantity )
+      `)
       .eq("seller_id", user.id)
       .in("status", statuses)
       .order("created_at", { ascending: false });
@@ -323,10 +332,9 @@ export default function SellerOrdersPage() {
     if (!rawOrders) { setLoading(false); return; }
 
     const buyerIds = [...new Set(rawOrders.map((o) => o.buyer_id))];
-    const { data: buyers } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("id", buyerIds);
+    const { data: buyers } = buyerIds.length
+      ? await supabase.from("profiles").select("id, full_name").in("id", buyerIds)
+      : { data: [] };
 
     const buyerMap = Object.fromEntries((buyers || []).map((b) => [b.id, b.full_name]));
 
@@ -335,32 +343,65 @@ export default function SellerOrdersPage() {
         id: o.id,
         order_number: o.order_number,
         created_at: o.created_at,
-        total_amount: o.total_amount,
+        total_amount: o.total,
         status: o.status as OrderStatus,
         buyer_name: buyerMap[o.buyer_id]?.split(" ")[0] || "Customer",
         items: Array.isArray(o.order_items) ? o.order_items : [],
       }))
     );
     setLoading(false);
-  }
+  }, []);
 
+  // Initial load + real-time subscription (FR-SEL-025: real-time new-order notifications)
   useEffect(() => {
     fetchOrders();
-  }, []);
+
+    let mounted = true;
+    let cleanup: (() => void) | undefined;
+
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !mounted) return;
+
+      const channel = supabase
+        .channel(`seller-orders-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "orders", filter: `seller_id=eq.${user.id}` },
+          () => { if (mounted) fetchOrders(); },
+        )
+        .subscribe();
+
+      cleanup = () => { supabase.removeChannel(channel); };
+    })();
+
+    return () => { mounted = false; cleanup?.(); };
+  }, [fetchOrders]);
 
   async function handleAction(id: string, action: "accept" | "ready") {
     setActionLoading(id);
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const now = new Date().toISOString();
     const newStatus: OrderStatus = action === "accept" ? "seller_preparing" : "awaiting_pickup";
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
-      .eq("id", id);
+    const patch: Record<string, unknown> = { status: newStatus, updated_at: now };
+    if (action === "accept") patch.accepted_at = now;
+    if (action === "ready")  patch.ready_at    = now;
+
+    const { error } = await supabase.from("orders").update(patch).eq("id", id);
 
     if (!error) {
-      setOrders((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
-      );
+      // Record audit trail (FR-SEL-031 dispute trail, BR-045 audit log)
+      await supabase.from("order_status_history").insert({
+        order_id: id,
+        status: newStatus,
+        changed_by: user?.id ?? null,
+        notes: action === "accept" ? "Seller accepted order" : "Marked ready for pickup",
+      });
+
+      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
     }
     setActionLoading(null);
   }

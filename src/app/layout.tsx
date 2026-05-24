@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Sora, Inter } from "next/font/google";
 import "./globals.css";
 import { ChatWidget } from "@/components/chat/chat-widget";
+import { CookieBanner } from "@/components/ui/cookie-banner";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -36,12 +37,21 @@ export const metadata: Metadata = {
     siteName: "Winipat",
     type: "website",
     locale: "en_NG",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Winipat — Trust-first commerce for Nigeria",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Winipat - Trust-First Commerce",
     description:
       "Trust what you buy. Track how it moves. Pay with confidence.",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,
@@ -64,11 +74,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${sora.variable} ${inter.variable}`}>
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-dvh flex flex-col antialiased">
         {children}
         <ChatWidget />
+        <CookieBanner />
         <ServiceWorkerRegistrar />
       </body>
     </html>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Mail, Globe } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
 export function Footer() {
@@ -10,10 +11,26 @@ export function Footer() {
             <Link href="/" className="inline-block mb-4">
               <Logo size="md" theme="dark" />
             </Link>
-            <p className="text-sm leading-relaxed">
+            <p className="text-sm leading-relaxed mb-4">
               Trust-first commerce platform connecting buyers, verified sellers,
               and logistics partners across Nigeria.
             </p>
+            <div className="space-y-2 text-sm">
+              <a
+                href="mailto:support@winipat.com"
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Mail size={14} className="text-gold shrink-0" />
+                support@winipat.com
+              </a>
+              <a
+                href="https://winipat.com"
+                className="flex items-center gap-2 hover:text-white transition-colors"
+              >
+                <Globe size={14} className="text-gold shrink-0" />
+                winipat.com
+              </a>
+            </div>
           </div>
 
           <div>
@@ -45,10 +62,10 @@ export function Footer() {
               Legal
             </h4>
             <ul className="space-y-2.5 text-sm">
-              <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Seller Agreement</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Dispute Policy</Link></li>
+              <li><Link href="/legal/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/legal/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/legal/seller-agreement" className="hover:text-white transition-colors">Seller Agreement</Link></li>
+              <li><Link href="/legal/dispute-policy" className="hover:text-white transition-colors">Dispute Policy</Link></li>
             </ul>
           </div>
         </div>
