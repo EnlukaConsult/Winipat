@@ -39,10 +39,19 @@ interface RecentOrder {
 }
 
 type SellerStatus = "draft" | "submitted" | "under_review" | "approved" | "rejected" | null;
+type SellerBadge = "verified" | "trusted_seller" | "fast_dispatch";
 
 interface SellerProfile {
   business_name: string | null;
   status: SellerStatus;
+}
+
+interface TrustScore {
+  averageRating: number;
+  totalReviews:  number;
+  disputeRate:   number;   // 0..1
+  onTimeRate:    number;   // 0..1
+  badge:         SellerBadge | null;
 }
 
 export default function SellerDashboardPage() {
@@ -54,6 +63,7 @@ export default function SellerDashboardPage() {
   });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
+  const [trustScore, setTrustScore] = useState<TrustScore | null>(null);
   const [userName, setUserName] = useState("Seller");
   const [loading, setLoading] = useState(true);
 
@@ -70,11 +80,11 @@ export default function SellerDashboardPage() {
           .select("business_name, status")
           .eq("id", user.id)
           .maybeSingle(),
-        // Average rating lives in trust_scores per schema, not on sellers
+        // Schema is trust_scores.seller_id + average_rating (not user_id + avg_rating)
         supabase
           .from("trust_scores")
-          .select("avg_rating")
-          .eq("user_id", user.id)
+          .select("average_rating, total_reviews, dispute_rate, on_time_rate, badge")
+          .eq("seller_id", user.id)
           .maybeSingle(),
       ]);
 
@@ -87,8 +97,15 @@ export default function SellerDashboardPage() {
       } else {
         setSellerProfile({ business_name: null, status: null });
       }
-      if (trust?.avg_rating) {
-        setStats((prev) => ({ ...prev, avgRating: trust.avg_rating || 0 }));
+      if (trust) {
+        setStats((prev) => ({ ...prev, avgRating: Number(trust.average_rating) || 0 }));
+        setTrustScore({
+          averageRating: Number(trust.average_rating) || 0,
+          totalReviews:  Number(trust.total_reviews) || 0,
+          disputeRate:   Number(trust.dispute_rate) || 0,
+          onTimeRate:    Number(trust.on_time_rate) || 0,
+          badge:         (trust.badge as SellerBadge | null) ?? null,
+        });
       }
 
       const [{ count: activeProducts }, { count: pendingOrders }, { data: orders }] =
@@ -238,9 +255,12 @@ export default function SellerDashboardPage() {
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
-            Welcome back, {firstName} 👋
-          </h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
+              Welcome back, {firstName} 👋
+            </h1>
+            {trustScore?.badge && <BadgePill badge={trustScore.badge} />}
+          </div>
           <p className="text-slate-light mt-1">
             {sellerProfile?.business_name
               ? `${sellerProfile.business_name} · Seller Portal`
@@ -297,6 +317,18 @@ export default function SellerDashboardPage() {
         </div>
       </div>
 
+      {/* Reputation — Trust score + badge progression */}
+      <Card>
+        <CardHeader className="mb-4">
+          <CardTitle>Reputation</CardTitle>
+          <CardDescription>
+            Your performance metrics determine trust badges that boost buyer confidence.
+          </CardDescription>
+        </CardHeader>
+        <ReputationGrid trust={trustScore} loading={loading} />
+        <BadgeLadder current={trustScore?.badge ?? null} />
+      </Card>
+
       {/* Recent Orders */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between mb-4">
@@ -352,6 +384,117 @@ export default function SellerDashboardPage() {
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reputation / trust badge helpers
+// ─────────────────────────────────────────────────────────────
+
+const BADGE_META: Record<SellerBadge, { label: string; emoji: string; color: string; bg: string }> = {
+  verified:       { label: "Verified",        emoji: "✓",  color: "text-royal",   bg: "bg-royal/10" },
+  trusted_seller: { label: "Trusted Seller",  emoji: "★",  color: "text-gold-dark", bg: "bg-gold/20" },
+  fast_dispatch:  { label: "Fast Dispatch",   emoji: "⚡", color: "text-emerald", bg: "bg-emerald/10" },
+};
+
+function BadgePill({ badge }: { badge: SellerBadge }) {
+  const meta = BADGE_META[badge];
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-[--radius-full] ${meta.bg} ${meta.color} px-2.5 py-1 text-xs font-semibold`}
+    >
+      <span>{meta.emoji}</span>
+      {meta.label}
+    </span>
+  );
+}
+
+function ReputationGrid({ trust, loading }: { trust: TrustScore | null; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-16 rounded-[--radius-md] bg-mist animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  const t = trust ?? { averageRating: 0, totalReviews: 0, disputeRate: 0, onTimeRate: 0, badge: null };
+  const metrics = [
+    {
+      label: "Avg rating",
+      value: t.totalReviews > 0 ? `${t.averageRating.toFixed(1)} / 5` : "—",
+      sub:   t.totalReviews > 0 ? `${t.totalReviews} review${t.totalReviews === 1 ? "" : "s"}` : "no reviews yet",
+    },
+    {
+      label: "On-time rate",
+      value: t.totalReviews > 0 ? `${Math.round(t.onTimeRate * 100)}%` : "—",
+      sub:   "Orders dispatched on time",
+    },
+    {
+      label: "Dispute rate",
+      value: t.totalReviews > 0 ? `${(t.disputeRate * 100).toFixed(1)}%` : "—",
+      sub:   "Lower is better",
+    },
+    {
+      label: "Trust badge",
+      value: t.badge ? BADGE_META[t.badge].label : "None yet",
+      sub:   t.badge ? "Awarded by platform" : "Earn one below",
+    },
+  ];
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      {metrics.map((m) => (
+        <div key={m.label} className="rounded-[--radius-md] border border-mist p-3">
+          <p className="text-xs font-medium text-slate-light uppercase tracking-wide">{m.label}</p>
+          <p className="mt-1 font-[family-name:var(--font-sora)] text-lg font-bold text-midnight">{m.value}</p>
+          <p className="text-xs text-slate-lighter mt-0.5">{m.sub}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Three-tier ladder showing badges in progression order.
+// Earned ones are full-colour; unearned are greyed out.
+function BadgeLadder({ current }: { current: SellerBadge | null }) {
+  const tiers: Array<{ badge: SellerBadge; criteria: string }> = [
+    { badge: "verified",       criteria: "Complete KYC verification" },
+    { badge: "fast_dispatch",  criteria: "≥90% of orders marked Ready within 24h" },
+    { badge: "trusted_seller", criteria: "≥25 completed orders + ≥4.5 rating + ≤2% dispute rate" },
+  ];
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {tiers.map((tier) => {
+        const earned = tier.badge === current;
+        const meta = BADGE_META[tier.badge];
+        return (
+          <div
+            key={tier.badge}
+            className={`rounded-[--radius-md] border p-3 flex items-start gap-3 ${
+              earned ? `${meta.bg} border-transparent` : "bg-cloud border-mist"
+            }`}
+          >
+            <div
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base font-bold ${
+                earned ? `${meta.color} ${meta.bg}` : "text-slate-lighter bg-mist"
+              }`}
+            >
+              {meta.emoji}
+            </div>
+            <div className="min-w-0">
+              <p className={`text-sm font-semibold ${earned ? meta.color : "text-midnight"}`}>
+                {meta.label}
+                {earned && <span className="ml-2 text-xs text-emerald">earned</span>}
+              </p>
+              <p className="text-xs text-slate-light mt-0.5">{tier.criteria}</p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
