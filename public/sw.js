@@ -28,6 +28,11 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  // Skip non-http(s) requests entirely (e.g. chrome-extension://, blob:, data:)
+  // — the Cache API rejects these with "scheme is unsupported".
+  if (url.protocol !== "http:" && url.protocol !== "https:") return;
+
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() =>

@@ -246,11 +246,11 @@ function RegisterForm() {
 
           <p className="text-xs text-slate-lighter leading-relaxed">
             By creating an account, you agree to Winipat&apos;s{" "}
-            <Link href="/terms" className="text-royal hover:underline">
+            <Link href="/legal/terms" className="text-royal hover:underline">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="text-royal hover:underline">
+            <Link href="/legal/privacy" className="text-royal hover:underline">
               Privacy Policy
             </Link>
             .

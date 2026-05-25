@@ -53,11 +53,11 @@ export default function AuthLayout({
       <footer className="relative z-10 py-6 px-6 text-center">
         <p className="text-xs text-white/30">
           &copy; {new Date().getFullYear()} Winipat. All rights reserved. &middot;{" "}
-          <Link href="/privacy" className="hover:text-white/60 transition-colors">
+          <Link href="/legal/privacy" className="hover:text-white/60 transition-colors">
             Privacy Policy
           </Link>{" "}
           &middot;{" "}
-          <Link href="/terms" className="hover:text-white/60 transition-colors">
+          <Link href="/legal/terms" className="hover:text-white/60 transition-colors">
             Terms of Service
           </Link>
         </p>
