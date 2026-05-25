@@ -641,6 +641,16 @@ export default function HomePage() {
                   </Button>
                 </Link>
               </div>
+              <p className="mt-6 text-sm text-white/60">
+                Have questions before signing up?{" "}
+                <Link
+                  href="/contact"
+                  className="text-gold hover:text-gold/80 underline underline-offset-4"
+                >
+                  Contact our support team
+                </Link>
+                .
+              </p>
             </div>
           </div>
         </div>

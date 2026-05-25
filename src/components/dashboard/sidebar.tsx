@@ -38,11 +38,12 @@ type NavItem = {
 };
 
 const buyerNav: NavItem[] = [
-  { label: "Browse", href: "/dashboard/browse", icon: Search },
-  { label: "Cart", href: "/dashboard/cart", icon: ShoppingCart },
-  { label: "Orders", href: "/dashboard/orders", icon: Package },
+  { label: "Browse",   href: "/dashboard/browse",   icon: Search },
+  { label: "Cart",     href: "/dashboard/cart",     icon: ShoppingCart },
+  { label: "Orders",   href: "/dashboard/orders",   icon: Package },
   { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
-  { label: "Profile", href: "/dashboard/profile", icon: User },
+  { label: "Profile",  href: "/dashboard/profile",  icon: User },
+  { label: "Support",  href: "/contact",            icon: Mail },
 ];
 
 const sellerNav: NavItem[] = [
@@ -53,6 +54,7 @@ const sellerNav: NavItem[] = [
   { label: "Orders",      href: "/seller/orders",         icon: Package },
   { label: "Disputes",    href: "/seller/disputes",       icon: AlertTriangle },
   { label: "Earnings",    href: "/seller/earnings",       icon: DollarSign },
+  { label: "Support",     href: "/contact",               icon: Mail },
 ];
 
 const adminNav: NavItem[] = [

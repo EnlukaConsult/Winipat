@@ -17,7 +17,7 @@ export function Navbar() {
             <Logo size="md" theme="dark" />
           </Link>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-7">
             <Link href="#how-it-works" className="text-sm text-white/80 hover:text-white transition-colors">
               How It Works
             </Link>
@@ -26,6 +26,12 @@ export function Navbar() {
             </Link>
             <Link href="#sellers" className="text-sm text-white/80 hover:text-white transition-colors">
               For Sellers
+            </Link>
+            <Link
+              href="/contact"
+              className="text-sm text-white/80 hover:text-white transition-colors"
+            >
+              Contact
             </Link>
             <Link href="/login">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
@@ -71,6 +77,13 @@ export function Navbar() {
               onClick={() => setIsOpen(false)}
             >
               For Sellers
+            </Link>
+            <Link
+              href="/contact"
+              className="block text-white/80 hover:text-white py-2"
+              onClick={() => setIsOpen(false)}
+            >
+              Contact
             </Link>
             <div className="flex gap-3 pt-2">
               <Link href="/login" className="flex-1">
