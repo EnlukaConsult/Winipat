@@ -171,79 +171,68 @@ export default async function HomePage() {
               on phones, so we render a proper responsive layout)
             Both share the same functional CTAs. */}
 
-        {/* Mobile / tablet hero (hidden on lg+) — sits on the bold purple
-            gradient instead of flat cloud so the page doesn't look like a
-            static screenshot. Text-built (the in-image text is too small
-            on phones to be legible). */}
+        {/* MOBILE hero (lg:hidden) — dedicated mobile hero image
+            (hero-mobile.png) shown on phones. Two transparent <Link>
+            overlays sit on top of the Start Shopping + Apply to Sell
+            buttons baked into the image. Percent-based so they scale
+            with the image at any phone width. */}
         <section
-          className="lg:hidden bg-hero-gradient pt-20 pb-10 text-white"
+          className="lg:hidden relative bg-hero-gradient overflow-hidden pt-20 pb-10"
           aria-labelledby="hero-mobile-title"
         >
-          <div className="mx-auto max-w-3xl px-4 sm:px-6">
-            <div
-              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 mb-4 border border-white/15 backdrop-blur-sm"
-              role="presentation"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
-              <span className="text-xs text-white/90 font-medium">
-                Built in Nigeria · Trusted nationwide
-              </span>
-            </div>
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-violet/25 rounded-full blur-3xl pointer-events-none" />
 
-            <h1
-              id="hero-mobile-title"
-              className="text-[2rem] sm:text-4xl font-bold text-white font-[family-name:var(--font-sora)] leading-[1.05] tracking-tight mb-3"
-            >
-              Buy without the{" "}
-              <span className="text-gold">worry.</span>
-              <br />
-              Sell without the{" "}
-              <span className="text-teal">chase.</span>
+          <div className="relative mx-auto max-w-md px-4 sm:px-6">
+            <h1 id="hero-mobile-title" className="sr-only">
+              Winipat — buy without the worry, sell without the chase
             </h1>
 
-            <p className="text-sm text-white/80 leading-relaxed mb-5 max-w-prose">
-              Escrow protection on every order. KYC-verified sellers. You pick
-              the courier at checkout.
-            </p>
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white">
+              <Image
+                src="/images/hero-mobile.png"
+                alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
+                width={750}
+                height={1500}
+                className="w-full h-auto block"
+                priority
+                sizes="(max-width: 1024px) 100vw"
+              />
 
-            <div className="flex flex-col gap-2.5 mb-4">
-              <Link href="/register" className="w-full">
-                <Button variant="gold" size="lg" className="w-full justify-center">
-                  Start shopping
-                  <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
-                </Button>
+              {/* Click overlays for the Start Shopping + Apply to Sell
+                  buttons visible side-by-side in the mobile image. Fully
+                  transparent — no hover tint, no shadow. */}
+              <Link
+                href="/register"
+                aria-label="Start shopping on Winipat"
+                title="Start shopping"
+                className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                style={{
+                  top: "18.2%",
+                  left: "5.5%",
+                  width: "42%",
+                  height: "3.6%",
+                }}
+              >
+                <span className="sr-only">Start shopping</span>
               </Link>
-              <Link href="/register?role=seller" className="w-full">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full justify-center border-white/30 text-white hover:bg-white hover:text-midnight"
-                >
-                  Apply to sell
-                </Button>
+
+              <Link
+                href="/register?role=seller"
+                aria-label="Apply to sell on Winipat"
+                title="Apply to sell"
+                className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
+                style={{
+                  top: "18.2%",
+                  left: "52%",
+                  width: "42%",
+                  height: "3.6%",
+                }}
+              >
+                <span className="sr-only">Apply to sell</span>
               </Link>
             </div>
 
-            <ul
-              className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-white/75"
-              role="list"
-              aria-label="Platform guarantees"
-            >
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" aria-hidden="true" />
-                KYC-verified sellers
-              </li>
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" aria-hidden="true" />
-                Escrow on every order
-              </li>
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" aria-hidden="true" />
-                Courier choice at checkout
-              </li>
-            </ul>
-
-            <p className="mt-5 text-center text-xs text-white/65">
+            <p className="mt-4 text-center text-xs text-white/75">
               Already a member?{" "}
               <Link
                 href="/login"
@@ -262,13 +251,10 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Desktop hero (lg+) — new image sits on the deep purple
-            gradient so the page reads as a designed surface, not a flat
-            embed. The image already shows the web layout (left half) plus
-            a mobile preview (right half) — we use the FULL image on
-            desktop since the side-by-side reads as a "here's how this
-            looks everywhere" showcase. Click overlays sit on the visible
-            Start Shopping + Apply to Sell buttons in the web (left) layout. */}
+        {/* DESKTOP hero (lg+) — dedicated web hero image (hero-desktop.png),
+            wrapped in the purple gradient so the page reads as a
+            designed surface and not a flat embed. Click overlays sit on
+            the Start Shopping + Apply to Sell buttons visible in the image. */}
         <section
           className="hidden lg:block relative bg-hero-gradient overflow-hidden pt-20 pb-16"
           aria-labelledby="hero-desktop-title"
@@ -283,28 +269,29 @@ export default async function HomePage() {
 
             <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white">
               <Image
-                src="/images/hero-v2.png"
+                src="/images/hero-desktop.png"
                 alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
-                width={1700}
-                height={900}
+                width={1900}
+                height={1100}
                 className="w-full h-auto block"
                 priority
                 sizes="1280px"
               />
 
-              {/* Click overlays — Start Shopping + Apply to Sell visible in
-                  the WEB (left) layout of the image. Fully transparent, no
-                  hover tint, no shadow. Cursor:pointer hints the click. */}
+              {/* Click overlays for the Start Shopping + Apply to Sell
+                  buttons baked into the desktop image. Fully transparent
+                  (no hover tint, no shadow). Cursor:pointer hints the
+                  click. */}
               <Link
                 href="/register"
                 aria-label="Start shopping on Winipat"
                 title="Start shopping"
                 className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                 style={{
-                  top: "61%",
+                  top: "44.5%",
                   left: "4.6%",
-                  width: "10.2%",
-                  height: "5.3%",
+                  width: "11%",
+                  height: "5%",
                 }}
               >
                 <span className="sr-only">Start shopping</span>
@@ -316,10 +303,10 @@ export default async function HomePage() {
                 title="Apply to sell"
                 className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
                 style={{
-                  top: "61%",
-                  left: "15.4%",
-                  width: "9.8%",
-                  height: "5.3%",
+                  top: "44.5%",
+                  left: "16.5%",
+                  width: "11%",
+                  height: "5%",
                 }}
               >
                 <span className="sr-only">Apply to sell</span>
