@@ -293,10 +293,133 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* (Removed the code-built "How it works" bar and "Your trust is
-            our priority" bar — the new hero images already include both
-            sections baked in, so the duplicate code-built versions are
-            gone.) */}
+        {/* ===== HOW IT WORKS BAR =====
+            Compact mobile-first: vertical list on small screens with
+            connecting dots between steps, horizontal row on lg+. */}
+        <section
+          className="bg-white border-y border-mist"
+          aria-labelledby="how-it-works-bar-heading"
+        >
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-6">
+              <h2
+                id="how-it-works-bar-heading"
+                className="text-sm sm:text-base font-bold text-midnight font-[family-name:var(--font-sora)] lg:w-32 shrink-0 uppercase tracking-wide lg:normal-case lg:tracking-normal"
+              >
+                How it works
+              </h2>
+              <ol
+                className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-3 sm:gap-4"
+                role="list"
+              >
+                {[
+                  { icon: "🛒", title: "Buyer places",   sub: "order & pays" },
+                  { icon: "🛡️", title: "Payment held",   sub: "in escrow" },
+                  { icon: "🚚", title: "Item delivered", sub: "safely" },
+                  { icon: "✅", title: "Buyer confirms", sub: "& seller gets paid" },
+                ].map((s, i, arr) => (
+                  <li key={s.title} className="relative flex items-center gap-2.5">
+                    <span
+                      className="text-base sm:text-lg shrink-0"
+                      aria-hidden="true"
+                    >
+                      {s.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] sm:text-xs font-semibold text-midnight leading-tight">
+                        {s.title}
+                      </p>
+                      <p className="text-[10px] sm:text-[11px] text-slate leading-tight mt-0.5">
+                        {s.sub}
+                      </p>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <span
+                        className="hidden lg:inline absolute -right-3 top-1/2 -translate-y-1/2 text-slate-lighter"
+                        aria-hidden="true"
+                      >
+                        →
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+              <aside className="lg:w-72 shrink-0 rounded-lg bg-violet/8 border border-violet/20 px-3 py-2.5 sm:px-4 sm:py-3 flex items-start gap-2.5 sm:gap-3">
+                <Lock
+                  className="h-4 w-4 sm:h-5 sm:w-5 text-violet shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="text-[11px] sm:text-xs font-semibold text-midnight leading-tight">
+                    Payment held securely in escrow
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] text-slate mt-0.5 leading-tight">
+                    Released to seller only after buyer confirms delivery
+                  </p>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== YOUR TRUST IS OUR PRIORITY (dark bar) =====
+            Mobile stacks vertically with tighter spacing. White/80 supporting
+            text contrast passes WCAG AA Large Text on the dark gradient. */}
+        <section
+          className="bg-gradient-to-r from-midnight via-midnight-light to-violet-dark text-white"
+          aria-labelledby="trust-priority-heading"
+        >
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 lg:items-center">
+              <div className="lg:col-span-4 flex items-start gap-3 sm:gap-4">
+                <div
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-emerald/20 flex items-center justify-center shrink-0"
+                  aria-hidden="true"
+                >
+                  <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald" />
+                </div>
+                <div>
+                  <h2
+                    id="trust-priority-heading"
+                    className="text-sm sm:text-base font-bold font-[family-name:var(--font-sora)] leading-tight"
+                  >
+                    Your trust is our priority.
+                  </h2>
+                  <p className="text-xs text-white/80 mt-1 leading-relaxed">
+                    We protect your money, verify every seller, and make every
+                    transaction worry-free.
+                  </p>
+                </div>
+              </div>
+              <ul
+                className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
+                role="list"
+                aria-label="What we promise"
+              >
+                {[
+                  { icon: UserCheck,     title: "Real People",        sub: "Verified buyers and sellers" },
+                  { icon: Lock,          title: "Real Protection",    sub: "Secure escrow keeps you covered" },
+                  { icon: CheckCircle2,  title: "Real Peace of Mind", sub: "Shop or sell with confidence" },
+                ].map((c) => (
+                  <li key={c.title} className="flex items-start gap-2.5 sm:gap-3">
+                    <c.icon
+                      className="h-4 w-4 sm:h-5 sm:w-5 text-white/85 shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold leading-tight">
+                        {c.title}
+                      </p>
+                      <p className="text-xs text-white/80 mt-0.5 leading-tight">
+                        {c.sub}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
 
         {/* ===== TRUST STRIP =====
             Mix of platform facts (48h protection, 12% commission, 36 states)
