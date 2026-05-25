@@ -131,87 +131,54 @@ export default async function HomePage() {
 
       <main id="main-content">
         {/* ===== HERO ===== */}
-        <section className="relative min-h-[88dvh] flex items-center bg-hero-gradient overflow-hidden">
-          {/* One subtle blur — less "AI gradient soup" than three */}
-          <div className="absolute -top-32 -right-32 w-[28rem] h-[28rem] bg-violet/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-24 pb-12 sm:pt-28">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-              <div className="lg:col-span-7">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 mb-6 backdrop-blur-sm border border-white/10">
-                  <ShieldCheck className="h-3.5 w-3.5 text-gold" />
-                  <span className="text-xs text-white/90 font-medium">
-                    Built in Lagos · Live across Nigeria
-                  </span>
-                </div>
-
-                <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white font-[family-name:var(--font-sora)] leading-[1.05] tracking-tight mb-5">
-                  Buy without the worry.{" "}
-                  <span className="text-gold">Sell without the chase.</span>
-                </h1>
-
-                <p className="text-base sm:text-lg text-white/75 mb-8 max-w-xl leading-relaxed">
-                  Winipat holds buyer payments in escrow until delivery is
-                  confirmed. Every seller is KYC-verified. You pick the courier
-                  at checkout. If something goes wrong, your money stays put
-                  until our team reviews evidence from both sides.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Link href="/register">
-                    <Button variant="gold" size="lg" className="w-full sm:w-auto">
-                      Start shopping
-                      <ArrowRight className="ml-2 h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Link href="/register?role=seller">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="w-full sm:w-auto border-white/30 text-white hover:bg-white hover:text-midnight"
-                    >
-                      Apply to sell
-                    </Button>
-                  </Link>
-                </div>
-
-                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-white/65 text-sm">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald" />
-                    KYC-verified sellers
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald" />
-                    Escrow on every order
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald" />
-                    Courier choice at checkout
-                  </span>
-                </div>
-              </div>
-
-              <div className="hidden lg:block lg:col-span-5">
-                <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                  {/*
-                    Hero image: 4-panel collage uploaded by user showing
-                    seller packing → courier pickup → buyer receiving →
-                    payment released. The collage already tells the story
-                    visually so we drop the floating badge that used to
-                    sit over it — would compete with the image's own
-                    inline labels.
-                  */}
-                  <Image
-                    src="/images/hero-main.png"
-                    alt="The Winipat trust flow: seller packs, courier picks up, buyer receives, payment is released"
-                    width={600}
-                    height={500}
-                    className="w-full h-[460px] object-cover"
-                    priority
-                  />
-                </div>
-              </div>
+        {/*
+          User asked to replace the dark "Buy without the worry" text+image
+          split with the full hero mockup image (which already contains the
+          headline, badges, trust strip, and a visual "How it works" bar).
+          We keep real, functional Start Shopping + Apply to Sell buttons
+          beneath the image so the visual mockup CTAs aren't dead clicks.
+        */}
+        <section className="bg-cloud pt-20 sm:pt-24 pb-10 sm:pb-14">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl overflow-hidden shadow-2xl bg-white">
+              <Image
+                src="/images/hero-main.png"
+                alt="Winipat: built in Nigeria, trusted nationwide. The full trust flow — seller packs the item, courier picks up, buyer receives, payment is released only after delivery is confirmed."
+                width={1600}
+                height={1100}
+                className="w-full h-auto"
+                priority
+                sizes="(max-width: 1024px) 100vw, 1280px"
+              />
             </div>
+
+            {/* Functional CTAs — the image shows visual versions of these,
+                but only this row is clickable. Centered so visitors who
+                scroll past the image know where to click. */}
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <Link href="/register" className="w-full sm:w-auto">
+                <Button variant="gold" size="lg" className="w-full sm:w-auto">
+                  Start shopping
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/register?role=seller" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                  Apply to sell
+                </Button>
+              </Link>
+            </div>
+
+            <p className="mt-4 text-center text-xs text-slate-light">
+              Already have an account?{" "}
+              <Link href="/login" className="text-violet font-medium hover:underline">
+                Log in
+              </Link>
+              {" · "}
+              <Link href="/track" className="text-violet font-medium hover:underline">
+                Track an order
+              </Link>
+            </p>
           </div>
         </section>
 
@@ -258,49 +225,37 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/*
+              4 vertical rows matching the user-supplied design
+              (/public/images/categories-rows.png). Each row's
+              background is sliced from that single PNG using CSS
+              background-position-y stepped at 0% / 33.3% / 66.7% /
+              100%. Clicks still route dynamically via featuredCategories
+              hrefs.
+            */}
+            <div className="space-y-3 sm:space-y-4">
               {featuredCategories.map((c, i) => {
-                const Icon =
-                  c.label === "Fashion"      ? Shirt :
-                  c.label === "Electronics"  ? Smartphone :
-                  c.label === "Home & Living" ? Sofa :
-                  Sparkles;
-                // Slice categories-strip.png into 4 panels using
-                // background-size: 400% (4x wider than the tile) +
-                // background-position-x stepped by 33.3% so each tile
-                // shows one of the four photos. Order in the strip
-                // (left -> right): Fashion, Electronics, Home, Beauty.
-                const panelPositions = ["0%", "33.333%", "66.667%", "100%"];
+                const rowPositions = ["0%", "33.333%", "66.667%", "100%"];
                 return (
                   <Link
                     key={c.label}
                     href={c.href}
-                    className="group relative aspect-[4/5] rounded-xl overflow-hidden bg-cloud border border-mist hover:shadow-lg transition-shadow"
+                    aria-label={`Shop ${c.label} on Winipat`}
+                    className="group block relative rounded-2xl overflow-hidden bg-cloud border border-mist hover:shadow-lg hover:border-violet/30 transition-all aspect-[16/3] sm:aspect-[16/2.5]"
                   >
                     <div
-                      className="absolute inset-0 bg-no-repeat transition-transform duration-500 group-hover:scale-[1.03]"
+                      className="absolute inset-0 bg-no-repeat"
                       style={{
-                        backgroundImage: "url(/images/categories-strip.png)",
-                        backgroundSize: "400% 100%",
-                        backgroundPosition: `${panelPositions[i]} 50%`,
+                        backgroundImage: "url(/images/categories-rows.png)",
+                        backgroundSize: "100% 400%",
+                        backgroundPosition: `50% ${rowPositions[i]}`,
                       }}
                       role="img"
-                      aria-label={`${c.label} category`}
+                      aria-hidden="true"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-midnight/85 via-midnight/30 to-transparent" />
-                    <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                          <Icon size={14} className="text-white" />
-                        </div>
-                        <p className="text-white font-semibold text-sm sm:text-base">
-                          {c.label}
-                        </p>
-                      </div>
-                      <p className="text-xs text-white/70 leading-tight">
-                        {c.blurb}
-                      </p>
-                    </div>
+                    {/* Subtle dark overlay only on the rightmost arrow zone
+                        to make the click affordance obvious. */}
+                    <span className="sr-only">Shop {c.label}</span>
                   </Link>
                 );
               })}
