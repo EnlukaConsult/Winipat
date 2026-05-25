@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,8 @@ export default function MessagesPage() {
   const [showList, setShowList] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const searchParams = useSearchParams();
+  const initialConvId = searchParams.get("conv");
 
   useEffect(() => {
     initPage();
@@ -73,6 +76,17 @@ export default function MessagesPage() {
       channelRef.current?.unsubscribe();
     };
   }, []);
+
+  // After conversations load, if ?conv= was passed (from "Contact seller"),
+  // auto-select that conversation and open the thread pane.
+  useEffect(() => {
+    if (!initialConvId || conversations.length === 0) return;
+    const match = conversations.find((c) => c.id === initialConvId);
+    if (match && (!selectedConv || selectedConv.id !== match.id)) {
+      setSelectedConv(match);
+      setShowList(false);
+    }
+  }, [initialConvId, conversations, selectedConv]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

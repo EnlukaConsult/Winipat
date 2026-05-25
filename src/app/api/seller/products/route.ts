@@ -36,7 +36,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const { name, description, categoryId, price, stockQuantity, imageUrls, videoUrl, status } = await req.json();
+  const {
+    name,
+    description,
+    categoryId,
+    price,
+    stockQuantity,
+    imageUrls,
+    videoUrl,
+    status,
+    escrowHoldHours,
+  } = await req.json();
 
   // Validation
   if (!name?.trim()) return NextResponse.json({ error: "Product name is required" }, { status: 400 });
@@ -55,6 +65,14 @@ export async function POST(req: Request) {
   // Product status: sellers submit for review, admin approves
   const productStatus = status === "draft" ? "draft" : "paused";
 
+  // Per-product escrow override is optional. Anything <= 0 or invalid is
+  // treated as "no override" (NULL) so the platform default applies.
+  // The cron will pick MAX(per-product, platform default).
+  const holdHours =
+    typeof escrowHoldHours === "number" && escrowHoldHours > 0
+      ? Math.floor(escrowHoldHours)
+      : null;
+
   // Insert product
   const { data: product, error: productError } = await supabase
     .from("products")
@@ -67,6 +85,7 @@ export async function POST(req: Request) {
       price: priceInKobo,
       stock_quantity: stockQuantity,
       status: productStatus,
+      escrow_hold_hours: holdHours,
     })
     .select("id")
     .single();

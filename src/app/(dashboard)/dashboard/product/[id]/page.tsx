@@ -71,7 +71,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [deliveryMode, setDeliveryMode] = useState<"door_to_door" | "pickup_office">("door_to_door");
   const [wishlisted, setWishlisted] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [contactingSeller, setContactingSeller] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
+
+  async function contactSeller() {
+    if (!product?.sellers?.id) return;
+    setContactingSeller(true);
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sellerId: product.sellers.id }),
+      });
+      if (res.status === 401) {
+        router.push(`/login?next=/dashboard/product/${id}`);
+        return;
+      }
+      const body = await res.json();
+      if (!res.ok || !body.id) {
+        alert(body.error || "Could not start conversation.");
+        return;
+      }
+      router.push(`/dashboard/messages?conv=${body.id}`);
+    } finally {
+      setContactingSeller(false);
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -282,19 +307,30 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           {/* Seller info */}
           <Card padding="sm" className="border-violet/10">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet to-teal flex items-center justify-center text-white text-sm font-bold">
+              <a
+                href={product.sellers?.id ? `/sellers/${product.sellers.id}` : "#"}
+                className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet to-teal flex items-center justify-center text-white text-sm font-bold shrink-0">
                   {product.sellers?.business_name?.charAt(0) || "S"}
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-midnight">{product.sellers?.business_name}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-midnight truncate">
+                    {product.sellers?.business_name}
+                  </p>
                   <div className="flex items-center gap-2 text-xs text-slate-light">
                     <MapPin size={11} />
-                    <span>{product.sellers?.pickup_address || "Lagos, Nigeria"}</span>
+                    <span className="truncate">{product.sellers?.pickup_address || "Lagos, Nigeria"}</span>
                   </div>
                 </div>
-              </div>
-              <Button variant="outline" size="sm">
+              </a>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={contactSeller}
+                loading={contactingSeller}
+                disabled={!product.sellers?.id}
+              >
                 <MessageSquare size={14} className="mr-1" />
                 Message
               </Button>

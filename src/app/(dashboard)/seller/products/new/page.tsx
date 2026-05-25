@@ -29,6 +29,7 @@ export default function AddProductPage() {
   const [categoryId, setCategoryId] = useState("");
   const [price, setPrice] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
+  const [escrowHoldHours, setEscrowHoldHours] = useState("");
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -123,6 +124,7 @@ export default function AddProductPage() {
           imageUrls,
           videoUrl,
           status: asDraft ? "draft" : "paused",
+          escrowHoldHours: escrowHoldHours ? parseInt(escrowHoldHours, 10) : null,
         }),
       });
 
@@ -200,6 +202,19 @@ export default function AddProductPage() {
           <div className="grid grid-cols-2 gap-4">
             <Input label="Price (₦) *" type="number" placeholder="e.g. 15000" value={price} onChange={(e) => setPrice(e.target.value)} />
             <Input label="Stock Quantity *" type="number" placeholder="e.g. 50" value={stockQuantity} onChange={(e) => setStockQuantity(e.target.value)} />
+          </div>
+          <div>
+            <Input
+              label="Custom escrow hold (hours)"
+              type="number"
+              placeholder="Leave blank for platform default (48h)"
+              value={escrowHoldHours}
+              onChange={(e) => setEscrowHoldHours(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-slate-lighter">
+              Optional. Use a longer hold for high-value or custom items.
+              Cannot be shorter than the platform default — protects the buyer.
+            </p>
           </div>
         </div>
       </Card>
