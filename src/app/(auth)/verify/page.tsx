@@ -45,11 +45,14 @@ function VerifyContent() {
 
     try {
       const supabase = createClient();
+      const origin =
+        process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+        (typeof window !== "undefined" ? window.location.origin : "");
       const { error } = await supabase.auth.resend({
         type: "signup",
         email,
         options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
+          emailRedirectTo: `${origin}/api/auth/callback`,
         },
       });
 

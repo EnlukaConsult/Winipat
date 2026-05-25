@@ -85,6 +85,14 @@ function RegisterForm() {
     try {
       const supabase = createClient();
 
+      // Where Supabase will send the user after they click the email
+      // verification link. Prefer the env var; fall back to the current
+      // host so the flow doesn't break if NEXT_PUBLIC_APP_URL is unset
+      // on preview deploys.
+      const origin =
+        process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+        (typeof window !== "undefined" ? window.location.origin : "");
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -94,7 +102,7 @@ function RegisterForm() {
             phone: phone.replace(/\s/g, ""),
             role,
           },
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
+          emailRedirectTo: `${origin}/api/auth/callback`,
         },
       });
 
