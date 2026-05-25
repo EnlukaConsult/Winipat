@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
+import { Logo } from "@/components/ui/logo";
 import { createClient } from "@/lib/supabase/server";
 import {
   ShieldCheck,
@@ -274,6 +275,21 @@ export default async function HomePage() {
                 priority
                 sizes="1280px"
               />
+
+              {/* Mask + new logo overlay: the hero PNG has the OLD W-shield
+                  logo baked into the top-left, which clashes with the new
+                  3D shopping-bag logo used everywhere else (brand confusion).
+                  This solid mask covers the baked logo (background colour
+                  chosen to blend with the card's light area), and we render
+                  the up-to-date <Logo /> component on top so the hero
+                  matches the rest of the site. */}
+              <div
+                aria-hidden="true"
+                className="absolute top-[2%] left-[3%] flex items-center bg-[#F5F0FF] rounded-md px-2 py-1"
+                style={{ width: "22%", height: "8%" }}
+              >
+                <Logo size="md" theme="light" />
+              </div>
 
               {/* Transparent click overlays sit exactly on top of the buttons
                   baked into the hero image. Fully see-through (no hover
