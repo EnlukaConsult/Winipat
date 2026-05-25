@@ -103,14 +103,14 @@ function RegisterForm() {
         return;
       }
 
-      if (data.user) {
-        await supabase.from("profiles").upsert({
-          id: data.user.id,
-          full_name: fullName.trim(),
-          phone: phone.replace(/\s/g, ""),
-          role,
-          email,
-        });
+      // Phone is not in handle_new_user trigger — patch it in (UPDATE is RLS-allowed
+      // for the owner row). full_name/role/email are already set by the trigger from
+      // auth.users.raw_user_meta_data, so no upsert is needed (and would 403 on INSERT).
+      if (data.user && data.session) {
+        await supabase
+          .from("profiles")
+          .update({ phone: phone.replace(/\s/g, "") })
+          .eq("id", data.user.id);
       }
 
       // If session exists (email confirmation disabled), go straight to dashboard

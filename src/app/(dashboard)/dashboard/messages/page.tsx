@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
+// Derived shape — built client-side from the conversations + profiles + messages
+// rows. The DB has buyer_id/seller_id (not participant_a/b) and no unread_count
+// column; we compute "other_user" from whichever side isn't the current user,
+// and unread_count from messages where is_read=false and sender_id != me.
 type Conversation = {
   id: string;
   updated_at: string;
@@ -29,6 +33,17 @@ type Conversation = {
     sender_id: string;
   } | null;
   unread_count: number;
+};
+
+// Raw shape returned by the conversations select with both profile embeds.
+type ConversationRow = {
+  id: string;
+  updated_at: string;
+  buyer_id: string;
+  seller_id: string;
+  buyer:  { id: string; full_name: string; avatar_url: string | null; role: string } | null;
+  seller: { id: string; full_name: string; avatar_url: string | null; role: string } | null;
+  messages: { content: string; created_at: string; sender_id: string; is_read: boolean }[];
 };
 
 type Message = {
@@ -80,14 +95,40 @@ export default function MessagesPage() {
     const { data } = await supabase
       .from("conversations")
       .select(
-        `id, updated_at, unread_count,
-         other_user:profiles!other_user_id(id, full_name, avatar_url, role),
-         last_message:messages(content, created_at, sender_id)`
+        `id, updated_at, buyer_id, seller_id,
+         buyer:profiles!buyer_id(id, full_name, avatar_url, role),
+         seller:profiles!seller_id(id, full_name, avatar_url, role),
+         messages(content, created_at, sender_id, is_read)`
       )
-      .or(`participant_a.eq.${userId},participant_b.eq.${userId}`)
+      .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
       .order("updated_at", { ascending: false });
 
-    setConversations((data as unknown as Conversation[]) || []);
+    const rows = (data as unknown as ConversationRow[]) || [];
+
+    const shaped: Conversation[] = rows.map((row) => {
+      const other = row.buyer_id === userId ? row.seller : row.buyer;
+      const msgs = [...(row.messages || [])].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      const last = msgs[0] || null;
+      const unread = msgs.filter((m) => !m.is_read && m.sender_id !== userId).length;
+      return {
+        id: row.id,
+        updated_at: row.updated_at,
+        other_user: other ?? {
+          id: "",
+          full_name: "Unknown user",
+          avatar_url: null,
+          role: "",
+        },
+        last_message: last
+          ? { content: last.content, created_at: last.created_at, sender_id: last.sender_id }
+          : null,
+        unread_count: unread,
+      };
+    });
+
+    setConversations(shaped);
   }
 
   const fetchMessages = useCallback(
