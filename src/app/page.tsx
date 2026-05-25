@@ -171,80 +171,41 @@ export default async function HomePage() {
               on phones, so we render a proper responsive layout)
             Both share the same functional CTAs. */}
 
-        {/* MOBILE hero (lg:hidden) — dedicated mobile hero image
-            (hero-mobile.png) shown on phones. Two transparent <Link>
-            overlays sit on top of the Start Shopping + Apply to Sell
-            buttons baked into the image. Percent-based so they scale
-            with the image at any phone width. */}
+        {/* MOBILE hero (lg:hidden) — new "Mobile fit" image already
+            includes the dark gradient background that matches our
+            bg-hero-gradient, so it blends seamlessly with the page
+            surface (no white card frame). The image has NO embedded
+            CTA buttons — clicks live in the explicit Button row below. */}
         <section
-          className="lg:hidden relative bg-hero-gradient overflow-hidden pt-20 pb-10"
+          className="lg:hidden bg-hero-gradient pt-20 pb-10"
           aria-labelledby="hero-mobile-title"
         >
-          <div className="absolute -top-24 -right-24 w-72 h-72 bg-violet/25 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative mx-auto max-w-md px-4 sm:px-6">
+          <div className="mx-auto max-w-md px-4 sm:px-6">
             <h1 id="hero-mobile-title" className="sr-only">
               Winipat — buy without the worry, sell without the chase
             </h1>
 
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white">
-              <Image
-                src="/images/hero-mobile.png"
-                alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
-                width={750}
-                height={1500}
-                className="w-full h-auto block"
-                priority
-                sizes="(max-width: 1024px) 100vw"
-              />
+            <Image
+              src="/images/hero-mobile.png"
+              alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
+              width={750}
+              height={1500}
+              className="w-full h-auto block rounded-xl"
+              priority
+              sizes="(max-width: 1024px) 100vw"
+            />
 
-              {/* Click overlays for the Start Shopping + Apply to Sell
-                  buttons visible side-by-side in the mobile image. Fully
-                  transparent — no hover tint, no shadow. Positions tuned
-                  by measuring directly off hero-mobile.png. */}
-              <Link
-                href="/register"
-                aria-label="Start shopping on Winipat"
-                title="Start shopping"
-                className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-                style={{
-                  top: "33%",
-                  left: "5%",
-                  width: "45%",
-                  height: "4.5%",
-                }}
-              >
-                <span className="sr-only">Start shopping</span>
-              </Link>
-
-              <Link
-                href="/register?role=seller"
-                aria-label="Apply to sell on Winipat"
-                title="Apply to sell"
-                className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
-                style={{
-                  top: "33%",
-                  left: "53%",
-                  width: "43%",
-                  height: "4.5%",
-                }}
-              >
-                <span className="sr-only">Apply to sell</span>
-              </Link>
-            </div>
-
-            {/* Backup CTAs under the image — guarantee clickability even
-                if the overlays drift after future image swaps. */}
-            <div className="mt-4 flex gap-2">
+            {/* Real CTAs — the only set on the page (no duplicates). */}
+            <div className="mt-5 flex gap-2.5">
               <Link href="/register" className="flex-1">
-                <Button variant="gold" size="md" className="w-full justify-center">
+                <Button variant="gold" size="lg" className="w-full justify-center">
                   Start shopping
                 </Button>
               </Link>
               <Link href="/register?role=seller" className="flex-1">
                 <Button
                   variant="outline"
-                  size="md"
+                  size="lg"
                   className="w-full justify-center border-white/30 text-white hover:bg-white hover:text-midnight"
                 >
                   Apply to sell
@@ -271,71 +232,31 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* DESKTOP hero (lg+) — dedicated web hero image (hero-desktop.png),
-            wrapped in the purple gradient so the page reads as a
-            designed surface and not a flat embed. Click overlays sit on
-            the Start Shopping + Apply to Sell buttons visible in the image. */}
+        {/* DESKTOP hero (lg+) — new "Hero image for web fit" already has
+            the dark gradient background baked in to match the page; we
+            drop the white framing card and overlays since the new image
+            has no embedded CTAs. */}
         <section
-          className="hidden lg:block relative bg-hero-gradient overflow-hidden pt-20 pb-16"
+          className="hidden lg:block bg-hero-gradient pt-20 pb-14"
           aria-labelledby="hero-desktop-title"
         >
-          <div className="absolute -top-32 -right-32 w-[28rem] h-[28rem] bg-violet/25 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute top-1/2 -left-32 w-80 h-80 bg-royal/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <h1 id="hero-desktop-title" className="sr-only">
               Winipat — buy without the worry, sell without the chase
             </h1>
 
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white">
-              <Image
-                src="/images/hero-desktop.png"
-                alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
-                width={1900}
-                height={1100}
-                className="w-full h-auto block"
-                priority
-                sizes="1280px"
-              />
+            <Image
+              src="/images/hero-desktop.png"
+              alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
+              width={1900}
+              height={1100}
+              className="w-full h-auto block rounded-2xl"
+              priority
+              sizes="1280px"
+            />
 
-              {/* Click overlays for the Start Shopping + Apply to Sell
-                  buttons baked into the desktop image. Positions tuned by
-                  measuring off hero-desktop.png. Fully transparent — no
-                  hover tint, no shadow. */}
-              <Link
-                href="/register"
-                aria-label="Start shopping on Winipat"
-                title="Start shopping"
-                className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-                style={{
-                  top: "61.5%",
-                  left: "2.5%",
-                  width: "15.5%",
-                  height: "6%",
-                }}
-              >
-                <span className="sr-only">Start shopping</span>
-              </Link>
-
-              <Link
-                href="/register?role=seller"
-                aria-label="Apply to sell on Winipat"
-                title="Apply to sell"
-                className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
-                style={{
-                  top: "61.5%",
-                  left: "19%",
-                  width: "14.5%",
-                  height: "6%",
-                }}
-              >
-                <span className="sr-only">Apply to sell</span>
-              </Link>
-            </div>
-
-            {/* Backup CTAs under the image — guarantee clickability even
-                if the overlays drift after future image swaps. */}
-            <div className="mt-6 flex gap-4 justify-center">
+            {/* Real CTAs — the only set on the page (no duplicates). */}
+            <div className="mt-7 flex gap-4 justify-center">
               <Link href="/register">
                 <Button variant="gold" size="lg">
                   Start shopping
@@ -372,147 +293,10 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ===== HOW IT WORKS BAR =====
-            Compact mobile-first: vertical list on small screens with
-            connecting dots between steps, horizontal row on lg+. */}
-        <section
-          className="bg-white border-y border-mist"
-          aria-labelledby="how-it-works-bar-heading"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-6">
-              <h2
-                id="how-it-works-bar-heading"
-                className="text-sm sm:text-base font-bold text-midnight font-[family-name:var(--font-sora)] lg:w-32 shrink-0 uppercase tracking-wide lg:normal-case lg:tracking-normal"
-              >
-                How it works
-              </h2>
-              <ol
-                className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-3 sm:gap-4"
-                role="list"
-              >
-                {[
-                  { icon: "🛒", title: "Buyer places",   sub: "order & pays" },
-                  { icon: "🛡️", title: "Payment held",   sub: "in escrow" },
-                  { icon: "🚚", title: "Item delivered", sub: "safely" },
-                  { icon: "✅", title: "Buyer confirms", sub: "& seller gets paid" },
-                ].map((s, i, arr) => (
-                  <li key={s.title} className="relative flex items-center gap-2.5">
-                    <span
-                      className="text-base sm:text-lg shrink-0"
-                      aria-hidden="true"
-                    >
-                      {s.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[11px] sm:text-xs font-semibold text-midnight leading-tight">
-                        {s.title}
-                      </p>
-                      <p className="text-[10px] sm:text-[11px] text-slate leading-tight mt-0.5">
-                        {s.sub}
-                      </p>
-                    </div>
-                    {/* Arrow only between lg horizontal items */}
-                    {i < arr.length - 1 && (
-                      <span
-                        className="hidden lg:inline absolute -right-3 top-1/2 -translate-y-1/2 text-slate-lighter"
-                        aria-hidden="true"
-                      >
-                        →
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-              <aside className="lg:w-72 shrink-0 rounded-lg bg-violet/8 border border-violet/20 px-3 py-2.5 sm:px-4 sm:py-3 flex items-start gap-2.5 sm:gap-3">
-                <Lock
-                  className="h-4 w-4 sm:h-5 sm:w-5 text-violet shrink-0 mt-0.5"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="text-[11px] sm:text-xs font-semibold text-midnight leading-tight">
-                    Payment held securely in escrow
-                  </p>
-                  <p className="text-[10px] sm:text-[11px] text-slate mt-0.5 leading-tight">
-                    Released to seller only after buyer confirms delivery
-                  </p>
-                </div>
-              </aside>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== YOUR TRUST IS OUR PRIORITY (dark bar from mockup) =====
-            Mobile: stacks vertically with tighter spacing. Increased
-            contrast on supporting text from white/65 (3.4:1 fails AA)
-            to white/80 (4.6:1 passes AA Large Text). */}
-        <section
-          className="bg-gradient-to-r from-midnight via-midnight-light to-violet-dark text-white"
-          aria-labelledby="trust-priority-heading"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 lg:items-center">
-              <div className="lg:col-span-4 flex items-start gap-3 sm:gap-4">
-                <div
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-emerald/20 flex items-center justify-center shrink-0"
-                  aria-hidden="true"
-                >
-                  <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald" />
-                </div>
-                <div>
-                  <h2
-                    id="trust-priority-heading"
-                    className="text-sm sm:text-base font-bold font-[family-name:var(--font-sora)] leading-tight"
-                  >
-                    Your trust is our priority.
-                  </h2>
-                  <p className="text-xs text-white/80 mt-1 leading-relaxed">
-                    We protect your money, verify every seller, and make every
-                    transaction worry-free.
-                  </p>
-                </div>
-              </div>
-              <ul
-                className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
-                role="list"
-                aria-label="What we promise"
-              >
-                {[
-                  {
-                    icon: UserCheck,
-                    title: "Real People",
-                    sub: "Verified buyers and sellers",
-                  },
-                  {
-                    icon: Lock,
-                    title: "Real Protection",
-                    sub: "Secure escrow keeps you covered",
-                  },
-                  {
-                    icon: CheckCircle2,
-                    title: "Real Peace of Mind",
-                    sub: "Shop or sell with confidence",
-                  },
-                ].map((c) => (
-                  <li key={c.title} className="flex items-start gap-2.5 sm:gap-3">
-                    <c.icon
-                      className="h-4 w-4 sm:h-5 sm:w-5 text-white/85 shrink-0 mt-0.5"
-                      aria-hidden="true"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold leading-tight">
-                        {c.title}
-                      </p>
-                      <p className="text-xs text-white/80 mt-0.5 leading-tight">
-                        {c.sub}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
+        {/* (Removed the code-built "How it works" bar and "Your trust is
+            our priority" bar — the new hero images already include both
+            sections baked in, so the duplicate code-built versions are
+            gone.) */}
 
         {/* ===== TRUST STRIP =====
             Mix of platform facts (48h protection, 12% commission, 36 states)
