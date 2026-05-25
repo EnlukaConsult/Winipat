@@ -9,7 +9,7 @@
 
 DO $$
 DECLARE
-  v_buyer_email   TEXT := 'lewisgucci@example.com';   -- <- buyer's auth email
+  v_buyer_name    TEXT := 'lewis Gucci';              -- <- buyer's profiles.full_name (case-insensitive)
   v_seller_name   TEXT := 'Peace Fashions Lagos';     -- <- seller business_name
   v_buyer_id      UUID;
   v_seller_id     UUID;
@@ -18,15 +18,17 @@ DECLARE
   v_product_price INTEGER;
   v_order_id      UUID;
 BEGIN
-  -- Look up the buyer profile via auth.users (email lives there)
-  SELECT p.id INTO v_buyer_id
-  FROM profiles p
-  JOIN auth.users u ON u.id = p.id
-  WHERE u.email = v_buyer_email
+  -- Look up the buyer profile by full_name (case-insensitive). If you have
+  -- multiple buyers with the same name, swap this for an auth.users.email
+  -- lookup instead.
+  SELECT id INTO v_buyer_id
+  FROM profiles
+  WHERE lower(full_name) = lower(v_buyer_name)
+    AND role = 'buyer'
   LIMIT 1;
 
   IF v_buyer_id IS NULL THEN
-    RAISE EXCEPTION 'Buyer not found for email %', v_buyer_email;
+    RAISE EXCEPTION 'Buyer profile not found: %', v_buyer_name;
   END IF;
 
   SELECT id INTO v_seller_id
