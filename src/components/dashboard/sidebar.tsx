@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   Menu,
   Sliders,
+  Mail,
 } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -60,6 +61,7 @@ const adminNav: NavItem[] = [
   { label: "Disputes",    href: "/admin/disputes",    icon: AlertTriangle },
   { label: "Settlements", href: "/admin/settlements", icon: Banknote },
   { label: "Payouts",     href: "/admin/payouts",     icon: DollarSign },
+  { label: "Enquiries",   href: "/admin/enquiries",   icon: Mail },
   { label: "Analytics",   href: "/admin/analytics",   icon: BarChart3 },
   { label: "Team",        href: "/admin/team",        icon: User },
   { label: "Settings",    href: "/admin/settings",    icon: Sliders },

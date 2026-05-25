@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Bot, User, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, Sparkles, Mail } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ShieldIcon } from "@/components/ui/logo";
 
@@ -215,6 +216,23 @@ export function ChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* "Talk to a human" handoff — only shown once the user has sent
+              at least one message AND the bot has responded. Builds a
+              base64'd transcript of the last 6 turns and passes it to
+              the contact form via query string so the human team has
+              full context. */}
+          {messages.length >= 3 && (
+            <div className="px-4 pb-2 -mt-2 shrink-0">
+              <Link
+                href={buildContactHref(messages)}
+                className="flex items-center justify-center gap-1.5 text-[11px] text-violet hover:text-violet-dark hover:underline py-1"
+              >
+                <Mail size={11} />
+                Not getting what you need? Talk to a human
+              </Link>
+            </div>
+          )}
+
           {/* Input */}
           <form
             onSubmit={handleSubmit}
@@ -239,4 +257,28 @@ export function ChatWidget() {
       )}
     </>
   );
+}
+
+// Build a /contact?subject=...&chat=base64 URL with the latest exchange
+// embedded so support can see what the bot already tried.
+function buildContactHref(messages: Message[]): string {
+  const recent = messages.slice(-6);
+  const firstUser = messages.find((m) => m.role === "user")?.content ?? "";
+  const subject = firstUser.slice(0, 80) || "Help request from chat";
+  const transcript = recent
+    .map((m) => `${m.role === "user" ? "You" : "Bot"}: ${m.content}`)
+    .join("\n\n");
+
+  // safe base64 — handles unicode (emojis, naira sign) without TypeError
+  const utf8 =
+    typeof window !== "undefined"
+      ? btoa(unescape(encodeURIComponent(transcript)))
+      : "";
+
+  const params = new URLSearchParams({
+    subject,
+    category: "other",
+    chat: utf8,
+  });
+  return `/contact?${params.toString()}`;
 }

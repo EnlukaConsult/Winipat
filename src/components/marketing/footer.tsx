@@ -50,10 +50,10 @@ export function Footer() {
               Company
             </h4>
             <ul className="space-y-2.5 text-sm">
+              <li><Link href="/contact" className="hover:text-white transition-colors">Contact Support</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">About Us</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
               <li><Link href="#" className="hover:text-white transition-colors">Blog</Link></li>
-              <li><Link href="#" className="hover:text-white transition-colors">Contact</Link></li>
             </ul>
           </div>
 
