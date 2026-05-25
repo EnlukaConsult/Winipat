@@ -567,12 +567,14 @@ export default async function HomePage() {
             </div>
 
             {/*
-              4 vertical rows matching the user-supplied design
-              (/public/images/categories-rows.png). Each row's
-              background is sliced from that single PNG using CSS
-              background-position-y stepped at 0% / 33.3% / 66.7% /
-              100%. Clicks still route dynamically via featuredCategories
-              hrefs.
+              4 vertical rows. Each tile renders one slice of a single PNG
+              via CSS background-position-y, so we ship one image per
+              breakpoint instead of 4 separate files per layout. Clicks
+              still route dynamically via featuredCategories hrefs.
+
+              - mobile: categories-mobile.png   (taller per-row, wide
+                rounded cards with arrow on the right)
+              - lg+:    categories-rows.png     (wider per-row format)
             */}
             <div className="space-y-3 sm:space-y-4">
               {featuredCategories.map((c, i) => {
@@ -582,10 +584,22 @@ export default async function HomePage() {
                     key={c.label}
                     href={c.href}
                     aria-label={`Shop ${c.label} on Winipat`}
-                    className="group block relative rounded-2xl overflow-hidden bg-cloud border border-mist hover:shadow-lg hover:border-violet/30 transition-all aspect-[16/3] sm:aspect-[16/2.5]"
+                    className="group block relative rounded-2xl overflow-hidden bg-cloud border border-mist hover:shadow-lg hover:border-violet/30 transition-all aspect-[16/9] sm:aspect-[16/7] lg:aspect-[16/2.5]"
                   >
+                    {/* Mobile slice (taller rows) */}
                     <div
-                      className="absolute inset-0 bg-no-repeat"
+                      className="lg:hidden absolute inset-0 bg-no-repeat"
+                      style={{
+                        backgroundImage: "url(/images/categories-mobile.png)",
+                        backgroundSize: "100% 400%",
+                        backgroundPosition: `50% ${rowPositions[i]}`,
+                      }}
+                      role="img"
+                      aria-hidden="true"
+                    />
+                    {/* Desktop slice (wide rows) */}
+                    <div
+                      className="hidden lg:block absolute inset-0 bg-no-repeat"
                       style={{
                         backgroundImage: "url(/images/categories-rows.png)",
                         backgroundSize: "100% 400%",
@@ -594,8 +608,6 @@ export default async function HomePage() {
                       role="img"
                       aria-hidden="true"
                     />
-                    {/* Subtle dark overlay only on the rightmost arrow zone
-                        to make the click affordance obvious. */}
                     <span className="sr-only">Shop {c.label}</span>
                   </Link>
                 );
