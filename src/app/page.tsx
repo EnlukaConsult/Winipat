@@ -194,34 +194,21 @@ export default async function HomePage() {
               <div className="hidden lg:block lg:col-span-5">
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl">
                   {/*
-                    Hero image: courier handing a package to a buyer. Uses
-                    the existing /public/images/delivery.jpg which already
-                    shows this exact moment. Swap by replacing that file in
-                    place — no code change needed.
+                    Hero image: 4-panel collage uploaded by user showing
+                    seller packing → courier pickup → buyer receiving →
+                    payment released. The collage already tells the story
+                    visually so we drop the floating badge that used to
+                    sit over it — would compete with the image's own
+                    inline labels.
                   */}
                   <Image
-                    src="/images/delivery.jpg"
-                    alt="A Winipat buyer receiving their package from a courier at the door"
+                    src="/images/hero-main.png"
+                    alt="The Winipat trust flow: seller packs, courier picks up, buyer receives, payment is released"
                     width={600}
                     height={500}
                     className="w-full h-[460px] object-cover"
                     priority
                   />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-midnight/80 via-midnight/40 to-transparent p-5">
-                    <div className="rounded-xl bg-white/10 backdrop-blur-md border border-white/10 px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Lock className="h-5 w-5 text-gold shrink-0" />
-                        <div>
-                          <p className="text-white text-sm font-semibold leading-tight">
-                            Payment released only after this moment
-                          </p>
-                          <p className="text-white/60 text-xs mt-0.5">
-                            Buyer confirms delivery → 48h hold → seller paid
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
