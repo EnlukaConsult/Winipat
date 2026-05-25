@@ -29,10 +29,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes - redirect to login if not authenticated
+  // Protected routes - redirect to login if not authenticated.
+  // Match the prefix exactly or followed by '/' so /sellers/<id> (public
+  // reputation page) doesn't get caught by the /seller prefix.
   const protectedPaths = ["/dashboard", "/seller", "/admin", "/logistics"];
-  const isProtected = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
+  const path = request.nextUrl.pathname;
+  const isProtected = protectedPaths.some(
+    (p) => path === p || path.startsWith(p + "/")
   );
 
   if (isProtected && !user) {
