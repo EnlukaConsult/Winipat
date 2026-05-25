@@ -247,36 +247,59 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Desktop hero (lg+) — the user-supplied mockup */}
+        {/* Desktop hero (lg+) — the user-supplied mockup with TRANSPARENT
+            clickable overlays positioned on top of the visual Start Shopping
+            and Apply to Sell buttons baked into the image. Percent-based
+            coordinates scale correctly with the image at any container
+            width. Adjust the inset values if the image is replaced and the
+            button positions shift. */}
         <section className="hidden lg:block bg-cloud pt-24 pb-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="rounded-2xl overflow-hidden shadow-2xl bg-white">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white">
               <Image
                 src="/images/hero-main.png"
                 alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
                 width={1600}
                 height={1100}
-                className="w-full h-auto"
+                className="w-full h-auto block"
                 priority
                 sizes="1280px"
               />
+
+              {/* Clickable overlay: "Start Shopping" button visible in image */}
+              <Link
+                href="/register"
+                aria-label="Start shopping on Winipat"
+                title="Start shopping"
+                className="absolute z-10 rounded-md hover:bg-violet/10 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                style={{
+                  top: "57.5%",
+                  left: "4.8%",
+                  width: "13%",
+                  height: "6.2%",
+                }}
+              >
+                <span className="sr-only">Start shopping</span>
+              </Link>
+
+              {/* Clickable overlay: "Apply to Sell" button visible in image */}
+              <Link
+                href="/register?role=seller"
+                aria-label="Apply to sell on Winipat"
+                title="Apply to sell"
+                className="absolute z-10 rounded-md hover:bg-violet/10 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet"
+                style={{
+                  top: "57.5%",
+                  left: "18.5%",
+                  width: "12%",
+                  height: "6.2%",
+                }}
+              >
+                <span className="sr-only">Apply to sell</span>
+              </Link>
             </div>
 
-            <div className="mt-8 flex gap-4 justify-center">
-              <Link href="/register">
-                <Button variant="gold" size="lg">
-                  Start shopping
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/register?role=seller">
-                <Button variant="outline" size="lg">
-                  Apply to sell
-                </Button>
-              </Link>
-            </div>
-
-            <p className="mt-4 text-center text-xs text-slate-light">
+            <p className="mt-5 text-center text-xs text-slate-light">
               Already have an account?{" "}
               <Link href="/login" className="text-violet font-medium hover:underline">
                 Log in
