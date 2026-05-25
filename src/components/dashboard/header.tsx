@@ -3,6 +3,7 @@
 import {
   Bell,
   ChevronLeft,
+  ArrowLeft,
   LogOut,
   Settings,
   User as UserIcon,
@@ -65,10 +66,37 @@ function deriveBreadcrumb(pathname: string): { parentLabel: string; parentHref: 
   return null;
 }
 
+// Top-level destinations don't need a back button — they're already
+// the root of their section, accessed from the sidebar.
+const TOP_LEVEL_ROUTES = new Set([
+  "/dashboard/browse",
+  "/dashboard/cart",
+  "/dashboard/orders",
+  "/dashboard/messages",
+  "/dashboard/profile",
+  "/seller",
+  "/seller/products",
+  "/seller/orders",
+  "/seller/disputes",
+  "/seller/earnings",
+  "/seller/onboarding",
+  "/admin",
+  "/admin/sellers",
+  "/admin/disputes",
+  "/admin/settlements",
+  "/admin/payouts",
+  "/admin/analytics",
+  "/admin/team",
+  "/admin/settings",
+  "/logistics/pickups",
+  "/logistics/deliveries",
+]);
+
 export function DashboardHeader({ title, userName, avatarUrl, role, email }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const breadcrumb = deriveBreadcrumb(pathname);
+  const showBackButton = !TOP_LEVEL_ROUTES.has(pathname);
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -169,10 +197,20 @@ export function DashboardHeader({ title, userName, avatarUrl, role, email }: Hea
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-mist">
       <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2 min-w-0">
+          {showBackButton && (
+            <button
+              onClick={() => router.back()}
+              className="p-1.5 rounded-[--radius-md] hover:bg-mist transition-colors cursor-pointer text-slate-light hover:text-violet"
+              aria-label="Go back"
+              title="Go back"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
           {breadcrumb && (
             <Link
               href={breadcrumb.parentHref}
-              className="flex items-center gap-1 text-xs text-slate-light hover:text-violet transition-colors px-2 py-1 rounded-md hover:bg-violet/5"
+              className="hidden sm:flex items-center gap-1 text-xs text-slate-light hover:text-violet transition-colors px-2 py-1 rounded-md hover:bg-violet/5"
             >
               <ChevronLeft size={14} />
               {breadcrumb.parentLabel}

@@ -29,11 +29,11 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes - redirect to login if not authenticated.
-  // Match the prefix exactly or followed by '/' so /sellers/<id> (public
-  // reputation page) doesn't get caught by the /seller prefix.
-  const protectedPaths = ["/dashboard", "/seller", "/admin", "/logistics"];
   const path = request.nextUrl.pathname;
+
+  // Protected route prefixes. Use exact-or-followed-by-slash matching so
+  // the prefix /seller doesn't accidentally match /sellers/<id> (public).
+  const protectedPaths = ["/dashboard", "/seller", "/admin", "/logistics"];
   const isProtected = protectedPaths.some(
     (p) => path === p || path.startsWith(p + "/")
   );
@@ -41,19 +41,44 @@ export async function updateSession(request: NextRequest) {
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
+    url.searchParams.set("redirect", path);
     return NextResponse.redirect(url);
+  }
+
+  // Role-based access — only check when authed (a single profiles
+  // query per request; cheap and avoids leaking admin UI to non-admins).
+  if (isProtected && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const role = profile?.role || "buyer";
+
+    const isAllowed =
+      role === "admin" || // admins can see everything
+      (role === "seller"    && (path.startsWith("/seller")    || path.startsWith("/dashboard"))) ||
+      (role === "buyer"     && (path.startsWith("/dashboard"))) ||
+      (role === "logistics" && (path.startsWith("/logistics") || path.startsWith("/dashboard")));
+
+    if (!isAllowed) {
+      const url = request.nextUrl.clone();
+      url.pathname =
+        role === "seller"    ? "/seller"    :
+        role === "logistics" ? "/logistics/pickups" :
+        role === "admin"     ? "/admin"     :
+                               "/dashboard/browse";
+      return NextResponse.redirect(url);
+    }
   }
 
   // Redirect logged-in users away from auth pages
   const authPaths = ["/login", "/register"];
-  const isAuthPage = authPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
+  const isAuthPage = authPaths.some((p) => path.startsWith(p));
 
   if (isAuthPage && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/dashboard/browse";
     return NextResponse.redirect(url);
   }
 
