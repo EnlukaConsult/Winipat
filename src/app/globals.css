@@ -174,3 +174,60 @@ html {
   }
 }
 
+/* ------------------------------------------------------------------
+   Dynamic-hero animations (dh-*)
+   Scoped namespace so they don't leak into the rest of the site.
+   The global prefers-reduced-motion rule above neutralises them for
+   users who opt out — no extra guard needed here.
+   ------------------------------------------------------------------ */
+@keyframes dh-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-50% - 9px)); }
+}
+@keyframes dh-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
+@keyframes dh-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.95; }
+}
+@keyframes dh-dot {
+  0%   { top: 0;    opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+.dh-card { animation: dh-float 7s ease-in-out infinite; }
+.dh-card:nth-of-type(2) { animation-delay: -1.4s; }
+.dh-card:nth-of-type(3) { animation-delay: -2.8s; }
+.dh-card:nth-of-type(4) { animation-delay: -4.2s; }
+
+.dh-track { animation: dh-scroll 26s linear infinite; }
+
+.dh-flow { animation: dh-pulse 2.4s ease-in-out infinite; }
+.dh-flow::before,
+.dh-flow::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--color-violet);
+  border: 3px solid #fff;
+  animation: dh-dot 4s linear infinite;
+}
+.dh-flow::after { animation-delay: -2s; }
+
+/* Pause animation on hover/focus-within for users who want to inspect */
+.dh-track:hover,
+.dh-track:focus-within { animation-play-state: paused; }
+
+/* Subtle image zoom on card hover (desktop only) */
+@media (hover: hover) {
+  .dh-card:hover img { transform: scale(1.06); }
+}
+.dh-card img { transition: transform 0.9s ease; }
+

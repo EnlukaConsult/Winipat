@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
+import { DynamicHero } from "@/components/marketing/dynamic-hero";
 import { createClient } from "@/lib/supabase/server";
 import {
   ShieldCheck,
@@ -126,144 +127,11 @@ export default async function HomePage() {
 
       <main id="main-content">
         {/* ===== HERO =====
-            Two implementations:
-            - lg+: the user-supplied mockup image (looks great on desktop,
-              text in the image is legible at that size)
-            - <lg: a code-built hero (text in the image becomes unreadable
-              on phones, so we render a proper responsive layout)
-            Both share the same functional CTAs. */}
-
-        {/* MOBILE hero (lg:hidden) — new "Mobile fit" image already
-            includes the dark gradient background that matches our
-            bg-hero-gradient, so it blends seamlessly with the page
-            surface (no white card frame). The image has NO embedded
-            CTA buttons — clicks live in the explicit Button row below. */}
-        <section
-          className="lg:hidden bg-hero-gradient pt-20 pb-10"
-          aria-labelledby="hero-mobile-title"
-        >
-          <div className="mx-auto max-w-md px-4 sm:px-6">
-            <h1 id="hero-mobile-title" className="sr-only">
-              Winipat — buy without the worry, sell without the chase
-            </h1>
-
-            <Image
-              src="/images/hero-mobile.png"
-              alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
-              width={750}
-              height={1500}
-              className="w-full h-auto block rounded-xl"
-              priority
-              sizes="(max-width: 1024px) 100vw"
-            />
-
-            {/* One dominant CTA. Seller route demoted to a text link so the
-                primary action wins visual focus on phones. */}
-            <div className="mt-6">
-              <Link href="/register" className="block">
-                <Button
-                  variant="gold"
-                  size="lg"
-                  className="w-full justify-center"
-                >
-                  Start shopping
-                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
-                </Button>
-              </Link>
-
-              <p className="mt-4 text-center text-sm text-white/80">
-                Selling on Winipat?{" "}
-                <Link
-                  href="/register?role=seller"
-                  className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-                >
-                  Apply to sell
-                </Link>
-              </p>
-              <p className="mt-2 text-center text-xs text-white/55">
-                <Link
-                  href="/login"
-                  className="text-white/75 hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-                >
-                  Log in
-                </Link>
-                {" · "}
-                <Link
-                  href="/track"
-                  className="text-white/75 hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-                >
-                  Track an order
-                </Link>
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* DESKTOP hero (lg+) — new "Hero image for web fit" already has
-            the dark gradient background baked in to match the page; we
-            drop the white framing card and overlays since the new image
-            has no embedded CTAs. */}
-        <section
-          className="hidden lg:block bg-hero-gradient pt-20 pb-14"
-          aria-labelledby="hero-desktop-title"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h1 id="hero-desktop-title" className="sr-only">
-              Winipat — buy without the worry, sell without the chase
-            </h1>
-
-            <Image
-              src="/images/hero-desktop.png"
-              alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
-              width={1900}
-              height={1100}
-              className="w-full h-auto block rounded-2xl"
-              priority
-              sizes="1280px"
-            />
-
-            {/* One dominant CTA. Seller route demoted to a text link so the
-                primary action wins visual focus. */}
-            <div className="mt-8 flex flex-col items-center">
-              <Link href="/register">
-                <Button variant="gold" size="lg" className="min-w-[260px] justify-center">
-                  Start shopping
-                  <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
-                </Button>
-              </Link>
-
-              <p className="mt-5 text-center text-sm text-white/80">
-                Selling on Winipat?{" "}
-                <Link
-                  href="/register?role=seller"
-                  className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-                >
-                  Apply to sell →
-                </Link>
-              </p>
-              <p className="mt-2 text-center text-xs text-white/55">
-                <Link
-                  href="/login"
-                  className="text-white/75 hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-                >
-                  Log in
-                </Link>
-                {" · "}
-                <Link
-                  href="/track"
-                  className="text-white/75 hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-                >
-                  Track an order
-                </Link>
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Trust bars / process strip / stats grid intentionally removed
-            from above-the-fold. The hero image already implies the trust
-            promise; the long "How it works" lives below the featured
-            categories, where readers ready for detail will find it. */}
+            Single dynamic React component (left = copy + CTAs,
+            right = animated 2x2 collage with pulsing dashed flow,
+            bottom = looping process strip). Animations live in
+            globals.css under `.dh-*` and respect prefers-reduced-motion. */}
+        <DynamicHero />
 
         {/* ===== FEATURED CATEGORIES ===== */}
         <section className="py-20 sm:py-28 bg-white">
