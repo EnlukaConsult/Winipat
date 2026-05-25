@@ -26,6 +26,7 @@ interface FormErrors {
   email?: string;
   phone?: string;
   password?: string;
+  terms?: string;
   form?: string;
 }
 
@@ -38,6 +39,7 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("buyer");
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -64,6 +66,8 @@ function RegisterForm() {
     else if (password.length < 8) next.password = "Password must be at least 8 characters.";
     else if (!/[A-Z]/.test(password)) next.password = "Include at least one uppercase letter.";
     else if (!/\d/.test(password)) next.password = "Include at least one number.";
+
+    if (!acceptTerms) next.terms = "Please accept the Terms & Conditions before continuing.";
 
     return next;
   }
@@ -244,24 +248,121 @@ function RegisterForm() {
             }
           />
 
-          <p className="text-xs text-slate-lighter leading-relaxed">
-            By creating an account, you agree to Winipat&apos;s{" "}
-            <Link href="/legal/terms" className="text-royal hover:underline">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/legal/privacy" className="text-royal hover:underline">
-              Privacy Policy
-            </Link>
-            .
-          </p>
+          {/* Required Terms & Conditions checkbox — submit is blocked
+              until checked. Role-aware escrow language so buyers and
+              sellers see the operational rule that applies to them. */}
+          <label
+            htmlFor="acceptTerms"
+            className={`flex items-start gap-3 cursor-pointer rounded-[--radius-md] border p-3 transition-colors ${
+              errors.terms
+                ? "border-error/50 bg-error/5"
+                : acceptTerms
+                ? "border-violet/30 bg-violet/5"
+                : "border-mist hover:border-mist-dark"
+            }`}
+          >
+            <input
+              id="acceptTerms"
+              type="checkbox"
+              checked={acceptTerms}
+              onChange={(e) => {
+                setAcceptTerms(e.target.checked);
+                if (e.target.checked && errors.terms) {
+                  setErrors((prev) => ({ ...prev, terms: undefined }));
+                }
+              }}
+              aria-describedby="acceptTermsHelp"
+              className="sr-only peer"
+              required
+            />
+            {/* Custom box — checked state styled via peer:checked */}
+            <span
+              aria-hidden="true"
+              className="mt-0.5 shrink-0 w-5 h-5 rounded border-2 border-violet bg-white peer-checked:bg-gradient-to-br peer-checked:from-violet peer-checked:to-teal peer-checked:border-transparent flex items-center justify-center"
+            >
+              {acceptTerms && (
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M2 6.5l2.5 2.5L10 3.5"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </span>
+            <span id="acceptTermsHelp" className="text-xs text-slate leading-relaxed">
+              I agree to Winipat&apos;s{" "}
+              <Link
+                href="/legal/terms"
+                target="_blank"
+                className="text-violet font-semibold hover:underline"
+              >
+                Terms &amp; Conditions
+              </Link>{" "}
+              and{" "}
+              <Link
+                href="/legal/privacy"
+                target="_blank"
+                className="text-violet font-semibold hover:underline"
+              >
+                Privacy Policy
+              </Link>
+              , including escrow handling, dispute resolution, delivery
+              verification, KYC, and communication consent.
+              <br />
+              <span className="block mt-1.5 text-slate-light">
+                {role === "seller" ? (
+                  <>
+                    I understand Winipat <strong className="text-midnight">holds buyer funds in escrow</strong> until
+                    delivery is confirmed, and that I&apos;m bound by the{" "}
+                    <Link
+                      href="/legal/seller-agreement"
+                      target="_blank"
+                      className="text-violet font-semibold hover:underline"
+                    >
+                      Seller Agreement
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  <>
+                    I understand my payments are{" "}
+                    <strong className="text-midnight">protected by escrow</strong> and released to
+                    the seller only after I confirm delivery (or the 48-hour
+                    auto-confirm window closes).
+                  </>
+                )}
+              </span>
+            </span>
+          </label>
+
+          {errors.terms && (
+            <p className="text-xs text-error -mt-2" role="alert">
+              {errors.terms}
+            </p>
+          )}
 
           <Button
             type="submit"
-            variant="gold"
+            variant={acceptTerms ? "gold" : "secondary"}
             size="lg"
             loading={loading}
-            className="w-full"
+            disabled={!acceptTerms || loading}
+            className={`w-full transition-all ${
+              !acceptTerms
+                ? "!bg-mist-dark !text-slate-lighter cursor-not-allowed hover:!bg-mist-dark"
+                : ""
+            }`}
+            aria-disabled={!acceptTerms}
           >
             Create Account
             {!loading && <ArrowRight className="ml-2 h-4 w-4" />}

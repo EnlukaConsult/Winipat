@@ -16,6 +16,14 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  // Email verification gate: if Supabase Auth has "Confirm email" enabled,
+  // user.email_confirmed_at will be null until the user clicks the link.
+  // Hold them at /verify until then. Skip this for the verify page itself
+  // so they're not bounced in a loop.
+  if (!user.email_confirmed_at && !user.confirmed_at) {
+    redirect(`/verify?email=${encodeURIComponent(user.email ?? "")}`);
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, role, avatar_url")
