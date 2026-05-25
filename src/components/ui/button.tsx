@@ -24,10 +24,13 @@ const variantStyles: Record<ButtonVariant, string> = {
   gold: "bg-gold text-midnight hover:bg-gold-dark shadow-md hover:shadow-lg font-semibold",
 };
 
+// min-h ensures every button hits the 44px WCAG tap-target floor
+// even when content is short. Was a real issue with `sm` icon-only
+// buttons (~32px tall).
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "px-4 py-2 text-sm rounded-[--radius-sm]",
-  md: "px-6 py-3 text-base rounded-[--radius-md]",
-  lg: "px-8 py-4 text-lg rounded-[--radius-lg]",
+  sm: "min-h-[44px] px-4 py-2 text-sm rounded-[--radius-sm]",
+  md: "min-h-[44px] px-6 py-3 text-base rounded-[--radius-md]",
+  lg: "min-h-[52px] px-8 py-4 text-lg rounded-[--radius-lg]",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

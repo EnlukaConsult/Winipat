@@ -30,6 +30,7 @@ export default function HomePage() {
     <>
       <Navbar />
 
+      <main id="main-content">
       {/* ===== HERO SECTION ===== */}
       <section className="relative min-h-dvh flex items-center bg-hero-gradient overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
@@ -655,6 +656,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      </main>
 
       <Footer />
     </>

@@ -62,8 +62,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Do NOT set maximumScale or userScalable=false — blocking pinch-zoom
+  // is a WCAG 1.4.4 violation. Users with low vision rely on it.
   themeColor: "#3C4FE0",
+  viewportFit: "cover", // lets us pad against iPhone notch with safe-area-inset
 };
 
 export default function RootLayout({
@@ -80,6 +82,14 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-dvh flex flex-col antialiased">
+        {/* Skip link for keyboard / screen-reader users — visually hidden
+            until focused, then jumps the user past the nav to main content. */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-royal focus:text-white focus:rounded-md focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         {children}
         <ChatWidget />
         <CookieBanner />
