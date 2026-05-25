@@ -25,9 +25,15 @@ export default async function DashboardLayout({
   const role = profile?.role || "buyer";
   const userName = profile?.full_name || user.email || "User";
   const avatarUrl = profile?.avatar_url || null;
+  const email = user.email ?? "";
 
   return (
-    <DashboardShell role={role} userName={userName} avatarUrl={avatarUrl}>
+    <DashboardShell
+      role={role}
+      userName={userName}
+      email={email}
+      avatarUrl={avatarUrl}
+    >
       {children}
     </DashboardShell>
   );

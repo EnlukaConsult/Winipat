@@ -1,0 +1,122 @@
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/admin-guard";
+
+// GET  /api/admin/team        -> { admins: Profile[] }
+// POST /api/admin/team        { email }  -> promote existing user to admin
+// DELETE /api/admin/team?id=  -> demote admin back to buyer (cannot demote self)
+//
+// Promotion only works for users who have already signed up. If the email
+// isn't in profiles we return 404 with guidance to share the signup link.
+// V1: no Supabase email invite — keeps the moving parts down.
+export async function GET() {
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("profiles")
+    .select("id, full_name, email, created_at")
+    .eq("role", "admin")
+    .order("created_at", { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ admins: data ?? [] });
+}
+
+export async function POST(request: Request) {
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
+
+  const { email } = (await request.json()) as { email: string };
+  if (!email?.trim()) {
+    return NextResponse.json({ error: "email is required" }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from("profiles")
+    .select("id, role, full_name, email")
+    .ilike("email", email.trim())
+    .maybeSingle();
+
+  if (!existing) {
+    return NextResponse.json(
+      {
+        error:
+          "No user with that email has signed up yet. Ask them to register at /register, then try again.",
+      },
+      { status: 404 }
+    );
+  }
+
+  if (existing.role === "admin") {
+    return NextResponse.json(
+      { error: `${existing.email} is already an admin.` },
+      { status: 409 }
+    );
+  }
+
+  const { error: updateError } = await admin
+    .from("profiles")
+    .update({ role: "admin" })
+    .eq("id", existing.id);
+
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+
+  await admin.from("notifications").insert({
+    user_id: existing.id,
+    title: "You're now an admin",
+    body: `${guard.user.email} promoted you to admin. Sign out and back in to see the admin portal.`,
+    type: "system",
+    data: { promoted_by: guard.user.id },
+  });
+
+  return NextResponse.json({
+    ok: true,
+    promoted: { id: existing.id, email: existing.email, full_name: existing.full_name },
+  });
+}
+
+export async function DELETE(request: Request) {
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
+
+  const url = new URL(request.url);
+  const id = url.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  if (id === guard.user.id) {
+    return NextResponse.json(
+      { error: "You can't demote yourself. Ask another admin." },
+      { status: 400 }
+    );
+  }
+
+  const admin = createAdminClient();
+
+  // Safety: refuse to leave the platform with zero admins.
+  const { count } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("role", "admin");
+
+  if ((count ?? 0) <= 1) {
+    return NextResponse.json(
+      { error: "Cannot demote the last remaining admin." },
+      { status: 400 }
+    );
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ role: "buyer" })
+    .eq("id", id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}

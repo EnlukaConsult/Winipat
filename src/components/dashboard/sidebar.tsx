@@ -61,6 +61,7 @@ const adminNav: NavItem[] = [
   { label: "Settlements", href: "/admin/settlements", icon: Banknote },
   { label: "Payouts",     href: "/admin/payouts",     icon: DollarSign },
   { label: "Analytics",   href: "/admin/analytics",   icon: BarChart3 },
+  { label: "Team",        href: "/admin/team",        icon: User },
   { label: "Settings",    href: "/admin/settings",    icon: Sliders },
 ];
 
