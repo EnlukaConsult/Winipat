@@ -193,9 +193,15 @@ export default async function HomePage() {
 
               <div className="hidden lg:block lg:col-span-5">
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                  {/*
+                    Hero image: courier handing a package to a buyer. Uses
+                    the existing /public/images/delivery.jpg which already
+                    shows this exact moment. Swap by replacing that file in
+                    place — no code change needed.
+                  */}
                   <Image
-                    src="/images/products/handbags-collection.jpg"
-                    alt="Verified sellers list real products on Winipat"
+                    src="/images/delivery.jpg"
+                    alt="A Winipat buyer receiving their package from a courier at the door"
                     width={600}
                     height={500}
                     className="w-full h-[460px] object-cover"
@@ -207,10 +213,10 @@ export default async function HomePage() {
                         <Lock className="h-5 w-5 text-gold shrink-0" />
                         <div>
                           <p className="text-white text-sm font-semibold leading-tight">
-                            Payment held in escrow
+                            Payment released only after this moment
                           </p>
                           <p className="text-white/60 text-xs mt-0.5">
-                            Released 48 hours after you confirm delivery
+                            Buyer confirms delivery → 48h hold → seller paid
                           </p>
                         </div>
                       </div>
