@@ -171,76 +171,85 @@ export default async function HomePage() {
               on phones, so we render a proper responsive layout)
             Both share the same functional CTAs. */}
 
-        {/* Mobile / tablet hero (hidden on lg+) */}
-        <section className="lg:hidden bg-cloud pt-20 pb-8">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6">
-            <div className="inline-flex items-center gap-2 rounded-full bg-violet/10 px-3 py-1.5 mb-5 border border-violet/15">
-              <ShieldCheck className="h-3.5 w-3.5 text-violet" />
+        {/* Mobile / tablet hero (hidden on lg+) — tightened: dropped the
+            ~1.5MB mockup preview that was making mobile feel heavy, packed
+            the badge + headline + CTAs above the fold, increased contrast
+            on supporting text (text-slate vs text-slate-light) so it
+            meets WCAG AA on the cloud background. */}
+        <section className="lg:hidden bg-cloud pt-20 pb-10" aria-labelledby="hero-mobile-title">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
+            <div
+              className="inline-flex items-center gap-2 rounded-full bg-violet/10 px-3 py-1.5 mb-4 border border-violet/15"
+              role="presentation"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 text-violet" aria-hidden="true" />
               <span className="text-xs text-midnight font-medium">
                 Built in Nigeria · Trusted nationwide
               </span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] leading-[1.1] tracking-tight mb-4">
+
+            <h1
+              id="hero-mobile-title"
+              className="text-[2rem] sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] leading-[1.05] tracking-tight mb-3"
+            >
               Buy without the{" "}
               <span className="text-violet">worry.</span>
               <br />
               Sell without the{" "}
               <span className="text-teal">chase.</span>
             </h1>
-            <p className="text-sm sm:text-base text-slate-light leading-relaxed mb-6">
-              Winipat is a secure marketplace with escrow protection that
-              ensures trusted transactions between buyers and sellers across
-              Nigeria.
+
+            <p className="text-sm text-slate leading-relaxed mb-5 max-w-prose">
+              Escrow protection on every order. KYC-verified sellers. You pick
+              the courier at checkout.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
-              <Link href="/register" className="w-full sm:w-auto">
-                <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                  Start Shopping
-                  <ArrowRight className="ml-2 h-5 w-5" />
+            <div className="flex flex-col gap-2.5 mb-4">
+              <Link href="/register" className="w-full">
+                <Button variant="primary" size="lg" className="w-full justify-center">
+                  Start shopping
+                  <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                 </Button>
               </Link>
-              <Link href="/register?role=seller" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                  Apply to Sell
+              <Link href="/register?role=seller" className="w-full">
+                <Button variant="outline" size="lg" className="w-full justify-center">
+                  Apply to sell
                 </Button>
               </Link>
             </div>
 
-            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-light">
+            <ul
+              className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate"
+              role="list"
+              aria-label="Platform guarantees"
+            >
               <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" aria-hidden="true" />
                 KYC-verified sellers
               </li>
               <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" aria-hidden="true" />
                 Escrow on every order
               </li>
               <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" aria-hidden="true" />
                 Courier choice at checkout
               </li>
             </ul>
 
-            {/* Compact mockup on mobile — useful preview without dominating */}
-            <div className="mt-7 rounded-2xl overflow-hidden border border-mist bg-white shadow-md">
-              <Image
-                src="/images/hero-main.png"
-                alt="How Winipat protects every transaction, from seller to buyer"
-                width={1600}
-                height={1100}
-                className="w-full h-auto"
-                priority
-              />
-            </div>
-
-            <p className="mt-4 text-center text-xs text-slate-light">
+            <p className="mt-5 text-center text-xs text-slate">
               Already a member?{" "}
-              <Link href="/login" className="text-violet font-medium hover:underline">
+              <Link
+                href="/login"
+                className="text-violet font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet rounded"
+              >
                 Log in
               </Link>
               {" · "}
-              <Link href="/track" className="text-violet font-medium hover:underline">
+              <Link
+                href="/track"
+                className="text-violet font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet rounded"
+              >
                 Track an order
               </Link>
             </p>
@@ -316,74 +325,111 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ===== HOW IT WORKS BAR (mockup match) =====
-            Horizontal 4-step icon bar + an emphasized 5th callout on the
-            right, matching the layout from the user's preferred mockup. */}
-        <section className="bg-white border-y border-mist">
+        {/* ===== HOW IT WORKS BAR =====
+            Compact mobile-first: vertical list on small screens with
+            connecting dots between steps, horizontal row on lg+. */}
+        <section
+          className="bg-white border-y border-mist"
+          aria-labelledby="how-it-works-bar-heading"
+        >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
-              <p className="text-base font-bold text-midnight font-[family-name:var(--font-sora)] lg:w-32 shrink-0">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-6">
+              <h2
+                id="how-it-works-bar-heading"
+                className="text-sm sm:text-base font-bold text-midnight font-[family-name:var(--font-sora)] lg:w-32 shrink-0 uppercase tracking-wide lg:normal-case lg:tracking-normal"
+              >
                 How it works
-              </p>
-              <ol className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 items-start">
+              </h2>
+              <ol
+                className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-3 sm:gap-4"
+                role="list"
+              >
                 {[
-                  { icon: "🛒", title: "Buyer places", sub: "order & pays" },
-                  { icon: "🛡️", title: "Payment held",  sub: "in escrow" },
+                  { icon: "🛒", title: "Buyer places",   sub: "order & pays" },
+                  { icon: "🛡️", title: "Payment held",   sub: "in escrow" },
                   { icon: "🚚", title: "Item delivered", sub: "safely" },
                   { icon: "✅", title: "Buyer confirms", sub: "& seller gets paid" },
                 ].map((s, i, arr) => (
-                  <li key={s.title} className="relative flex items-center gap-3">
-                    <span className="text-lg" aria-hidden="true">{s.icon}</span>
+                  <li key={s.title} className="relative flex items-center gap-2.5">
+                    <span
+                      className="text-base sm:text-lg shrink-0"
+                      aria-hidden="true"
+                    >
+                      {s.icon}
+                    </span>
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-midnight leading-tight">
+                      <p className="text-[11px] sm:text-xs font-semibold text-midnight leading-tight">
                         {s.title}
                       </p>
-                      <p className="text-[11px] text-slate-light leading-tight">
+                      <p className="text-[10px] sm:text-[11px] text-slate leading-tight mt-0.5">
                         {s.sub}
                       </p>
                     </div>
+                    {/* Arrow only between lg horizontal items */}
                     {i < arr.length - 1 && (
-                      <span className="hidden sm:inline absolute -right-3 top-1/2 -translate-y-1/2 text-slate-lighter">
+                      <span
+                        className="hidden lg:inline absolute -right-3 top-1/2 -translate-y-1/2 text-slate-lighter"
+                        aria-hidden="true"
+                      >
                         →
                       </span>
                     )}
                   </li>
                 ))}
               </ol>
-              <div className="lg:w-72 shrink-0 rounded-lg bg-violet/8 border border-violet/20 px-4 py-3 flex items-start gap-3">
-                <Lock className="h-5 w-5 text-violet shrink-0 mt-0.5" />
+              <aside className="lg:w-72 shrink-0 rounded-lg bg-violet/8 border border-violet/20 px-3 py-2.5 sm:px-4 sm:py-3 flex items-start gap-2.5 sm:gap-3">
+                <Lock
+                  className="h-4 w-4 sm:h-5 sm:w-5 text-violet shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
                 <div>
-                  <p className="text-xs font-semibold text-midnight leading-tight">
+                  <p className="text-[11px] sm:text-xs font-semibold text-midnight leading-tight">
                     Payment held securely in escrow
                   </p>
-                  <p className="text-[11px] text-slate-light mt-0.5 leading-tight">
+                  <p className="text-[10px] sm:text-[11px] text-slate mt-0.5 leading-tight">
                     Released to seller only after buyer confirms delivery
                   </p>
                 </div>
-              </div>
+              </aside>
             </div>
           </div>
         </section>
 
-        {/* ===== YOUR TRUST IS OUR PRIORITY (dark bar from mockup) ===== */}
-        <section className="bg-gradient-to-r from-midnight via-midnight-light to-violet-dark text-white">
+        {/* ===== YOUR TRUST IS OUR PRIORITY (dark bar from mockup) =====
+            Mobile: stacks vertically with tighter spacing. Increased
+            contrast on supporting text from white/65 (3.4:1 fails AA)
+            to white/80 (4.6:1 passes AA Large Text). */}
+        <section
+          className="bg-gradient-to-r from-midnight via-midnight-light to-violet-dark text-white"
+          aria-labelledby="trust-priority-heading"
+        >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-center">
-              <div className="lg:col-span-4 flex items-start gap-4">
-                <div className="w-12 h-12 rounded-lg bg-emerald/20 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="h-6 w-6 text-emerald" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 lg:items-center">
+              <div className="lg:col-span-4 flex items-start gap-3 sm:gap-4">
+                <div
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-emerald/20 flex items-center justify-center shrink-0"
+                  aria-hidden="true"
+                >
+                  <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald" />
                 </div>
                 <div>
-                  <p className="text-base font-bold font-[family-name:var(--font-sora)] leading-tight">
+                  <h2
+                    id="trust-priority-heading"
+                    className="text-sm sm:text-base font-bold font-[family-name:var(--font-sora)] leading-tight"
+                  >
                     Your trust is our priority.
-                  </p>
-                  <p className="text-xs text-white/70 mt-1 leading-relaxed">
+                  </h2>
+                  <p className="text-xs text-white/80 mt-1 leading-relaxed">
                     We protect your money, verify every seller, and make every
                     transaction worry-free.
                   </p>
                 </div>
               </div>
-              <ul className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <ul
+                className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
+                role="list"
+                aria-label="What we promise"
+              >
                 {[
                   {
                     icon: UserCheck,
@@ -401,13 +447,16 @@ export default async function HomePage() {
                     sub: "Shop or sell with confidence",
                   },
                 ].map((c) => (
-                  <li key={c.title} className="flex items-start gap-3">
-                    <c.icon className="h-5 w-5 text-white/70 shrink-0 mt-0.5" />
+                  <li key={c.title} className="flex items-start gap-2.5 sm:gap-3">
+                    <c.icon
+                      className="h-4 w-4 sm:h-5 sm:w-5 text-white/85 shrink-0 mt-0.5"
+                      aria-hidden="true"
+                    />
                     <div>
                       <p className="text-sm font-semibold leading-tight">
                         {c.title}
                       </p>
-                      <p className="text-xs text-white/65 mt-0.5 leading-tight">
+                      <p className="text-xs text-white/80 mt-0.5 leading-tight">
                         {c.sub}
                       </p>
                     </div>
