@@ -3,7 +3,6 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
-import { Logo } from "@/components/ui/logo";
 import { createClient } from "@/lib/supabase/server";
 import {
   ShieldCheck,
@@ -172,55 +171,61 @@ export default async function HomePage() {
               on phones, so we render a proper responsive layout)
             Both share the same functional CTAs. */}
 
-        {/* Mobile / tablet hero (hidden on lg+) — tightened: dropped the
-            ~1.5MB mockup preview that was making mobile feel heavy, packed
-            the badge + headline + CTAs above the fold, increased contrast
-            on supporting text (text-slate vs text-slate-light) so it
-            meets WCAG AA on the cloud background. */}
-        <section className="lg:hidden bg-cloud pt-20 pb-10" aria-labelledby="hero-mobile-title">
+        {/* Mobile / tablet hero (hidden on lg+) — sits on the bold purple
+            gradient instead of flat cloud so the page doesn't look like a
+            static screenshot. Text-built (the in-image text is too small
+            on phones to be legible). */}
+        <section
+          className="lg:hidden bg-hero-gradient pt-20 pb-10 text-white"
+          aria-labelledby="hero-mobile-title"
+        >
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <div
-              className="inline-flex items-center gap-2 rounded-full bg-violet/10 px-3 py-1.5 mb-4 border border-violet/15"
+              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 mb-4 border border-white/15 backdrop-blur-sm"
               role="presentation"
             >
-              <ShieldCheck className="h-3.5 w-3.5 text-violet" aria-hidden="true" />
-              <span className="text-xs text-midnight font-medium">
+              <ShieldCheck className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
+              <span className="text-xs text-white/90 font-medium">
                 Built in Nigeria · Trusted nationwide
               </span>
             </div>
 
             <h1
               id="hero-mobile-title"
-              className="text-[2rem] sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] leading-[1.05] tracking-tight mb-3"
+              className="text-[2rem] sm:text-4xl font-bold text-white font-[family-name:var(--font-sora)] leading-[1.05] tracking-tight mb-3"
             >
               Buy without the{" "}
-              <span className="text-violet">worry.</span>
+              <span className="text-gold">worry.</span>
               <br />
               Sell without the{" "}
               <span className="text-teal">chase.</span>
             </h1>
 
-            <p className="text-sm text-slate leading-relaxed mb-5 max-w-prose">
+            <p className="text-sm text-white/80 leading-relaxed mb-5 max-w-prose">
               Escrow protection on every order. KYC-verified sellers. You pick
               the courier at checkout.
             </p>
 
             <div className="flex flex-col gap-2.5 mb-4">
               <Link href="/register" className="w-full">
-                <Button variant="primary" size="lg" className="w-full justify-center">
+                <Button variant="gold" size="lg" className="w-full justify-center">
                   Start shopping
                   <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                 </Button>
               </Link>
               <Link href="/register?role=seller" className="w-full">
-                <Button variant="outline" size="lg" className="w-full justify-center">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full justify-center border-white/30 text-white hover:bg-white hover:text-midnight"
+                >
                   Apply to sell
                 </Button>
               </Link>
             </div>
 
             <ul
-              className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate"
+              className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-white/75"
               role="list"
               aria-label="Platform guarantees"
             >
@@ -238,18 +243,18 @@ export default async function HomePage() {
               </li>
             </ul>
 
-            <p className="mt-5 text-center text-xs text-slate">
+            <p className="mt-5 text-center text-xs text-white/65">
               Already a member?{" "}
               <Link
                 href="/login"
-                className="text-violet font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet rounded"
+                className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
               >
                 Log in
               </Link>
               {" · "}
               <Link
                 href="/track"
-                className="text-violet font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet rounded"
+                className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
               >
                 Track an order
               </Link>
@@ -257,56 +262,49 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Desktop hero (lg+) — the user-supplied mockup with TRANSPARENT
-            clickable overlays positioned on top of the visual Start Shopping
-            and Apply to Sell buttons baked into the image. Percent-based
-            coordinates scale correctly with the image at any container
-            width. Adjust the inset values if the image is replaced and the
-            button positions shift. */}
-        <section className="hidden lg:block bg-cloud pt-24 pb-14">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Desktop hero (lg+) — new image sits on the deep purple
+            gradient so the page reads as a designed surface, not a flat
+            embed. The image already shows the web layout (left half) plus
+            a mobile preview (right half) — we use the FULL image on
+            desktop since the side-by-side reads as a "here's how this
+            looks everywhere" showcase. Click overlays sit on the visible
+            Start Shopping + Apply to Sell buttons in the web (left) layout. */}
+        <section
+          className="hidden lg:block relative bg-hero-gradient overflow-hidden pt-20 pb-16"
+          aria-labelledby="hero-desktop-title"
+        >
+          <div className="absolute -top-32 -right-32 w-[28rem] h-[28rem] bg-violet/25 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 -left-32 w-80 h-80 bg-royal/20 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <h1 id="hero-desktop-title" className="sr-only">
+              Winipat — buy without the worry, sell without the chase
+            </h1>
+
             <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-white">
               <Image
-                src="/images/hero-main.png"
+                src="/images/hero-v2.png"
                 alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
-                width={1600}
-                height={1100}
+                width={1700}
+                height={900}
                 className="w-full h-auto block"
                 priority
                 sizes="1280px"
               />
 
-              {/* Mask + new logo overlay: the hero PNG has the OLD W-shield
-                  logo baked into the top-left, which clashes with the new
-                  3D shopping-bag logo used everywhere else (brand confusion).
-                  This solid mask covers the baked logo (background colour
-                  chosen to blend with the card's light area), and we render
-                  the up-to-date <Logo /> component on top so the hero
-                  matches the rest of the site. */}
-              <div
-                aria-hidden="true"
-                className="absolute top-[2%] left-[3%] flex items-center bg-[#F5F0FF] rounded-md px-2 py-1"
-                style={{ width: "22%", height: "8%" }}
-              >
-                <Logo size="md" theme="light" />
-              </div>
-
-              {/* Transparent click overlays sit exactly on top of the buttons
-                  baked into the hero image. Fully see-through (no hover
-                  tint, no border, no shadow) so the image's own button
-                  styling shows. Percent-based so they scale with the image
-                  at any container width. Keyboard focus shows a thin
-                  outline only — visible for a11y but invisible at rest. */}
+              {/* Click overlays — Start Shopping + Apply to Sell visible in
+                  the WEB (left) layout of the image. Fully transparent, no
+                  hover tint, no shadow. Cursor:pointer hints the click. */}
               <Link
                 href="/register"
                 aria-label="Start shopping on Winipat"
                 title="Start shopping"
                 className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                 style={{
-                  top: "57.8%",
-                  left: "5.1%",
-                  width: "13.5%",
-                  height: "5.7%",
+                  top: "61%",
+                  left: "4.6%",
+                  width: "10.2%",
+                  height: "5.3%",
                 }}
               >
                 <span className="sr-only">Start shopping</span>
@@ -318,23 +316,29 @@ export default async function HomePage() {
                 title="Apply to sell"
                 className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
                 style={{
-                  top: "57.8%",
-                  left: "19.5%",
-                  width: "13%",
-                  height: "5.7%",
+                  top: "61%",
+                  left: "15.4%",
+                  width: "9.8%",
+                  height: "5.3%",
                 }}
               >
                 <span className="sr-only">Apply to sell</span>
               </Link>
             </div>
 
-            <p className="mt-5 text-center text-xs text-slate-light">
+            <p className="mt-5 text-center text-sm text-white/75">
               Already have an account?{" "}
-              <Link href="/login" className="text-violet font-medium hover:underline">
+              <Link
+                href="/login"
+                className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
+              >
                 Log in
               </Link>
               {" · "}
-              <Link href="/track" className="text-violet font-medium hover:underline">
+              <Link
+                href="/track"
+                className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
+              >
                 Track an order
               </Link>
             </p>
