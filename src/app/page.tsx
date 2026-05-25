@@ -200,17 +200,18 @@ export default async function HomePage() {
 
               {/* Click overlays for the Start Shopping + Apply to Sell
                   buttons visible side-by-side in the mobile image. Fully
-                  transparent — no hover tint, no shadow. */}
+                  transparent — no hover tint, no shadow. Positions tuned
+                  by measuring directly off hero-mobile.png. */}
               <Link
                 href="/register"
                 aria-label="Start shopping on Winipat"
                 title="Start shopping"
                 className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                 style={{
-                  top: "18.2%",
-                  left: "5.5%",
-                  width: "42%",
-                  height: "3.6%",
+                  top: "33%",
+                  left: "5%",
+                  width: "45%",
+                  height: "4.5%",
                 }}
               >
                 <span className="sr-only">Start shopping</span>
@@ -222,13 +223,32 @@ export default async function HomePage() {
                 title="Apply to sell"
                 className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
                 style={{
-                  top: "18.2%",
-                  left: "52%",
-                  width: "42%",
-                  height: "3.6%",
+                  top: "33%",
+                  left: "53%",
+                  width: "43%",
+                  height: "4.5%",
                 }}
               >
                 <span className="sr-only">Apply to sell</span>
+              </Link>
+            </div>
+
+            {/* Backup CTAs under the image — guarantee clickability even
+                if the overlays drift after future image swaps. */}
+            <div className="mt-4 flex gap-2">
+              <Link href="/register" className="flex-1">
+                <Button variant="gold" size="md" className="w-full justify-center">
+                  Start shopping
+                </Button>
+              </Link>
+              <Link href="/register?role=seller" className="flex-1">
+                <Button
+                  variant="outline"
+                  size="md"
+                  className="w-full justify-center border-white/30 text-white hover:bg-white hover:text-midnight"
+                >
+                  Apply to sell
+                </Button>
               </Link>
             </div>
 
@@ -279,19 +299,19 @@ export default async function HomePage() {
               />
 
               {/* Click overlays for the Start Shopping + Apply to Sell
-                  buttons baked into the desktop image. Fully transparent
-                  (no hover tint, no shadow). Cursor:pointer hints the
-                  click. */}
+                  buttons baked into the desktop image. Positions tuned by
+                  measuring off hero-desktop.png. Fully transparent — no
+                  hover tint, no shadow. */}
               <Link
                 href="/register"
                 aria-label="Start shopping on Winipat"
                 title="Start shopping"
                 className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                 style={{
-                  top: "44.5%",
-                  left: "4.6%",
-                  width: "11%",
-                  height: "5%",
+                  top: "61.5%",
+                  left: "2.5%",
+                  width: "15.5%",
+                  height: "6%",
                 }}
               >
                 <span className="sr-only">Start shopping</span>
@@ -303,13 +323,33 @@ export default async function HomePage() {
                 title="Apply to sell"
                 className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
                 style={{
-                  top: "44.5%",
-                  left: "16.5%",
-                  width: "11%",
-                  height: "5%",
+                  top: "61.5%",
+                  left: "19%",
+                  width: "14.5%",
+                  height: "6%",
                 }}
               >
                 <span className="sr-only">Apply to sell</span>
+              </Link>
+            </div>
+
+            {/* Backup CTAs under the image — guarantee clickability even
+                if the overlays drift after future image swaps. */}
+            <div className="mt-6 flex gap-4 justify-center">
+              <Link href="/register">
+                <Button variant="gold" size="lg">
+                  Start shopping
+                  <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
+                </Button>
+              </Link>
+              <Link href="/register?role=seller">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-white/30 text-white hover:bg-white hover:text-midnight"
+                >
+                  Apply to sell
+                </Button>
               </Link>
             </div>
 
