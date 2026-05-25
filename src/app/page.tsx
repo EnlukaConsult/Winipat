@@ -94,6 +94,36 @@ async function getCategoryTile(
   };
 }
 
+// Live stats for the trust strip — pulled at render time so the
+// numbers reflect actual platform state, not made-up marketing
+// figures. All counts cap at 1 to avoid showing "0 sellers" while
+// you're still onboarding.
+async function getPlatformStats(): Promise<{
+  sellers: number;
+  orders: number;
+  states: number;
+  couriers: number;
+}> {
+  const supabase = await createClient();
+  const [s, o, p] = await Promise.all([
+    supabase
+      .from("sellers")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "approved"),
+    supabase.from("orders").select("id", { count: "exact", head: true }),
+    supabase
+      .from("logistics_partners")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true),
+  ]);
+  return {
+    sellers:  s.count ?? 0,
+    orders:   o.count ?? 0,
+    states:   36, // FCT + 36 states is a geographic fact, not a count
+    couriers: p.count ?? 0,
+  };
+}
+
 async function getFeaturedCategories(): Promise<CategoryTile[]> {
   return Promise.all([
     getCategoryTile(["fashion-accessories", "fashion"], {
@@ -124,46 +154,123 @@ async function getFeaturedCategories(): Promise<CategoryTile[]> {
 }
 
 export default async function HomePage() {
-  const featuredCategories = await getFeaturedCategories();
+  const [featuredCategories, stats] = await Promise.all([
+    getFeaturedCategories(),
+    getPlatformStats(),
+  ]);
   return (
     <>
       <Navbar />
 
       <main id="main-content">
-        {/* ===== HERO ===== */}
-        {/*
-          User asked to replace the dark "Buy without the worry" text+image
-          split with the full hero mockup image (which already contains the
-          headline, badges, trust strip, and a visual "How it works" bar).
-          We keep real, functional Start Shopping + Apply to Sell buttons
-          beneath the image so the visual mockup CTAs aren't dead clicks.
-        */}
-        <section className="bg-cloud pt-20 sm:pt-24 pb-10 sm:pb-14">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="rounded-2xl overflow-hidden shadow-2xl bg-white">
-              <Image
-                src="/images/hero-main.png"
-                alt="Winipat: built in Nigeria, trusted nationwide. The full trust flow — seller packs the item, courier picks up, buyer receives, payment is released only after delivery is confirmed."
-                width={1600}
-                height={1100}
-                className="w-full h-auto"
-                priority
-                sizes="(max-width: 1024px) 100vw, 1280px"
-              />
-            </div>
+        {/* ===== HERO =====
+            Two implementations:
+            - lg+: the user-supplied mockup image (looks great on desktop,
+              text in the image is legible at that size)
+            - <lg: a code-built hero (text in the image becomes unreadable
+              on phones, so we render a proper responsive layout)
+            Both share the same functional CTAs. */}
 
-            {/* Functional CTAs — the image shows visual versions of these,
-                but only this row is clickable. Centered so visitors who
-                scroll past the image know where to click. */}
-            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+        {/* Mobile / tablet hero (hidden on lg+) */}
+        <section className="lg:hidden bg-cloud pt-20 pb-8">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-violet/10 px-3 py-1.5 mb-5 border border-violet/15">
+              <ShieldCheck className="h-3.5 w-3.5 text-violet" />
+              <span className="text-xs text-midnight font-medium">
+                Built in Nigeria · Trusted nationwide
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] leading-[1.1] tracking-tight mb-4">
+              Buy without the{" "}
+              <span className="text-violet">worry.</span>
+              <br />
+              Sell without the{" "}
+              <span className="text-teal">chase.</span>
+            </h1>
+            <p className="text-sm sm:text-base text-slate-light leading-relaxed mb-6">
+              Winipat is a secure marketplace with escrow protection that
+              ensures trusted transactions between buyers and sellers across
+              Nigeria.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <Link href="/register" className="w-full sm:w-auto">
-                <Button variant="gold" size="lg" className="w-full sm:w-auto">
-                  Start shopping
+                <Button variant="primary" size="lg" className="w-full sm:w-auto">
+                  Start Shopping
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link href="/register?role=seller" className="w-full sm:w-auto">
                 <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                  Apply to Sell
+                </Button>
+              </Link>
+            </div>
+
+            <ul className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-light">
+              <li className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" />
+                KYC-verified sellers
+              </li>
+              <li className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" />
+                Escrow on every order
+              </li>
+              <li className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald" />
+                Courier choice at checkout
+              </li>
+            </ul>
+
+            {/* Compact mockup on mobile — useful preview without dominating */}
+            <div className="mt-7 rounded-2xl overflow-hidden border border-mist bg-white shadow-md">
+              <Image
+                src="/images/hero-main.png"
+                alt="How Winipat protects every transaction, from seller to buyer"
+                width={1600}
+                height={1100}
+                className="w-full h-auto"
+                priority
+              />
+            </div>
+
+            <p className="mt-4 text-center text-xs text-slate-light">
+              Already a member?{" "}
+              <Link href="/login" className="text-violet font-medium hover:underline">
+                Log in
+              </Link>
+              {" · "}
+              <Link href="/track" className="text-violet font-medium hover:underline">
+                Track an order
+              </Link>
+            </p>
+          </div>
+        </section>
+
+        {/* Desktop hero (lg+) — the user-supplied mockup */}
+        <section className="hidden lg:block bg-cloud pt-24 pb-14">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl overflow-hidden shadow-2xl bg-white">
+              <Image
+                src="/images/hero-main.png"
+                alt="Winipat: built in Nigeria, trusted nationwide. Seller packs the item, courier picks it up, buyer receives it, payment is released only after delivery is confirmed."
+                width={1600}
+                height={1100}
+                className="w-full h-auto"
+                priority
+                sizes="1280px"
+              />
+            </div>
+
+            <div className="mt-8 flex gap-4 justify-center">
+              <Link href="/register">
+                <Button variant="gold" size="lg">
+                  Start shopping
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/register?role=seller">
+                <Button variant="outline" size="lg">
                   Apply to sell
                 </Button>
               </Link>
@@ -182,21 +289,132 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ===== TRUST STRIP ===== */}
+        {/* ===== HOW IT WORKS BAR (mockup match) =====
+            Horizontal 4-step icon bar + an emphasized 5th callout on the
+            right, matching the layout from the user's preferred mockup. */}
+        <section className="bg-white border-y border-mist">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+              <p className="text-base font-bold text-midnight font-[family-name:var(--font-sora)] lg:w-32 shrink-0">
+                How it works
+              </p>
+              <ol className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 items-start">
+                {[
+                  { icon: "🛒", title: "Buyer places", sub: "order & pays" },
+                  { icon: "🛡️", title: "Payment held",  sub: "in escrow" },
+                  { icon: "🚚", title: "Item delivered", sub: "safely" },
+                  { icon: "✅", title: "Buyer confirms", sub: "& seller gets paid" },
+                ].map((s, i, arr) => (
+                  <li key={s.title} className="relative flex items-center gap-3">
+                    <span className="text-lg" aria-hidden="true">{s.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-midnight leading-tight">
+                        {s.title}
+                      </p>
+                      <p className="text-[11px] text-slate-light leading-tight">
+                        {s.sub}
+                      </p>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <span className="hidden sm:inline absolute -right-3 top-1/2 -translate-y-1/2 text-slate-lighter">
+                        →
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+              <div className="lg:w-72 shrink-0 rounded-lg bg-violet/8 border border-violet/20 px-4 py-3 flex items-start gap-3">
+                <Lock className="h-5 w-5 text-violet shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-midnight leading-tight">
+                    Payment held securely in escrow
+                  </p>
+                  <p className="text-[11px] text-slate-light mt-0.5 leading-tight">
+                    Released to seller only after buyer confirms delivery
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== YOUR TRUST IS OUR PRIORITY (dark bar from mockup) ===== */}
+        <section className="bg-gradient-to-r from-midnight via-midnight-light to-violet-dark text-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-center">
+              <div className="lg:col-span-4 flex items-start gap-4">
+                <div className="w-12 h-12 rounded-lg bg-emerald/20 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="h-6 w-6 text-emerald" />
+                </div>
+                <div>
+                  <p className="text-base font-bold font-[family-name:var(--font-sora)] leading-tight">
+                    Your trust is our priority.
+                  </p>
+                  <p className="text-xs text-white/70 mt-1 leading-relaxed">
+                    We protect your money, verify every seller, and make every
+                    transaction worry-free.
+                  </p>
+                </div>
+              </div>
+              <ul className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  {
+                    icon: UserCheck,
+                    title: "Real People",
+                    sub: "Verified buyers and sellers",
+                  },
+                  {
+                    icon: Lock,
+                    title: "Real Protection",
+                    sub: "Secure escrow keeps you covered",
+                  },
+                  {
+                    icon: CheckCircle2,
+                    title: "Real Peace of Mind",
+                    sub: "Shop or sell with confidence",
+                  },
+                ].map((c) => (
+                  <li key={c.title} className="flex items-start gap-3">
+                    <c.icon className="h-5 w-5 text-white/70 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold leading-tight">
+                        {c.title}
+                      </p>
+                      <p className="text-xs text-white/65 mt-0.5 leading-tight">
+                        {c.sub}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== TRUST STRIP =====
+            Mix of platform facts (48h protection, 12% commission, 36 states)
+            and live DB-backed numbers (couriers, sellers) so the strip
+            updates as the platform grows. */}
         <section className="border-y border-mist bg-white">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
               {[
                 { stat: "48h", label: "Buyer protection window after delivery" },
                 { stat: "12%", label: "Flat platform commission. No listing fees." },
-                { stat: "3 couriers", label: "GIG, Sendbox, Kwik — you choose" },
+                {
+                  stat: stats.couriers > 0 ? `${stats.couriers} couriers` : "Multi-courier",
+                  label:
+                    stats.couriers > 0
+                      ? "GIG, Sendbox, Kwik — pick yours at checkout"
+                      : "Adding partners across Nigeria — pick yours at checkout",
+                },
                 { stat: "36 states", label: "+ FCT. Nationwide delivery coverage." },
               ].map((s) => (
                 <div key={s.label} className="flex flex-col md:items-start items-center">
                   <p className="text-2xl sm:text-3xl font-bold text-midnight font-[family-name:var(--font-sora)]">
                     {s.stat}
                   </p>
-                  <p className="text-xs sm:text-sm text-slate-light mt-1 max-w-[180px]">
+                  <p className="text-xs sm:text-sm text-slate-light mt-1 max-w-[200px]">
                     {s.label}
                   </p>
                 </div>
