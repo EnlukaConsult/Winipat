@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
+import { createClient } from "@/lib/supabase/server";
 import {
   ShieldCheck,
   Truck,
@@ -22,11 +23,108 @@ import {
 } from "lucide-react";
 
 // Marketing landing page. Structured top → bottom as:
-//   Hero → Trust strip → How it works (4 steps) → Why trust us →
-//   For buyers / For sellers → Testimonials (placeholder) → FAQ teaser → CTA
+//   Hero → Trust strip → Featured Categories (live data) →
+//   How it works → Why trust us → For buyers / For sellers →
+//   Testimonials (placeholder) → FAQ teaser → CTA
 // Copy aims to be specific (real partners, real SLAs, real fees) and
 // avoids generic AI-speak like "innovative solutions for African commerce".
-export default function HomePage() {
+
+// Re-render every 5 minutes so the Featured Categories tiles pick up
+// new seller uploads without a full deploy.
+export const revalidate = 300;
+
+type CategoryTile = {
+  label: string;
+  href: string;
+  blurb: string;
+  image: string;       // public URL (real product photo or fallback)
+  productName: string; // shown in alt text + tooltip
+};
+
+// Try each candidate slug in order until we find an active product with
+// at least one image. Keeps the page from breaking if seed data uses
+// slightly different slugs (we have both /fashion and /fashion-accessories
+// across seed files).
+async function getCategoryTile(
+  candidates: string[],
+  fallback: { label: string; blurb: string; image: string; href: string }
+): Promise<CategoryTile> {
+  const supabase = await createClient();
+
+  for (const slug of candidates) {
+    const { data } = await supabase
+      .from("products")
+      .select(
+        `id, name, categories!inner(slug, name),
+         product_media(file_url, display_order, media_type)`
+      )
+      .eq("status", "active")
+      .eq("categories.slug", slug)
+      .order("created_at", { ascending: false })
+      .limit(6);
+
+    if (!data) continue;
+
+    for (const product of data) {
+      const media = (product.product_media || [])
+        .filter((m: { media_type: string }) => m.media_type === "image")
+        .sort(
+          (a: { display_order: number }, b: { display_order: number }) =>
+            (a.display_order ?? 0) - (b.display_order ?? 0)
+        );
+      if (media[0]?.file_url) {
+        return {
+          label: fallback.label,
+          href: `/dashboard/browse?category=${slug}`,
+          blurb: fallback.blurb,
+          image: media[0].file_url,
+          productName: product.name,
+        };
+      }
+    }
+  }
+
+  // No products yet for this category — show the bundled fallback image
+  return {
+    label: fallback.label,
+    href: fallback.href,
+    blurb: fallback.blurb,
+    image: fallback.image,
+    productName: fallback.label,
+  };
+}
+
+async function getFeaturedCategories(): Promise<CategoryTile[]> {
+  return Promise.all([
+    getCategoryTile(["fashion-accessories", "fashion"], {
+      label: "Fashion",
+      blurb: "Aso-Oke, Ankara, ready-to-wear",
+      image: "/images/products/ankara-dress.png",
+      href: "/dashboard/browse",
+    }),
+    getCategoryTile(["electronics"], {
+      label: "Electronics",
+      blurb: "Phones, laptops, accessories",
+      image: "/images/products/handbags-collection.jpg",
+      href: "/dashboard/browse",
+    }),
+    getCategoryTile(["home-living"], {
+      label: "Home & Living",
+      blurb: "Appliances, kitchenware, furniture",
+      image: "/images/products/handbags-collection.jpg",
+      href: "/dashboard/browse",
+    }),
+    getCategoryTile(["health-beauty"], {
+      label: "Beauty",
+      blurb: "Skincare, fragrance, hair",
+      image: "/images/products/ankara-dress.png",
+      href: "/dashboard/browse",
+    }),
+  ]);
+}
+
+export default async function HomePage() {
+  const featuredCategories = await getFeaturedCategories();
   return (
     <>
       <Navbar />
@@ -168,63 +266,45 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {[
-                {
-                  label: "Fashion",
-                  slug: "fashion",
-                  icon: Shirt,
-                  // Swap with /images/categories/fashion.jpg when uploaded
-                  img: "/images/products/ankara-dress.png",
-                  blurb: "Aso-Oke, Ankara, ready-to-wear",
-                },
-                {
-                  label: "Electronics",
-                  slug: "electronics",
-                  icon: Smartphone,
-                  img: "/images/products/handbags-collection.jpg",
-                  blurb: "Phones, laptops, accessories",
-                },
-                {
-                  label: "Home & Living",
-                  slug: "home-living",
-                  icon: Sofa,
-                  img: "/images/products/handbags-collection.jpg",
-                  blurb: "Appliances, kitchenware, furniture",
-                },
-                {
-                  label: "Beauty",
-                  slug: "health-beauty",
-                  icon: Sparkles,
-                  img: "/images/products/ankara-dress.png",
-                  blurb: "Skincare, fragrance, hair",
-                },
-              ].map((c) => (
-                <Link
-                  key={c.slug}
-                  href={`/dashboard/browse?category=${c.slug}`}
-                  className="group relative aspect-[4/5] rounded-xl overflow-hidden bg-cloud border border-mist hover:shadow-lg transition-shadow"
-                >
-                  <Image
-                    src={c.img}
-                    alt={`${c.label} on Winipat`}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 25vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-midnight/85 via-midnight/30 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                        <c.icon size={14} className="text-white" />
+              {featuredCategories.map((c) => {
+                const Icon =
+                  c.label === "Fashion"      ? Shirt :
+                  c.label === "Electronics"  ? Smartphone :
+                  c.label === "Home & Living" ? Sofa :
+                  Sparkles;
+                return (
+                  <Link
+                    key={c.label}
+                    href={c.href}
+                    className="group relative aspect-[4/5] rounded-xl overflow-hidden bg-cloud border border-mist hover:shadow-lg transition-shadow"
+                  >
+                    <Image
+                      src={c.image}
+                      alt={`${c.productName} — featured ${c.label.toLowerCase()} on Winipat`}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                      className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                      // Allow Supabase-hosted images even if next.config doesn't
+                      // list the domain — unoptimized is fine for one image
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-midnight/85 via-midnight/30 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                          <Icon size={14} className="text-white" />
+                        </div>
+                        <p className="text-white font-semibold text-sm sm:text-base">
+                          {c.label}
+                        </p>
                       </div>
-                      <p className="text-white font-semibold text-sm sm:text-base">
-                        {c.label}
+                      <p className="text-xs text-white/70 leading-tight">
+                        {c.blurb}
                       </p>
                     </div>
-                    <p className="text-xs text-white/70 leading-tight">{c.blurb}</p>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
