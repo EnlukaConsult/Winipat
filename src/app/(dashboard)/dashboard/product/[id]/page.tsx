@@ -22,7 +22,10 @@ import {
   Camera,
   Flame,
   Zap,
+  X,
+  PenLine,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import React from "react";
 
 type Product = {
@@ -61,6 +64,13 @@ type Review = {
   has_media: boolean;
 };
 
+type EligibleOrder = {
+  id: string;
+  created_at: string;
+  total: number;
+  order_number: string;
+};
+
 const LOGISTICS_PARTNERS = [
   { id: "gig",    name: "GIG Logistics",  fee: 250000, eta: "2–4 days" },
   { id: "dhl",    name: "DHL Express",    fee: 450000, eta: "1–2 days" },
@@ -95,6 +105,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("recommended");
   const [showAllReviews, setShowAllReviews] = useState(false);
 
+  // Review-submission flow
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [eligibleOrders, setEligibleOrders] = useState<EligibleOrder[]>([]);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string>("");
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewHoverRating, setReviewHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+
   useEffect(() => {
     async function load() {
       const supabase = createClient();
@@ -112,7 +134,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setProduct(p);
 
         if (p.sellers?.id) {
-          const [{ data: ts }, { data: rs }] = await Promise.all([
+          const [{ data: ts }, { data: rs }, { data: { user } }] = await Promise.all([
             supabase
               .from("trust_scores")
               .select("average_rating, total_reviews, dispute_rate, on_time_rate, badge")
@@ -126,6 +148,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               .eq("seller_id", p.sellers.id)
               .order("created_at", { ascending: false })
               .limit(50),
+            supabase.auth.getUser(),
           ]);
           if (ts) setTrustScore(ts as TrustScore);
           if (rs) {
@@ -139,12 +162,134 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             }));
             setReviews(shaped);
           }
+
+          // Check this buyer's completed orders with this seller that haven't
+          // been reviewed yet — used to gate the "Write a review" button.
+          if (user) {
+            setCurrentUserId(user.id);
+            const { data: orders } = await supabase
+              .from("orders")
+              .select("id, order_number, created_at, total, reviews(id)")
+              .eq("buyer_id", user.id)
+              .eq("seller_id", p.sellers.id)
+              .eq("status", "completed")
+              .order("created_at", { ascending: false });
+            if (orders) {
+              const eligible: EligibleOrder[] = (orders as unknown as Array<Record<string, unknown>>)
+                .filter((o) => {
+                  const rv = o.reviews as unknown[] | undefined;
+                  return !rv || rv.length === 0;
+                })
+                .map((o) => ({
+                  id: o.id as string,
+                  order_number: o.order_number as string,
+                  created_at: o.created_at as string,
+                  total: o.total as number,
+                }));
+              setEligibleOrders(eligible);
+              if (eligible.length > 0) setSelectedOrderId(eligible[0].id);
+            }
+          }
         }
       }
       setLoading(false);
     }
     load();
   }, [id]);
+
+  async function submitReview() {
+    if (!selectedOrderId) {
+      setReviewError("Select which order you're reviewing.");
+      return;
+    }
+    if (reviewRating < 1 || reviewRating > 5) {
+      setReviewError("Please pick a rating from 1 to 5 stars.");
+      return;
+    }
+    setSubmittingReview(true);
+    setReviewError("");
+    try {
+      const res = await fetch(`/api/orders/${selectedOrderId}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating: reviewRating,
+          comment: reviewComment.trim() || undefined,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setReviewError(body.error || "Could not submit review. Please try again.");
+        return;
+      }
+      setReviewSuccess(true);
+
+      // Refresh reviews + trust score so the new entry shows immediately.
+      if (product?.sellers?.id) {
+        const supabase = createClient();
+        const [{ data: rs }, { data: ts }] = await Promise.all([
+          supabase
+            .from("reviews")
+            .select(
+              "id, rating, comment, created_at, buyer:profiles!buyer_id(full_name), review_media(id)"
+            )
+            .eq("seller_id", product.sellers.id)
+            .order("created_at", { ascending: false })
+            .limit(50),
+          supabase
+            .from("trust_scores")
+            .select("average_rating, total_reviews, dispute_rate, on_time_rate, badge")
+            .eq("seller_id", product.sellers.id)
+            .single(),
+        ]);
+        if (rs) {
+          const shaped: Review[] = (rs as unknown as Array<Record<string, unknown>>).map((r) => ({
+            id: r.id as string,
+            rating: r.rating as number,
+            comment: r.comment as string | null,
+            created_at: r.created_at as string,
+            buyer: Array.isArray(r.buyer) ? (r.buyer[0] as Review["buyer"]) : (r.buyer as Review["buyer"]),
+            has_media: Array.isArray(r.review_media) ? r.review_media.length > 0 : false,
+          }));
+          setReviews(shaped);
+        }
+        if (ts) setTrustScore(ts as TrustScore);
+      }
+
+      setEligibleOrders((prev) => {
+        const next = prev.filter((o) => o.id !== selectedOrderId);
+        setSelectedOrderId(next[0]?.id ?? "");
+        return next;
+      });
+
+      setTimeout(() => {
+        setReviewModalOpen(false);
+        setReviewRating(0);
+        setReviewHoverRating(0);
+        setReviewComment("");
+        setReviewSuccess(false);
+      }, 1400);
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
+
+  function openReviewModal() {
+    if (!currentUserId) {
+      router.push(`/login?next=/dashboard/product/${id}`);
+      return;
+    }
+    if (eligibleOrders.length === 0) return;
+    setReviewError("");
+    setReviewSuccess(false);
+    setReviewModalOpen(true);
+  }
+
+  function closeReviewModal() {
+    if (submittingReview) return;
+    setReviewModalOpen(false);
+    setReviewError("");
+  }
 
   async function contactSeller() {
     if (!product?.sellers?.id) return;
@@ -656,6 +801,44 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
 
+        {/* "Write a review" callout — shown to eligible buyers as a prominent
+            card; signed-out / non-eligible visitors see context only. */}
+        <div className="mb-5 rounded-xl border border-violet/20 bg-gradient-to-r from-violet/5 via-white to-teal/5 p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-violet/10 text-violet flex items-center justify-center shrink-0">
+              <PenLine size={18} aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-midnight">
+                {!currentUserId
+                  ? "Bought from this seller? Share your experience."
+                  : eligibleOrders.length > 0
+                  ? `You can review ${eligibleOrders.length} completed ${
+                      eligibleOrders.length === 1 ? "order" : "orders"
+                    } from this seller`
+                  : "Only verified buyers of this seller can leave a review"}
+              </p>
+              <p className="text-xs text-slate-light mt-0.5">
+                {!currentUserId
+                  ? "Sign in to leave a verified-buyer review."
+                  : eligibleOrders.length > 0
+                  ? "Help others shop with confidence — your review is anonymous to the public."
+                  : "Complete a purchase from this seller to unlock reviews."}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant={eligibleOrders.length > 0 || !currentUserId ? "primary" : "outline"}
+            size="md"
+            onClick={openReviewModal}
+            disabled={!!currentUserId && eligibleOrders.length === 0}
+            className="shrink-0"
+          >
+            <PenLine size={14} className="mr-1.5" aria-hidden="true" />
+            {!currentUserId ? "Sign in to review" : "Write a review"}
+          </Button>
+        </div>
+
         {/* Filter tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4 border-b border-mist scrollbar-none">
           {REVIEW_FILTERS.map((f) => {
@@ -729,6 +912,185 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
       </section>
+
+      {/* ===== Review submission modal ===== */}
+      {reviewModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-midnight/60 backdrop-blur-sm p-0 sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="review-modal-title"
+          onClick={closeReviewModal}
+        >
+          <div
+            className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-mist px-5 py-4 flex items-center justify-between">
+              <div className="min-w-0">
+                <h3
+                  id="review-modal-title"
+                  className="text-base font-bold text-midnight font-[family-name:var(--font-sora)]"
+                >
+                  Write a review
+                </h3>
+                <p className="text-xs text-slate-light truncate">
+                  {product.sellers?.business_name || "this seller"}
+                </p>
+              </div>
+              <button
+                onClick={closeReviewModal}
+                disabled={submittingReview}
+                className="p-2 rounded-md text-slate hover:bg-cloud min-w-[44px] min-h-[44px] flex items-center justify-center disabled:opacity-50"
+                aria-label="Close"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="px-5 py-5 space-y-5">
+              {reviewSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-14 h-14 mx-auto rounded-full bg-emerald/10 text-emerald flex items-center justify-center mb-3">
+                    <CheckCircle2 size={28} aria-hidden="true" />
+                  </div>
+                  <p className="text-base font-semibold text-midnight">Review posted</p>
+                  <p className="text-sm text-slate-light mt-1">
+                    Thanks for helping other buyers shop with confidence.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Order picker (only if multiple eligible) */}
+                  {eligibleOrders.length > 1 && (
+                    <div>
+                      <label
+                        htmlFor="review-order-select"
+                        className="mb-1.5 block text-sm font-medium text-slate"
+                      >
+                        Which order are you reviewing?
+                      </label>
+                      <select
+                        id="review-order-select"
+                        value={selectedOrderId}
+                        onChange={(e) => setSelectedOrderId(e.target.value)}
+                        className="w-full rounded-[--radius-md] border border-mist-dark bg-white px-3 py-2.5 text-sm text-slate focus:border-violet focus:outline-none focus:ring-2 focus:ring-violet/20"
+                      >
+                        {eligibleOrders.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.order_number} · {formatDate(o.created_at)} ·{" "}
+                            {formatNaira(o.total / 100)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Star picker */}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-slate">
+                      Your rating
+                    </label>
+                    <div
+                      className="flex items-center gap-1"
+                      onMouseLeave={() => setReviewHoverRating(0)}
+                      role="radiogroup"
+                      aria-label="Rating"
+                    >
+                      {[1, 2, 3, 4, 5].map((n) => {
+                        const active = (reviewHoverRating || reviewRating) >= n;
+                        return (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => setReviewRating(n)}
+                            onMouseEnter={() => setReviewHoverRating(n)}
+                            className="p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gold/5 transition-colors"
+                            aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                            aria-pressed={reviewRating === n}
+                            role="radio"
+                            aria-checked={reviewRating === n}
+                          >
+                            <Star
+                              size={28}
+                              className={
+                                active
+                                  ? "fill-gold text-gold"
+                                  : "fill-mist text-mist-dark"
+                              }
+                              aria-hidden="true"
+                            />
+                          </button>
+                        );
+                      })}
+                      {reviewRating > 0 && (
+                        <span className="ml-2 text-sm font-semibold text-midnight">
+                          {
+                            ["", "Poor", "Fair", "Good", "Very good", "Excellent"][
+                              reviewRating
+                            ]
+                          }
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Comment */}
+                  <Textarea
+                    id="review-comment"
+                    label="Your review (optional)"
+                    placeholder="What was great? What could be better? Mention quality, packaging, delivery time."
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    maxLength={1000}
+                    rows={5}
+                  />
+                  <p className="text-[11px] text-slate-light -mt-3 text-right">
+                    {reviewComment.length}/1000
+                  </p>
+
+                  {reviewError && (
+                    <div className="rounded-md bg-error/8 border border-error/20 px-3 py-2 text-sm text-error">
+                      {reviewError}
+                    </div>
+                  )}
+
+                  <div className="rounded-md bg-cloud border border-mist px-3 py-2 text-[11px] text-slate-light flex items-start gap-1.5">
+                    <ShieldCheck size={12} className="text-emerald shrink-0 mt-0.5" aria-hidden="true" />
+                    Your review is tied to a verified order. Reviews can&apos;t be edited once posted.
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer actions */}
+            {!reviewSuccess && (
+              <div className="sticky bottom-0 bg-white border-t border-mist px-5 py-3 flex gap-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <Button
+                  variant="outline"
+                  size="md"
+                  className="flex-1"
+                  onClick={closeReviewModal}
+                  disabled={submittingReview}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  size="md"
+                  className="flex-1"
+                  loading={submittingReview}
+                  disabled={reviewRating === 0 || !selectedOrderId}
+                  onClick={submitReview}
+                >
+                  Post review
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ===== Sticky mobile CTA bar ===== */}
       <div className="lg:hidden fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-30 bg-white border-t border-mist shadow-lg">
