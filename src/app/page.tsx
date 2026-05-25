@@ -266,33 +266,37 @@ export default async function HomePage() {
                 sizes="1280px"
               />
 
-              {/* Clickable overlay: "Start Shopping" button visible in image */}
+              {/* Transparent click overlays sit exactly on top of the buttons
+                  baked into the hero image. Fully see-through (no hover
+                  tint, no border, no shadow) so the image's own button
+                  styling shows. Percent-based so they scale with the image
+                  at any container width. Keyboard focus shows a thin
+                  outline only — visible for a11y but invisible at rest. */}
               <Link
                 href="/register"
                 aria-label="Start shopping on Winipat"
                 title="Start shopping"
-                className="absolute z-10 rounded-md hover:bg-violet/10 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                 style={{
-                  top: "57.5%",
-                  left: "4.8%",
-                  width: "13%",
-                  height: "6.2%",
+                  top: "57.8%",
+                  left: "5.1%",
+                  width: "13.5%",
+                  height: "5.7%",
                 }}
               >
                 <span className="sr-only">Start shopping</span>
               </Link>
 
-              {/* Clickable overlay: "Apply to Sell" button visible in image */}
               <Link
                 href="/register?role=seller"
                 aria-label="Apply to sell on Winipat"
                 title="Apply to sell"
-                className="absolute z-10 rounded-md hover:bg-violet/10 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet"
+                className="absolute z-10 cursor-pointer rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet"
                 style={{
-                  top: "57.5%",
-                  left: "18.5%",
-                  width: "12%",
-                  height: "6.2%",
+                  top: "57.8%",
+                  left: "19.5%",
+                  width: "13%",
+                  height: "5.7%",
                 }}
               >
                 <span className="sr-only">Apply to sell</span>
