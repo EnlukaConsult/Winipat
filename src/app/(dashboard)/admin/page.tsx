@@ -8,24 +8,19 @@ import { Button } from "@/components/ui/button";
 import { cn, formatNaira } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import {
-  TrendingUp,
-  TrendingDown,
   ShoppingBag,
   Users,
   UserCheck,
   AlertTriangle,
   BarChart3,
-  Clock,
   ShieldCheck,
   MessageSquareWarning,
   Package,
-  ArrowUpRight,
-  Activity,
   ArrowRight,
   Banknote,
-  Eye,
-  CheckCircle2,
-  XCircle,
+  Sliders,
+  Wallet,
+  Clock,
 } from "lucide-react";
 
 function timeAgo(iso: string): string {
@@ -37,17 +32,27 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+type Stats = {
+  totalProducts: number;
+  totalSellers: number;
+  totalBuyers: number;
+  totalOrders: number;
+  pendingKyc: number;
+  openDisputes: number;
+  pendingPayouts: number;
+  gmvKobo: number;          // sum of orders.total for completed orders
+  escrowHeldKobo: number;   // sum of escrow_ledger.amount for held/captured/release_eligible
+};
+
 export default function AdminOverviewPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalSellers: 0,
-    totalBuyers: 0,
-    pendingProducts: 0,
-    pendingSellers: 0,
-    totalOrders: 0,
+  const [stats, setStats] = useState<Stats>({
+    totalProducts: 0, totalSellers: 0, totalBuyers: 0, totalOrders: 0,
+    pendingKyc: 0, openDisputes: 0, pendingPayouts: 0,
+    gmvKobo: 0, escrowHeldKobo: 0,
   });
+
   const [recentProducts, setRecentProducts] = useState<
     { id: string; name: string; status: string; created_at: string; sellers: { business_name: string } | null }[]
   >([]);
@@ -59,40 +64,49 @@ export default function AdminOverviewPage() {
     async function load() {
       const supabase = createClient();
 
-      // Fetch real counts
-      const [productsRes, sellersRes, buyersRes, pendingProductsRes, pendingSellersRes, ordersRes] =
-        await Promise.all([
-          supabase.from("products").select("id", { count: "exact", head: true }),
-          supabase.from("sellers").select("id", { count: "exact", head: true }).eq("status", "approved"),
-          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "buyer"),
-          supabase.from("products").select("id", { count: "exact", head: true }).eq("status", "paused"),
-          supabase.from("sellers").select("id", { count: "exact", head: true }).in("status", ["submitted", "under_review"]),
-          supabase.from("orders").select("id", { count: "exact", head: true }),
-        ]);
+      const [
+        productsRes, sellersRes, buyersRes, ordersRes,
+        kycRes, disputesRes, payoutsRes,
+        gmvRes, escrowRes,
+      ] = await Promise.all([
+        supabase.from("products").select("id", { count: "exact", head: true }),
+        supabase.from("sellers").select("id", { count: "exact", head: true }).eq("status", "approved"),
+        supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "buyer"),
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("sellers").select("id", { count: "exact", head: true }).in("status", ["submitted", "under_review"]),
+        supabase.from("disputes").select("id", { count: "exact", head: true }).in("status", ["open", "under_review"]),
+        supabase.from("payouts").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("orders").select("total").eq("status", "completed"),
+        supabase.from("escrow_ledger").select("amount").in("status", ["held", "captured", "release_eligible"]),
+      ]);
+
+      const gmvKobo = (gmvRes.data || []).reduce((s, r) => s + (r.total || 0), 0);
+      const escrowHeldKobo = (escrowRes.data || []).reduce((s, r) => s + (r.amount || 0), 0);
 
       setStats({
         totalProducts: productsRes.count || 0,
-        totalSellers: sellersRes.count || 0,
-        totalBuyers: buyersRes.count || 0,
-        pendingProducts: pendingProductsRes.count || 0,
-        pendingSellers: pendingSellersRes.count || 0,
-        totalOrders: ordersRes.count || 0,
+        totalSellers:  sellersRes.count  || 0,
+        totalBuyers:   buyersRes.count   || 0,
+        totalOrders:   ordersRes.count   || 0,
+        pendingKyc:    kycRes.count      || 0,
+        openDisputes:  disputesRes.count || 0,
+        pendingPayouts: payoutsRes.count || 0,
+        gmvKobo,
+        escrowHeldKobo,
       });
 
-      // Recent products for review
       const { data: products } = await supabase
         .from("products")
         .select("id, name, status, created_at, sellers(business_name)")
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(6);
       setRecentProducts((products as unknown as typeof recentProducts) || []);
 
-      // Recent signups
       const { data: users } = await supabase
         .from("profiles")
         .select("id, full_name, role, email, created_at")
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(6);
       setRecentUsers(users || []);
 
       setLoading(false);
@@ -102,32 +116,28 @@ export default function AdminOverviewPage() {
 
   const kpis = [
     {
-      label: "Total Products",
-      value: stats.totalProducts.toLocaleString(),
-      icon: <Package className="h-5 w-5" />,
-      bg: "bg-gradient-to-br from-violet to-violet-dark",
-      trend: "+12%",
-    },
-    {
-      label: "Active Sellers",
-      value: stats.totalSellers.toLocaleString(),
-      icon: <ShoppingBag className="h-5 w-5" />,
-      bg: "bg-gradient-to-br from-teal to-teal-dark",
-      trend: "+8%",
-    },
-    {
-      label: "Total Buyers",
-      value: stats.totalBuyers.toLocaleString(),
-      icon: <Users className="h-5 w-5" />,
-      bg: "bg-gradient-to-br from-royal to-royal-dark",
-      trend: "+15%",
-    },
-    {
-      label: "Total Orders",
-      value: stats.totalOrders.toLocaleString(),
+      label: "GMV (completed)",
+      value: formatNaira(stats.gmvKobo / 100),
       icon: <Banknote className="h-5 w-5" />,
+      bg: "bg-gradient-to-br from-violet to-violet-dark",
+    },
+    {
+      label: "Escrow held",
+      value: formatNaira(stats.escrowHeldKobo / 100),
+      icon: <Wallet className="h-5 w-5" />,
+      bg: "bg-gradient-to-br from-teal to-teal-dark",
+    },
+    {
+      label: "Total orders",
+      value: stats.totalOrders.toLocaleString(),
+      icon: <ShoppingBag className="h-5 w-5" />,
+      bg: "bg-gradient-to-br from-royal to-royal-dark",
+    },
+    {
+      label: "Active sellers",
+      value: stats.totalSellers.toLocaleString(),
+      icon: <Users className="h-5 w-5" />,
       bg: "bg-gradient-to-br from-gold-dark to-gold",
-      trend: "+5%",
     },
   ];
 
@@ -138,10 +148,6 @@ export default function AdminOverviewPage() {
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-violet/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-1/3 w-48 h-48 bg-teal/15 rounded-full blur-3xl" />
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }} />
         </div>
 
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -172,21 +178,15 @@ export default function AdminOverviewPage() {
         </div>
       </div>
 
-      {/* ===== KPI CARDS ===== */}
+      {/* ===== KPI CARDS (real data, no fake trends) ===== */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi) => (
           <div key={kpi.label} className={cn("rounded-[--radius-lg] p-5 text-white", kpi.bg)}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 rounded-[--radius-md] bg-white/15 flex items-center justify-center">
-                {kpi.icon}
-              </div>
-              <span className="text-xs font-semibold bg-white/15 px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                <TrendingUp size={10} />
-                {kpi.trend}
-              </span>
+            <div className="w-10 h-10 rounded-[--radius-md] bg-white/15 flex items-center justify-center mb-3">
+              {kpi.icon}
             </div>
-            <p className="text-3xl font-bold font-[family-name:var(--font-sora)]">
-              {loading ? <span className="inline-block h-8 w-16 animate-pulse rounded bg-white/20" /> : kpi.value}
+            <p className="text-2xl md:text-3xl font-bold font-[family-name:var(--font-sora)]">
+              {loading ? <span className="inline-block h-7 w-20 animate-pulse rounded bg-white/20" /> : kpi.value}
             </p>
             <p className="text-sm text-white/70 mt-1">{kpi.label}</p>
           </div>
@@ -194,18 +194,20 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* ===== ACTION REQUIRED ===== */}
-      {(stats.pendingProducts > 0 || stats.pendingSellers > 0) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {stats.pendingProducts > 0 && (
-            <Card className="border-warning/30 bg-warning/5" padding="sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
-                    <Eye className="h-5 w-5 text-amber-600" />
+      {(stats.pendingKyc > 0 || stats.openDisputes > 0 || stats.pendingPayouts > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {stats.pendingKyc > 0 && (
+            <Card className="border-violet/30 bg-violet/5" padding="sm">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-violet/20 flex items-center justify-center shrink-0">
+                    <UserCheck className="h-5 w-5 text-violet" />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-midnight">{stats.pendingProducts} Products Pending Review</p>
-                    <p className="text-xs text-slate-light">Sellers are waiting for approval</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-midnight">
+                      {stats.pendingKyc} Sellers pending KYC
+                    </p>
+                    <p className="text-xs text-slate-light">Awaiting verification</p>
                   </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => router.push("/admin/sellers")}>
@@ -214,20 +216,42 @@ export default function AdminOverviewPage() {
               </div>
             </Card>
           )}
-          {stats.pendingSellers > 0 && (
-            <Card className="border-violet/30 bg-violet/5" padding="sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-violet/20 flex items-center justify-center">
-                    <UserCheck className="h-5 w-5 text-violet" />
+          {stats.openDisputes > 0 && (
+            <Card className="border-error/30 bg-error/5" padding="sm">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-error/20 flex items-center justify-center shrink-0">
+                    <MessageSquareWarning className="h-5 w-5 text-error" />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-midnight">{stats.pendingSellers} Sellers Pending Verification</p>
-                    <p className="text-xs text-slate-light">KYC documents await review</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-midnight">
+                      {stats.openDisputes} Open disputes
+                    </p>
+                    <p className="text-xs text-slate-light">Need a decision</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => router.push("/admin/sellers")}>
-                  Verify <ArrowRight size={14} className="ml-1" />
+                <Button variant="outline" size="sm" onClick={() => router.push("/admin/disputes")}>
+                  Review <ArrowRight size={14} className="ml-1" />
+                </Button>
+              </div>
+            </Card>
+          )}
+          {stats.pendingPayouts > 0 && (
+            <Card className="border-warn/30 bg-warn/5" padding="sm">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-warn/20 flex items-center justify-center shrink-0">
+                    <Banknote className="h-5 w-5 text-warn" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-midnight">
+                      {stats.pendingPayouts} Pending payouts
+                    </p>
+                    <p className="text-xs text-slate-light">Need bank transfer</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => router.push("/admin/payouts")}>
+                  Process <ArrowRight size={14} className="ml-1" />
                 </Button>
               </div>
             </Card>
@@ -264,13 +288,15 @@ export default function AdminOverviewPage() {
                   <div key={p.id} className="flex items-center justify-between rounded-[--radius-md] bg-cloud px-4 py-3">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-midnight truncate">{p.name}</p>
-                      <p className="text-xs text-slate-light">{seller?.business_name || "Unknown"} · {timeAgo(p.created_at)}</p>
+                      <p className="text-xs text-slate-light">
+                        {seller?.business_name || "Unknown"} · {timeAgo(p.created_at)}
+                      </p>
                     </div>
                     <Badge
                       variant={p.status === "active" ? "success" : p.status === "paused" ? "warning" : p.status === "draft" ? "default" : "error"}
                       className="text-[10px] shrink-0 ml-2"
                     >
-                      {p.status === "paused" ? "Pending Review" : p.status}
+                      {p.status}
                     </Badge>
                   </div>
                 );
@@ -336,10 +362,10 @@ export default function AdminOverviewPage() {
       {/* ===== QUICK ACTIONS ===== */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Manage Sellers", icon: UserCheck, color: "from-violet to-violet-dark", href: "/admin/sellers" },
-          { label: "Review Disputes", icon: MessageSquareWarning, color: "from-error to-red-700", href: "/admin/disputes" },
-          { label: "Settlements", icon: Banknote, color: "from-teal to-teal-dark", href: "/admin/settlements" },
-          { label: "Analytics", icon: BarChart3, color: "from-royal to-royal-dark", href: "/admin/analytics" },
+          { label: "Manage Sellers",  icon: UserCheck,           color: "from-violet to-violet-dark", href: "/admin/sellers"     },
+          { label: "Review Disputes", icon: MessageSquareWarning, color: "from-error to-red-700",     href: "/admin/disputes"    },
+          { label: "Process Payouts", icon: Banknote,            color: "from-teal to-teal-dark",    href: "/admin/payouts"     },
+          { label: "Platform Settings", icon: Sliders,           color: "from-royal to-royal-dark",  href: "/admin/settings"    },
         ].map((action) => (
           <button
             key={action.label}

@@ -24,6 +24,7 @@ import {
   LogOut,
   ChevronLeft,
   Menu,
+  Sliders,
 } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -53,11 +54,13 @@ const sellerNav: NavItem[] = [
 ];
 
 const adminNav: NavItem[] = [
-  { label: "Overview", href: "/admin", icon: BarChart3 },
-  { label: "Sellers", href: "/admin/sellers", icon: Users },
-  { label: "Disputes", href: "/admin/disputes", icon: AlertTriangle },
+  { label: "Overview",    href: "/admin",             icon: LayoutDashboard },
+  { label: "Sellers",     href: "/admin/sellers",     icon: Users },
+  { label: "Disputes",    href: "/admin/disputes",    icon: AlertTriangle },
   { label: "Settlements", href: "/admin/settlements", icon: Banknote },
-  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { label: "Payouts",     href: "/admin/payouts",     icon: DollarSign },
+  { label: "Analytics",   href: "/admin/analytics",   icon: BarChart3 },
+  { label: "Settings",    href: "/admin/settings",    icon: Sliders },
 ];
 
 const logisticsNav: NavItem[] = [

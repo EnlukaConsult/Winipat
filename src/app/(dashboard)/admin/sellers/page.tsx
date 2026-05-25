@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { cn, formatNaira, formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import {
   Search,
   ChevronDown,
   ChevronUp,
-  Star,
-  ShoppingBag,
   CheckCircle2,
   XCircle,
   Ban,
@@ -21,340 +19,375 @@ import {
   Building2,
   Phone,
   Mail,
-  Calendar,
   Shield,
+  AlertCircle,
 } from "lucide-react";
 
-type SellerStatus = "pending" | "approved" | "suspended" | "rejected";
+type SellerStatus = "draft" | "submitted" | "under_review" | "approved" | "rejected";
 
-interface Seller {
+type Seller = {
   id: string;
-  businessName: string;
-  ownerName: string;
-  email: string;
-  phone: string;
+  business_name: string;
+  description: string | null;
   status: SellerStatus;
-  joinDate: string;
-  verificationStatus: "unverified" | "pending" | "verified";
-  totalSales: number;
-  rating: number;
-  reviewCount: number;
-  kycDocs: string[];
-  bankInfo: { bank: string; accountNumber: string; accountName: string };
-  adminNotes: string;
-}
-
-const MOCK_SELLERS: Seller[] = [
-  {
-    id: "s1", businessName: "Adaeze Crafts", ownerName: "Adaeze Okonkwo", email: "adaeze@crafts.ng", phone: "0801 234 5678",
-    status: "approved", joinDate: "2025-11-02T10:00:00Z", verificationStatus: "verified",
-    totalSales: 1_280_000, rating: 4.8, reviewCount: 96,
-    kycDocs: ["CAC Certificate", "BVN Verified", "Utility Bill"],
-    bankInfo: { bank: "GTBank", accountNumber: "012•••3456", accountName: "Adaeze Okonkwo" },
-    adminNotes: "Verified seller with consistent 5-star reviews.",
-  },
-  {
-    id: "s2", businessName: "Lagos Fabrics Hub", ownerName: "Chukwuemeka Eze", email: "info@lagosfabrics.ng", phone: "0812 345 6789",
-    status: "pending", joinDate: "2026-01-15T08:30:00Z", verificationStatus: "pending",
-    totalSales: 0, rating: 0, reviewCount: 0,
-    kycDocs: ["CAC Certificate"],
-    bankInfo: { bank: "Access Bank", accountNumber: "021•••7890", accountName: "Chukwuemeka Eze" },
-    adminNotes: "",
-  },
-  {
-    id: "s3", businessName: "Chukwu Electronics", ownerName: "Obiora Chukwu", email: "obiora@chukwutech.ng", phone: "0703 456 7890",
-    status: "approved", joinDate: "2025-09-20T14:00:00Z", verificationStatus: "verified",
-    totalSales: 4_560_000, rating: 4.6, reviewCount: 214,
-    kycDocs: ["CAC Certificate", "BVN Verified", "Utility Bill", "TIN"],
-    bankInfo: { bank: "First Bank", accountNumber: "302•••1234", accountName: "Obiora Chukwu" },
-    adminNotes: "Top seller. Priority support assigned.",
-  },
-  {
-    id: "s4", businessName: "QuickDeals NG", ownerName: "Babatunde Folarin", email: "quickdeals@ng.com", phone: "0906 789 0123",
-    status: "suspended", joinDate: "2025-10-05T09:00:00Z", verificationStatus: "verified",
-    totalSales: 890_000, rating: 3.2, reviewCount: 88,
-    kycDocs: ["CAC Certificate", "BVN Verified"],
-    bankInfo: { bank: "Zenith Bank", accountNumber: "201•••5678", accountName: "Babatunde Folarin" },
-    adminNotes: "Suspended: 3 unresolved disputes + counterfeit goods report. Review scheduled 2026-02-01.",
-  },
-  {
-    id: "s5", businessName: "Abuja Pottery Co.", ownerName: "Fatima Usman", email: "fatima@abujapottery.ng", phone: "0805 678 9012",
-    status: "pending", joinDate: "2026-02-08T11:15:00Z", verificationStatus: "unverified",
-    totalSales: 0, rating: 0, reviewCount: 0,
-    kycDocs: [],
-    bankInfo: { bank: "UBA", accountNumber: "204•••6789", accountName: "Fatima Usman" },
-    adminNotes: "",
-  },
-];
-
-type Tab = "all" | "pending" | "approved" | "suspended";
-
-const TAB_LABELS: Record<Tab, string> = {
-  all: "All",
-  pending: "Pending Review",
-  approved: "Approved",
-  suspended: "Suspended",
+  admin_notes: string | null;
+  approved_at: string | null;
+  created_at: string;
+  pickup_city: string | null;
+  pickup_state: string | null;
+  profile: {
+    full_name: string;
+    email: string;
+    phone: string | null;
+  } | null;
+  kyc_docs: {
+    id: string;
+    document_type: string;
+    file_url: string;
+    status: string;
+  }[];
+  trust: {
+    average_rating: number;
+    total_reviews: number;
+    dispute_rate: number;
+  } | null;
 };
 
-const STATUS_BADGE: Record<SellerStatus, React.ReactElement> = {
-  approved: <Badge variant="success">Approved</Badge>,
-  pending: <Badge variant="warning">Pending Review</Badge>,
-  suspended: <Badge variant="error">Suspended</Badge>,
-  rejected: <Badge variant="default">Rejected</Badge>,
-};
-
-const VERIFY_BADGE: Record<Seller["verificationStatus"], React.ReactElement> = {
-  verified: <Badge variant="success">Verified</Badge>,
-  pending: <Badge variant="warning">Pending</Badge>,
-  unverified: <Badge variant="default">Unverified</Badge>,
+const STATUS_STYLES: Record<SellerStatus, { label: string; variant: "success" | "warning" | "error" | "default" }> = {
+  draft:        { label: "Draft",         variant: "default" },
+  submitted:    { label: "Submitted",     variant: "warning" },
+  under_review: { label: "Under review",  variant: "warning" },
+  approved:     { label: "Approved",      variant: "success" },
+  rejected:     { label: "Rejected",      variant: "error" },
 };
 
 export default function AdminSellersPage() {
-  const [tab, setTab] = useState<Tab>("all");
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [sellers, setSellers] = useState<Seller[]>(MOCK_SELLERS);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [sellers, setSellers] = useState<Seller[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | SellerStatus>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [notesById, setNotesById] = useState<Record<string, string>>({});
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("sellers")
+      .select(
+        `id, business_name, description, status, admin_notes, approved_at, created_at,
+         pickup_city, pickup_state,
+         profile:profiles!id(full_name, email, phone),
+         kyc_docs:seller_kyc_documents(id, document_type, file_url, status),
+         trust:trust_scores(average_rating, total_reviews, dispute_rate)`
+      )
+      .order("created_at", { ascending: false });
+
+    const rows = (data || []).map((r: Record<string, unknown>) => {
+      const profile = r.profile as Seller["profile"] | Seller["profile"][] | null;
+      const trust = r.trust as Seller["trust"] | Seller["trust"][] | null;
+      return {
+        ...r,
+        profile: Array.isArray(profile) ? profile[0] ?? null : profile,
+        trust:   Array.isArray(trust)   ? trust[0]   ?? null : trust,
+      } as Seller;
+    });
+
+    setSellers(rows);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = sellers.filter((s) => {
-    const matchTab = tab === "all" || s.status === tab;
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      s.businessName.toLowerCase().includes(q) ||
-      s.ownerName.toLowerCase().includes(q) ||
-      s.email.toLowerCase().includes(q);
-    return matchTab && matchSearch;
+    if (statusFilter !== "all" && s.status !== statusFilter) return false;
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (
+      s.business_name?.toLowerCase().includes(q) ||
+      s.profile?.full_name?.toLowerCase().includes(q) ||
+      s.profile?.email?.toLowerCase().includes(q)
+    );
   });
 
-  function toggleExpand(id: string) {
-    setExpanded((prev) => (prev === id ? null : id));
+  async function setStatus(
+    sellerId: string,
+    status: "approved" | "rejected" | "under_review"
+  ) {
+    const notes = notesById[sellerId];
+    if ((status === "rejected" || status === "under_review") && !notes?.trim()) {
+      alert("Please add admin notes explaining the decision before proceeding.");
+      return;
+    }
+    setActionLoading(sellerId);
+    const res = await fetch(`/api/admin/sellers/${sellerId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, notes: notes ?? "" }),
+    });
+    setActionLoading(null);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      alert(body.error || "Failed to update seller status.");
+      return;
+    }
+    await load();
   }
 
-  function handleAction(id: string, action: "approve" | "reject" | "suspend") {
-    setSellers((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s;
-        const newStatus: SellerStatus =
-          action === "approve" ? "approved" : action === "reject" ? "rejected" : "suspended";
-        const noteText = notes[id] || "";
-        return { ...s, status: newStatus, adminNotes: noteText || s.adminNotes };
-      })
-    );
-  }
-
-  const tabCounts: Record<Tab, number> = {
-    all: sellers.length,
-    pending: sellers.filter((s) => s.status === "pending").length,
-    approved: sellers.filter((s) => s.status === "approved").length,
-    suspended: sellers.filter((s) => s.status === "suspended").length,
-  };
+  const counts = sellers.reduce(
+    (acc, s) => {
+      acc[s.status] = (acc[s.status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   return (
     <div className="space-y-6">
-      {/* Heading */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
-            Seller Management
-          </h1>
-          <p className="mt-1 text-sm text-slate-light">
-            Review, approve, and manage marketplace sellers
-          </p>
-        </div>
-        <div className="w-full sm:w-72">
+      <div>
+        <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
+          Sellers
+        </h1>
+        <p className="mt-0.5 text-sm text-slate-light">
+          Review KYC, approve sellers, and manage suspensions.
+        </p>
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex flex-wrap items-center gap-2">
+        {(["all", "submitted", "under_review", "approved", "rejected"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+              statusFilter === s
+                ? "border-violet bg-violet text-white"
+                : "border-mist bg-white text-slate hover:border-violet/40"
+            )}
+          >
+            {s === "all" ? "All" : STATUS_STYLES[s].label}
+            {s !== "all" && counts[s] ? ` · ${counts[s]}` : ""}
+          </button>
+        ))}
+        <div className="ml-auto w-64">
           <Input
-            placeholder="Search sellers…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            icon={<Search className="h-4 w-4" />}
+            placeholder="Search name, business, email…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            icon={<Search size={14} />}
           />
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-[--radius-md] bg-mist p-1">
-        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[--radius-sm] px-3 py-2 text-sm font-medium transition-all duration-200",
-              tab === t
-                ? "bg-white text-midnight shadow-sm"
-                : "text-slate-light hover:text-slate"
-            )}
-          >
-            {TAB_LABELS[t]}
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-0.5 text-xs font-bold",
-                tab === t ? "bg-royal/10 text-royal" : "bg-mist-dark text-slate-light"
-              )}
-            >
-              {tabCounts[t]}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Seller List */}
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <Card className="rounded-[--radius-lg] py-12 text-center">
-            <p className="text-slate-light">No sellers found.</p>
-          </Card>
-        ) : (
-          filtered.map((seller) => {
-            const isOpen = expanded === seller.id;
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-20 bg-mist rounded-[--radius-md] animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-[--radius-lg] border border-mist bg-white p-12 text-center">
+          <AlertCircle className="mx-auto mb-3 text-slate-lighter" size={28} />
+          <p className="text-sm font-medium text-midnight">No sellers match this filter.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((s) => {
+            const styleConfig = STATUS_STYLES[s.status];
+            const expanded = expandedId === s.id;
             return (
-              <Card key={seller.id} className="rounded-[--radius-lg] p-0 overflow-hidden">
-                {/* Row */}
+              <Card key={s.id} padding="sm">
                 <button
-                  className="w-full cursor-pointer px-6 py-4 text-left"
-                  onClick={() => toggleExpand(seller.id)}
+                  onClick={() => setExpandedId(expanded ? null : s.id)}
+                  className="w-full flex items-start justify-between gap-4 text-left"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-royal/10">
-                        <Building2 className="h-5 w-5 text-royal" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-midnight">{seller.businessName}</p>
-                        <p className="text-sm text-slate-light">{seller.ownerName}</p>
-                      </div>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-violet/10 text-violet flex items-center justify-center font-bold">
+                      {s.business_name?.[0]?.toUpperCase() || "?"}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {STATUS_BADGE[seller.status]}
-                      {VERIFY_BADGE[seller.verificationStatus]}
-                      {seller.rating > 0 && (
-                        <span className="flex items-center gap-1 text-sm font-semibold text-amber-600">
-                          <Star className="h-3.5 w-3.5 fill-current" />
-                          {seller.rating.toFixed(1)}
-                          <span className="font-normal text-slate-lighter">({seller.reviewCount})</span>
-                        </span>
-                      )}
-                      <span className="text-sm text-slate-light">
-                        {seller.totalSales > 0 ? formatNaira(seller.totalSales) : "No sales yet"}
-                      </span>
-                      <span className="text-sm text-slate-lighter">
-                        Joined {formatDate(seller.joinDate)}
-                      </span>
-                      {isOpen ? (
-                        <ChevronUp className="h-4 w-4 text-slate-lighter" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-slate-lighter" />
-                      )}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-midnight truncate">
+                        {s.business_name}
+                      </p>
+                      <p className="text-xs text-slate-light truncate">
+                        {s.profile?.full_name || "—"} · {s.profile?.email || "—"}
+                      </p>
+                      <p className="text-[11px] text-slate-lighter mt-0.5">
+                        Joined {formatDate(s.created_at)} · {s.kyc_docs.length} doc
+                        {s.kyc_docs.length !== 1 ? "s" : ""}
+                      </p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant={styleConfig.variant} className="text-[10px]">
+                      {styleConfig.label}
+                    </Badge>
+                    {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </div>
                 </button>
 
-                {/* Expanded Details */}
-                {isOpen && (
-                  <div className="border-t border-mist bg-cloud px-6 py-5">
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                      {/* Contact & Bank */}
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-midnight">Contact & Banking</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2 text-slate">
-                            <Mail className="h-4 w-4 text-slate-lighter" />
-                            {seller.email}
-                          </div>
-                          <div className="flex items-center gap-2 text-slate">
-                            <Phone className="h-4 w-4 text-slate-lighter" />
-                            {seller.phone}
-                          </div>
-                          <div className="flex items-center gap-2 text-slate">
-                            <Calendar className="h-4 w-4 text-slate-lighter" />
-                            Joined {formatDate(seller.joinDate)}
-                          </div>
-                        </div>
-                        <div className="rounded-[--radius-md] border border-mist bg-white p-3 text-sm">
-                          <p className="font-medium text-midnight">{seller.bankInfo.bank}</p>
-                          <p className="text-slate-light">{seller.bankInfo.accountNumber}</p>
-                          <p className="text-slate-light">{seller.bankInfo.accountName}</p>
-                        </div>
+                {expanded && (
+                  <div className="mt-4 border-t border-mist pt-4 space-y-4">
+                    {/* Contact */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                      <div className="flex items-center gap-2 text-slate-light">
+                        <Building2 size={14} />
+                        {s.pickup_city || "—"}, {s.pickup_state || "—"}
                       </div>
+                      <div className="flex items-center gap-2 text-slate-light">
+                        <Phone size={14} />
+                        {s.profile?.phone || "—"}
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-light">
+                        <Mail size={14} />
+                        {s.profile?.email || "—"}
+                      </div>
+                    </div>
 
-                      {/* KYC Docs */}
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-midnight">KYC Documents</h4>
-                        {seller.kycDocs.length === 0 ? (
-                          <p className="text-sm text-slate-lighter">No documents submitted</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {seller.kycDocs.map((doc) => (
-                              <div
-                                key={doc}
-                                className="flex items-center gap-2 rounded-[--radius-sm] border border-mist bg-white px-3 py-2 text-sm"
+                    {s.description && (
+                      <p className="text-sm text-slate">{s.description}</p>
+                    )}
+
+                    {/* KYC documents */}
+                    <div>
+                      <CardTitle className="text-xs uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                        <FileText size={12} />
+                        KYC documents
+                      </CardTitle>
+                      {s.kyc_docs.length === 0 ? (
+                        <p className="text-xs text-slate-lighter">
+                          No documents submitted.
+                        </p>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {s.kyc_docs.map((d) => (
+                            <a
+                              key={d.id}
+                              href={d.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-between rounded-[--radius-md] border border-mist bg-cloud px-3 py-2 text-xs hover:border-violet/40"
+                            >
+                              <span className="capitalize">{d.document_type.replace(/_/g, " ")}</span>
+                              <Badge
+                                variant={
+                                  d.status === "approved"
+                                    ? "success"
+                                    : d.status === "rejected"
+                                    ? "error"
+                                    : "warning"
+                                }
+                                className="text-[9px]"
                               >
-                                <FileText className="h-4 w-4 text-royal" />
-                                <span className="text-slate">{doc}</span>
-                                <Shield className="ml-auto h-4 w-4 text-emerald" />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 text-xs text-slate-lighter">
-                          <ShoppingBag className="h-3.5 w-3.5" />
-                          Total Sales: {seller.totalSales > 0 ? formatNaira(seller.totalSales) : "—"}
+                                {d.status}
+                              </Badge>
+                            </a>
+                          ))}
                         </div>
-                      </div>
+                      )}
+                    </div>
 
-                      {/* Admin Notes & Actions */}
-                      <div className="space-y-4">
-                        <h4 className="font-semibold text-midnight">Admin Notes</h4>
-                        <Textarea
-                          placeholder="Add internal notes…"
-                          value={notes[seller.id] ?? seller.adminNotes}
-                          onChange={(e) =>
-                            setNotes((prev) => ({ ...prev, [seller.id]: e.target.value }))
-                          }
-                          className="min-h-[80px] text-sm"
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          {seller.status !== "approved" && (
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={() => handleAction(seller.id, "approve")}
-                            >
-                              <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                              Approve
-                            </Button>
-                          )}
-                          {seller.status === "pending" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleAction(seller.id, "reject")}
-                            >
-                              <XCircle className="mr-1.5 h-4 w-4" />
-                              Reject
-                            </Button>
-                          )}
-                          {seller.status === "approved" && (
-                            <Button
-                              size="sm"
-                              variant="danger"
-                              onClick={() => handleAction(seller.id, "suspend")}
-                            >
-                              <Ban className="mr-1.5 h-4 w-4" />
-                              Suspend
-                            </Button>
-                          )}
+                    {/* Trust */}
+                    {s.trust && (
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="rounded-[--radius-md] bg-cloud px-3 py-2">
+                          <p className="text-xs text-slate-light">Rating</p>
+                          <p className="text-sm font-bold text-midnight">
+                            {Number(s.trust.average_rating).toFixed(1)} ★
+                          </p>
+                        </div>
+                        <div className="rounded-[--radius-md] bg-cloud px-3 py-2">
+                          <p className="text-xs text-slate-light">Reviews</p>
+                          <p className="text-sm font-bold text-midnight">
+                            {s.trust.total_reviews}
+                          </p>
+                        </div>
+                        <div className="rounded-[--radius-md] bg-cloud px-3 py-2">
+                          <p className="text-xs text-slate-light">Dispute rate</p>
+                          <p className="text-sm font-bold text-midnight">
+                            {(Number(s.trust.dispute_rate) * 100).toFixed(1)}%
+                          </p>
                         </div>
                       </div>
+                    )}
+
+                    {/* Admin notes */}
+                    <div>
+                      <CardTitle className="text-xs uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                        <Shield size={12} />
+                        Admin notes
+                      </CardTitle>
+                      {s.admin_notes && (
+                        <p className="text-xs text-slate-light bg-cloud rounded-[--radius-md] px-3 py-2 mb-2">
+                          Last note: {s.admin_notes}
+                        </p>
+                      )}
+                      <Textarea
+                        placeholder="Add a note (required for reject/under-review)…"
+                        rows={2}
+                        value={notesById[s.id] ?? ""}
+                        onChange={(e) =>
+                          setNotesById((m) => ({ ...m, [s.id]: e.target.value }))
+                        }
+                      />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2">
+                      {s.status !== "approved" && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setStatus(s.id, "approved")}
+                          loading={actionLoading === s.id}
+                        >
+                          <CheckCircle2 size={14} className="mr-1.5" />
+                          Approve
+                        </Button>
+                      )}
+                      {s.status !== "under_review" && s.status !== "approved" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setStatus(s.id, "under_review")}
+                          loading={actionLoading === s.id}
+                        >
+                          Mark under review
+                        </Button>
+                      )}
+                      {s.status !== "rejected" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-error hover:bg-error/10"
+                          onClick={() => setStatus(s.id, "rejected")}
+                          loading={actionLoading === s.id}
+                        >
+                          {s.status === "approved" ? (
+                            <>
+                              <Ban size={14} className="mr-1.5" />
+                              Suspend
+                            </>
+                          ) : (
+                            <>
+                              <XCircle size={14} className="mr-1.5" />
+                              Reject
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}
               </Card>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }

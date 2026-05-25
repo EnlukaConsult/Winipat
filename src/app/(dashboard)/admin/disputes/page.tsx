@@ -1,393 +1,345 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useEffect, useState, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, formatNaira, formatDate } from "@/lib/utils";
 import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
-  Package,
-  User,
-  ShoppingBag,
+  CheckCircle2,
+  RotateCcw,
+  SplitSquareVertical,
   MessageSquare,
   Image as ImageIcon,
-  DollarSign,
-  RotateCcw,
-  CheckCircle2,
-  SplitSquareVertical,
 } from "lucide-react";
 
-type DisputeStatus = "open" | "under_review" | "resolved";
-type DisputeReason =
-  | "item_not_received"
-  | "item_not_as_described"
-  | "damaged_item"
-  | "wrong_item"
-  | "seller_no_response";
+type DisputeStatus =
+  | "open"
+  | "under_review"
+  | "resolved_seller"
+  | "resolved_buyer"
+  | "resolved_partial";
 
-interface Dispute {
+type Dispute = {
   id: string;
-  orderNumber: string;
-  buyer: { name: string; email: string };
-  seller: { name: string; businessName: string };
-  amount: number;
-  reason: DisputeReason;
-  openedDate: string;
+  reason: string;
+  description: string | null;
   status: DisputeStatus;
-  buyerMessage: string;
-  sellerResponse: string;
-  evidence: string[];
-  adminNotes: string;
-  resolution?: "released_to_seller" | "partial_refund" | "full_refund" | "return_required";
-  partialAmount?: number;
-}
-
-const MOCK_DISPUTES: Dispute[] = [
-  {
-    id: "d1", orderNumber: "ORD-2841", amount: 28_500,
-    buyer: { name: "Emeka Okafor", email: "emeka.o@mail.com" },
-    seller: { name: "Adaeze Okonkwo", businessName: "Adaeze Crafts" },
-    reason: "item_not_as_described", openedDate: "2026-04-10T09:22:00Z",
-    status: "open",
-    buyerMessage: "The handwoven bag I received is significantly different from the photos. The stitching is loose and the colour is wrong. I want a full refund.",
-    sellerResponse: "",
-    evidence: ["photo_bag_received.jpg", "photo_listing.jpg"],
-    adminNotes: "",
-  },
-  {
-    id: "d2", orderNumber: "ORD-2808", amount: 14_000,
-    buyer: { name: "Ngozi Adeyemi", email: "ngozi.a@mail.com" },
-    seller: { name: "Babatunde Folarin", businessName: "QuickDeals NG" },
-    reason: "item_not_received", openedDate: "2026-04-05T14:10:00Z",
-    status: "under_review",
-    buyerMessage: "Order was marked delivered 5 days ago but I never received the package. Tracking shows it was dropped at wrong address.",
-    sellerResponse: "The logistics company confirmed delivery at the registered address. We have photos. We are not liable for delivery errors.",
-    evidence: ["tracking_screenshot.png"],
-    adminNotes: "Awaiting logistics provider confirmation. Contacted rider #L-042.",
-  },
-  {
-    id: "d3", orderNumber: "ORD-2795", amount: 52_000,
-    buyer: { name: "Chinedu Ike", email: "chinedu.ike@mail.com" },
-    seller: { name: "Obiora Chukwu", businessName: "Chukwu Electronics" },
-    reason: "damaged_item", openedDate: "2026-03-28T11:00:00Z",
-    status: "resolved",
-    buyerMessage: "Laptop screen arrived cracked. Clearly damaged in transit. Requesting full refund or replacement.",
-    sellerResponse: "Item was packaged securely with bubble wrap and hard case. Likely courier fault. We are willing to offer partial refund.",
-    evidence: ["cracked_screen_1.jpg", "cracked_screen_2.jpg", "packaging_photo.jpg"],
-    adminNotes: "Resolved: 70% refund agreed upon as item is still partially functional. Seller agreed.",
-    resolution: "partial_refund",
-    partialAmount: 36_400,
-  },
-  {
-    id: "d4", orderNumber: "ORD-2831", amount: 9_800,
-    buyer: { name: "Aisha Musa", email: "aisha.m@mail.com" },
-    seller: { name: "Fatima Usman", businessName: "Abuja Pottery Co." },
-    reason: "wrong_item", openedDate: "2026-04-09T16:45:00Z",
-    status: "open",
-    buyerMessage: "I ordered a ceramic bowl set but received a single mug. Completely wrong item.",
-    sellerResponse: "We are investigating with our warehouse team. Should be resolved within 48 hours.",
-    evidence: ["received_item.jpg", "order_invoice.pdf"],
-    adminNotes: "",
-  },
-];
-
-type Tab = "open" | "under_review" | "resolved";
-
-const TAB_LABELS: Record<Tab, string> = {
-  open: "Open",
-  under_review: "Under Review",
-  resolved: "Resolved",
+  admin_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  order: {
+    id: string;
+    order_number: string;
+    total: number;
+    subtotal: number;
+    buyer: { id: string; full_name: string; email: string } | null;
+    seller: { id: string; business_name: string } | null;
+  } | null;
+  evidence: { id: string; file_url: string; description: string | null }[];
+  messages: { id: string; sender_id: string; content: string; created_at: string }[];
 };
 
-const REASON_LABELS: Record<DisputeReason, string> = {
-  item_not_received: "Item Not Received",
-  item_not_as_described: "Not As Described",
-  damaged_item: "Damaged Item",
-  wrong_item: "Wrong Item",
-  seller_no_response: "Seller No Response",
-};
-
-const STATUS_BADGE: Record<DisputeStatus, React.ReactElement> = {
-  open: <Badge variant="error">Open</Badge>,
-  under_review: <Badge variant="warning">Under Review</Badge>,
-  resolved: <Badge variant="success">Resolved</Badge>,
-};
-
-const RESOLUTION_LABELS: Record<NonNullable<Dispute["resolution"]>, string> = {
-  released_to_seller: "Released to Seller",
-  partial_refund: "Partial Refund",
-  full_refund: "Full Refund",
-  return_required: "Return Required",
+const STATUS_LABEL: Record<DisputeStatus, { label: string; variant: "warning" | "success" | "error" | "default" }> = {
+  open:             { label: "Open",             variant: "warning" },
+  under_review:     { label: "Under review",     variant: "warning" },
+  resolved_seller:  { label: "Released to seller", variant: "success" },
+  resolved_buyer:   { label: "Refunded to buyer",  variant: "error"   },
+  resolved_partial: { label: "Partial refund",     variant: "default" },
 };
 
 export default function AdminDisputesPage() {
-  const [tab, setTab] = useState<Tab>("open");
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [disputes, setDisputes] = useState<Dispute[]>(MOCK_DISPUTES);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [partialAmounts, setPartialAmounts] = useState<Record<string, string>>({});
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"open" | "resolved" | "all">("open");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [notesById, setNotesById] = useState<Record<string, string>>({});
+  const [partialAmountById, setPartialAmountById] = useState<Record<string, string>>({});
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const filtered = disputes.filter((d) => d.status === tab);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("disputes")
+      .select(
+        `id, reason, description, status, admin_notes, created_at, resolved_at,
+         order:orders!order_id(
+           id, order_number, total, subtotal,
+           buyer:profiles!buyer_id(id, full_name, email),
+           seller:sellers!seller_id(id, business_name)
+         ),
+         evidence:dispute_evidence(id, file_url, description),
+         messages:dispute_messages(id, sender_id, content, created_at)`
+      )
+      .order("created_at", { ascending: false });
 
-  const tabCounts: Record<Tab, number> = {
-    open: disputes.filter((d) => d.status === "open").length,
-    under_review: disputes.filter((d) => d.status === "under_review").length,
-    resolved: disputes.filter((d) => d.status === "resolved").length,
-  };
+    const rows = (data || []).map((r: Record<string, unknown>) => {
+      const order = r.order as Dispute["order"] | Dispute["order"][] | null;
+      const o = Array.isArray(order) ? order[0] ?? null : order;
+      if (o) {
+        const buyer = o.buyer as Dispute["order"] extends infer T
+          ? T extends { buyer: infer B } ? B | B[] | null : null
+          : null;
+        const seller = o.seller;
+        const ob = Array.isArray(buyer)  ? buyer[0]  ?? null : buyer;
+        const os = Array.isArray(seller) ? seller[0] ?? null : seller;
+        o.buyer = ob;
+        o.seller = os;
+      }
+      return { ...r, order: o } as Dispute;
+    });
 
-  function toggleExpand(id: string) {
-    setExpanded((prev) => (prev === id ? null : id));
+    setDisputes(rows);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const filtered = disputes.filter((d) => {
+    if (filter === "open") return d.status === "open" || d.status === "under_review";
+    if (filter === "resolved") return d.status.startsWith("resolved");
+    return true;
+  });
+
+  async function resolve(
+    disputeId: string,
+    resolution: "release_to_seller" | "full_refund" | "partial_refund"
+  ) {
+    const notes = notesById[disputeId];
+    const refundAmount =
+      resolution === "partial_refund"
+        ? Math.round(parseFloat(partialAmountById[disputeId] || "0") * 100)
+        : undefined;
+
+    if (!notes?.trim()) {
+      alert("Please add resolution notes before proceeding.");
+      return;
+    }
+    if (resolution === "partial_refund" && (!refundAmount || refundAmount <= 0)) {
+      alert("Enter a partial refund amount in Naira.");
+      return;
+    }
+
+    setActionLoading(disputeId);
+    const res = await fetch(`/api/admin/disputes/${disputeId}/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resolution, refundAmount, notes }),
+    });
+    setActionLoading(null);
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      alert(b.error || "Failed to resolve dispute.");
+      return;
+    }
+    await load();
   }
 
-  function resolveDispute(id: string, resolution: NonNullable<Dispute["resolution"]>) {
-    setDisputes((prev) =>
-      prev.map((d) => {
-        if (d.id !== id) return d;
-        const noteText = notes[id] || d.adminNotes;
-        const partial = resolution === "partial_refund" ? parseFloat(partialAmounts[id] || "0") : undefined;
-        return { ...d, status: "resolved" as DisputeStatus, resolution, adminNotes: noteText, partialAmount: partial };
-      })
-    );
-    setExpanded(null);
-  }
-
-  function moveToReview(id: string) {
-    setDisputes((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, status: "under_review" as DisputeStatus } : d))
-    );
-  }
+  const counts = disputes.reduce(
+    (acc, d) => {
+      if (d.status === "open" || d.status === "under_review") acc.open++;
+      if (d.status.startsWith("resolved")) acc.resolved++;
+      return acc;
+    },
+    { open: 0, resolved: 0 }
+  );
 
   return (
     <div className="space-y-6">
-      {/* Heading */}
       <div>
         <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
-          Dispute Management
+          Disputes
         </h1>
-        <p className="mt-1 text-sm text-slate-light">
-          Review buyer–seller disputes and issue resolutions
+        <p className="mt-0.5 text-sm text-slate-light">
+          Review buyer disputes and decide on refunds or releases.
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-[--radius-md] bg-mist p-1">
-        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
+      <div className="flex items-center gap-2">
+        {(
+          [
+            { key: "open",     label: `Open (${counts.open})` },
+            { key: "resolved", label: `Resolved (${counts.resolved})` },
+            { key: "all",      label: "All" },
+          ] as const
+        ).map((f) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={f.key}
+            onClick={() => setFilter(f.key)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-[--radius-sm] px-3 py-2 text-sm font-medium transition-all duration-200",
-              tab === t
-                ? "bg-white text-midnight shadow-sm"
-                : "text-slate-light hover:text-slate"
+              "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+              filter === f.key
+                ? "border-violet bg-violet text-white"
+                : "border-mist bg-white text-slate hover:border-violet/40"
             )}
           >
-            {TAB_LABELS[t]}
-            <span
-              className={cn(
-                "rounded-full px-1.5 py-0.5 text-xs font-bold",
-                tab === t ? "bg-royal/10 text-royal" : "bg-mist-dark text-slate-light"
-              )}
-            >
-              {tabCounts[t]}
-            </span>
+            {f.label}
           </button>
         ))}
       </div>
 
-      {/* Dispute Cards */}
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <Card className="rounded-[--radius-lg] py-12 text-center">
-            <p className="text-slate-light">No {TAB_LABELS[tab].toLowerCase()} disputes.</p>
-          </Card>
-        ) : (
-          filtered.map((dispute) => {
-            const isOpen = expanded === dispute.id;
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 bg-mist rounded-[--radius-md] animate-pulse" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-[--radius-lg] border border-mist bg-white p-12 text-center">
+          <AlertTriangle className="mx-auto mb-3 text-slate-lighter" size={28} />
+          <p className="text-sm font-medium text-midnight">No disputes in this filter.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((d) => {
+            const expanded = expandedId === d.id;
+            const styleConfig = STATUS_LABEL[d.status];
             return (
-              <Card key={dispute.id} className="rounded-[--radius-lg] p-0 overflow-hidden">
-                {/* Row header */}
+              <Card key={d.id} padding="sm">
                 <button
-                  className="w-full cursor-pointer px-6 py-4 text-left"
-                  onClick={() => toggleExpand(dispute.id)}
+                  onClick={() => setExpandedId(expanded ? null : d.id)}
+                  className="w-full flex items-start justify-between gap-3 text-left"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-error/10">
-                        <AlertTriangle className="h-4 w-4 text-error" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-midnight">
-                            #{dispute.orderNumber}
-                          </span>
-                          {STATUS_BADGE[dispute.status]}
-                          <Badge variant="default">{REASON_LABELS[dispute.reason]}</Badge>
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-sm text-slate-light">
-                          <span className="flex items-center gap-1">
-                            <User className="h-3.5 w-3.5" />
-                            {dispute.buyer.name}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <ShoppingBag className="h-3.5 w-3.5" />
-                            {dispute.seller.businessName}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Package className="h-3.5 w-3.5" />
-                            {formatNaira(dispute.amount)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-lighter">
-                      <span>Opened {formatDate(dispute.openedDate)}</span>
-                      {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-midnight">
+                      Order #{d.order?.order_number ?? "—"}
+                    </p>
+                    <p className="text-xs text-slate-light mt-0.5">
+                      {d.order?.buyer?.full_name || "Buyer"} vs{" "}
+                      {d.order?.seller?.business_name || "Seller"} ·{" "}
+                      {d.reason} · {formatDate(d.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-bold text-violet">
+                      {formatNaira((d.order?.total || 0) / 100)}
+                    </span>
+                    <Badge variant={styleConfig.variant} className="text-[10px]">
+                      {styleConfig.label}
+                    </Badge>
+                    {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </div>
                 </button>
 
-                {/* Expanded Detail */}
-                {isOpen && (
-                  <div className="border-t border-mist bg-cloud px-6 py-5 space-y-5">
-                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                      {/* Buyer message */}
-                      <div className="space-y-2">
-                        <h4 className="flex items-center gap-2 font-semibold text-midnight">
-                          <User className="h-4 w-4 text-royal" />
-                          Buyer's Statement
-                        </h4>
-                        <div className="rounded-[--radius-md] border border-mist bg-white p-4 text-sm text-slate">
-                          {dispute.buyerMessage}
-                        </div>
+                {expanded && (
+                  <div className="mt-4 border-t border-mist pt-4 space-y-4">
+                    {d.description && (
+                      <div>
+                        <CardTitle className="text-xs uppercase tracking-wide flex items-center gap-1.5 mb-1.5">
+                          <MessageSquare size={12} />
+                          Buyer&apos;s claim
+                        </CardTitle>
+                        <p className="text-sm text-slate bg-cloud rounded-[--radius-md] px-3 py-2">
+                          {d.description}
+                        </p>
                       </div>
+                    )}
 
-                      {/* Seller response */}
-                      <div className="space-y-2">
-                        <h4 className="flex items-center gap-2 font-semibold text-midnight">
-                          <ShoppingBag className="h-4 w-4 text-violet" />
-                          Seller's Response
-                        </h4>
-                        <div className="rounded-[--radius-md] border border-mist bg-white p-4 text-sm text-slate">
-                          {dispute.sellerResponse || (
-                            <span className="italic text-slate-lighter">No response yet</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Evidence */}
-                    {dispute.evidence.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="flex items-center gap-2 font-semibold text-midnight">
-                          <ImageIcon className="h-4 w-4 text-slate-light" />
-                          Evidence Files
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {dispute.evidence.map((file) => (
-                            <div
-                              key={file}
-                              className="flex items-center gap-2 rounded-[--radius-sm] border border-mist bg-white px-3 py-1.5 text-sm text-slate hover:bg-mist cursor-pointer"
-                            >
-                              <ImageIcon className="h-3.5 w-3.5 text-royal" />
-                              {file}
+                    {d.messages.length > 0 && (
+                      <div>
+                        <CardTitle className="text-xs uppercase tracking-wide mb-2">
+                          Conversation
+                        </CardTitle>
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                          {d.messages.map((m) => (
+                            <div key={m.id} className="text-xs bg-cloud rounded-[--radius-md] px-3 py-2">
+                              <span className="text-slate-lighter mr-2">
+                                {formatDate(m.created_at)}
+                              </span>
+                              {m.content}
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Admin Notes */}
-                    <div className="space-y-2">
-                      <h4 className="flex items-center gap-2 font-semibold text-midnight">
-                        <MessageSquare className="h-4 w-4 text-slate-light" />
-                        Admin Notes
-                      </h4>
-                      <Textarea
-                        placeholder="Internal notes (not visible to buyer/seller)…"
-                        value={notes[dispute.id] ?? dispute.adminNotes}
-                        onChange={(e) =>
-                          setNotes((prev) => ({ ...prev, [dispute.id]: e.target.value }))
-                        }
-                        className="text-sm"
-                      />
-                    </div>
-
-                    {/* Resolved badge */}
-                    {dispute.status === "resolved" && dispute.resolution && (
-                      <div className="rounded-[--radius-md] border border-emerald/30 bg-emerald/5 px-4 py-3">
-                        <p className="text-sm font-semibold text-emerald-dark">
-                          Resolution: {RESOLUTION_LABELS[dispute.resolution]}
-                          {dispute.resolution === "partial_refund" && dispute.partialAmount
-                            ? ` — ${formatNaira(dispute.partialAmount)}`
-                            : ""}
-                        </p>
+                    {d.evidence.length > 0 && (
+                      <div>
+                        <CardTitle className="text-xs uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                          <ImageIcon size={12} />
+                          Evidence
+                        </CardTitle>
+                        <div className="flex flex-wrap gap-2">
+                          {d.evidence.map((e) => (
+                            <a
+                              key={e.id}
+                              href={e.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs px-3 py-1.5 rounded-full border border-mist bg-white hover:border-violet/40 text-violet"
+                            >
+                              View file
+                            </a>
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    {/* Action Buttons */}
-                    {dispute.status !== "resolved" && (
+                    {d.status.startsWith("resolved") ? (
+                      <div className="text-xs text-slate-light bg-cloud rounded-[--radius-md] px-3 py-2">
+                        Resolved {d.resolved_at && formatDate(d.resolved_at)} —{" "}
+                        {d.admin_notes || "no notes"}
+                      </div>
+                    ) : (
                       <div className="space-y-3">
-                        {dispute.status === "open" && (
+                        <Textarea
+                          placeholder="Resolution notes (visible internally; summarized to both parties)…"
+                          rows={2}
+                          value={notesById[d.id] ?? ""}
+                          onChange={(e) =>
+                            setNotesById((m) => ({ ...m, [d.id]: e.target.value }))
+                          }
+                        />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                           <Button
+                            variant="primary"
                             size="sm"
-                            variant="secondary"
-                            onClick={() => moveToReview(dispute.id)}
+                            onClick={() => resolve(d.id, "release_to_seller")}
+                            loading={actionLoading === d.id}
                           >
-                            Mark Under Review
+                            <CheckCircle2 size={14} className="mr-1.5" />
+                            Release to seller
                           </Button>
-                        )}
-                        <div className="flex flex-wrap gap-2">
                           <Button
-                            size="sm"
                             variant="outline"
-                            onClick={() => resolveDispute(dispute.id, "released_to_seller")}
-                          >
-                            <CheckCircle2 className="mr-1.5 h-4 w-4 text-emerald" />
-                            Release to Seller
-                          </Button>
-                          <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => resolveDispute(dispute.id, "full_refund")}
+                            onClick={() => resolve(d.id, "full_refund")}
+                            loading={actionLoading === d.id}
                           >
-                            <DollarSign className="mr-1.5 h-4 w-4 text-royal" />
-                            Full Refund
+                            <RotateCcw size={14} className="mr-1.5" />
+                            Full refund
                           </Button>
                           <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              placeholder="Partial amount (₦)"
-                              value={partialAmounts[dispute.id] || ""}
+                            <Input
+                              placeholder="Partial ₦"
+                              value={partialAmountById[d.id] ?? ""}
                               onChange={(e) =>
-                                setPartialAmounts((prev) => ({
-                                  ...prev,
-                                  [dispute.id]: e.target.value,
+                                setPartialAmountById((m) => ({
+                                  ...m,
+                                  [d.id]: e.target.value,
                                 }))
                               }
-                              className="w-36 rounded-[--radius-sm] border border-mist-dark px-3 py-2 text-sm text-slate focus:border-royal focus:outline-none focus:ring-2 focus:ring-royal/20"
                             />
                             <Button
+                              variant="ghost"
                               size="sm"
-                              variant="outline"
-                              onClick={() => resolveDispute(dispute.id, "partial_refund")}
+                              onClick={() => resolve(d.id, "partial_refund")}
+                              loading={actionLoading === d.id}
                             >
-                              <SplitSquareVertical className="mr-1.5 h-4 w-4 text-violet" />
-                              Partial Refund
+                              <SplitSquareVertical size={14} className="mr-1.5" />
+                              Apply
                             </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => resolveDispute(dispute.id, "return_required")}
-                          >
-                            <RotateCcw className="mr-1.5 h-4 w-4" />
-                            Return Required
-                          </Button>
                         </div>
                       </div>
                     )}
@@ -395,9 +347,9 @@ export default function AdminDisputesPage() {
                 )}
               </Card>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }
