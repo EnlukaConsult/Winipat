@@ -195,18 +195,25 @@ export default async function HomePage() {
               sizes="(max-width: 1024px) 100vw"
             />
 
-            {/* Real CTAs — the only set on the page (no duplicates). */}
-            <div className="mt-5 flex gap-2.5">
-              <Link href="/register" className="flex-1">
-                <Button variant="gold" size="lg" className="w-full justify-center">
+            {/* Real CTAs — the only set on the page (no duplicates).
+                Uses CSS grid with items-stretch so both buttons get
+                identical width + height regardless of which variant
+                they use (gold solid vs outline border). */}
+            <div className="mt-5 grid grid-cols-2 gap-2.5 items-stretch">
+              <Link href="/register" className="flex">
+                <Button
+                  variant="gold"
+                  size="lg"
+                  className="w-full h-14 justify-center"
+                >
                   Start shopping
                 </Button>
               </Link>
-              <Link href="/register?role=seller" className="flex-1">
+              <Link href="/register?role=seller" className="flex">
                 <Button
                   variant="outline"
                   size="lg"
-                  className="w-full justify-center border-white/30 text-white hover:bg-white hover:text-midnight"
+                  className="w-full h-14 justify-center border-white/30 text-white hover:bg-white hover:text-midnight"
                 >
                   Apply to sell
                 </Button>
