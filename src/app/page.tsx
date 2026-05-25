@@ -259,27 +259,33 @@ export default async function HomePage() {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {featuredCategories.map((c) => {
+              {featuredCategories.map((c, i) => {
                 const Icon =
                   c.label === "Fashion"      ? Shirt :
                   c.label === "Electronics"  ? Smartphone :
                   c.label === "Home & Living" ? Sofa :
                   Sparkles;
+                // Slice categories-strip.png into 4 panels using
+                // background-size: 400% (4x wider than the tile) +
+                // background-position-x stepped by 33.3% so each tile
+                // shows one of the four photos. Order in the strip
+                // (left -> right): Fashion, Electronics, Home, Beauty.
+                const panelPositions = ["0%", "33.333%", "66.667%", "100%"];
                 return (
                   <Link
                     key={c.label}
                     href={c.href}
                     className="group relative aspect-[4/5] rounded-xl overflow-hidden bg-cloud border border-mist hover:shadow-lg transition-shadow"
                   >
-                    <Image
-                      src={c.image}
-                      alt={`${c.productName} — featured ${c.label.toLowerCase()} on Winipat`}
-                      fill
-                      sizes="(max-width: 640px) 50vw, 25vw"
-                      className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                      // Allow Supabase-hosted images even if next.config doesn't
-                      // list the domain — unoptimized is fine for one image
-                      unoptimized
+                    <div
+                      className="absolute inset-0 bg-no-repeat transition-transform duration-500 group-hover:scale-[1.03]"
+                      style={{
+                        backgroundImage: "url(/images/categories-strip.png)",
+                        backgroundSize: "400% 100%",
+                        backgroundPosition: `${panelPositions[i]} 50%`,
+                      }}
+                      role="img"
+                      aria-label={`${c.label} category`}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-midnight/85 via-midnight/30 to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
