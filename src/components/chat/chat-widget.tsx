@@ -110,10 +110,9 @@ export function ChatWidget() {
         {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
       </button>
 
-      {/* Pulse animation when closed */}
-      {!isOpen && (
-        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 w-14 h-14 rounded-full bg-violet/30 animate-ping pointer-events-none" />
-      )}
+      {/* (Removed always-on ping pulse — it pulsed forever and pulled
+          the eye away from real content. The chat button itself is
+          already visually distinct.) */}
 
       {/* Chat panel */}
       {isOpen && (

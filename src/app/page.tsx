@@ -6,118 +6,115 @@ import { Footer } from "@/components/marketing/footer";
 import {
   ShieldCheck,
   Truck,
-  Star,
   Lock,
-  Eye,
-  MessageSquareWarning,
   ArrowRight,
   CheckCircle2,
-  Package,
   CreditCard,
   UserCheck,
-  BadgeCheck,
-  TrendingUp,
-  Sparkles,
-  QrCode,
-  Video,
   Clock,
-  Banknote,
-  Heart,
+  PackageCheck,
+  Quote,
+  ChevronRight,
+  Shirt,
+  Smartphone,
+  Sofa,
+  Sparkles,
 } from "lucide-react";
 
+// Marketing landing page. Structured top → bottom as:
+//   Hero → Trust strip → How it works (4 steps) → Why trust us →
+//   For buyers / For sellers → Testimonials (placeholder) → FAQ teaser → CTA
+// Copy aims to be specific (real partners, real SLAs, real fees) and
+// avoids generic AI-speak like "innovative solutions for African commerce".
 export default function HomePage() {
   return (
     <>
       <Navbar />
 
       <main id="main-content">
-      {/* ===== HERO SECTION ===== */}
-      <section className="relative min-h-dvh flex items-center bg-hero-gradient overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-violet/20 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 -left-20 w-72 h-72 bg-royal/30 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-1/4 w-64 h-64 bg-gold/10 rounded-full blur-3xl" />
-        </div>
+        {/* ===== HERO ===== */}
+        <section className="relative min-h-[88dvh] flex items-center bg-hero-gradient overflow-hidden">
+          {/* One subtle blur — less "AI gradient soup" than three */}
+          <div className="absolute -top-32 -right-32 w-[28rem] h-[28rem] bg-violet/20 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-24 pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-[--radius-full] bg-white/10 px-4 py-2 mb-8 backdrop-blur-sm border border-white/10">
-                <ShieldCheck className="h-4 w-4 text-gold" />
-                <span className="text-sm text-white/90">
-                  Trust-First Commerce for Nigeria
-                </span>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white font-[family-name:var(--font-sora)] leading-tight mb-6">
-                Trust what you buy.{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold to-gold-light">
-                  Track how it moves.
-                </span>{" "}
-                Pay with confidence.
-              </h1>
-
-              <p className="text-lg sm:text-xl text-white/75 mb-10 max-w-2xl leading-relaxed">
-                Winipat is a trust-first commerce platform connecting buyers,
-                verified sellers, and logistics partners through escrow-backed
-                payments and transparent delivery coordination across Nigeria.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/register">
-                  <Button variant="gold" size="lg" className="w-full sm:w-auto">
-                    Start Shopping Safely
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="/register?role=seller">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full sm:w-auto border-white/30 text-white hover:bg-white hover:text-midnight"
-                  >
-                    Sell on Winipat
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="mt-12 flex flex-wrap gap-6 sm:gap-8 text-white/60 text-sm">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald" />
-                  Verified Sellers Only
+          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-24 pb-12 sm:pt-28">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+              <div className="lg:col-span-7">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 mb-6 backdrop-blur-sm border border-white/10">
+                  <ShieldCheck className="h-3.5 w-3.5 text-gold" />
+                  <span className="text-xs text-white/90 font-medium">
+                    Built in Lagos · Live across Nigeria
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald" />
-                  Escrow-Backed Payments
+
+                <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold text-white font-[family-name:var(--font-sora)] leading-[1.05] tracking-tight mb-5">
+                  Buy without the worry.{" "}
+                  <span className="text-gold">Sell without the chase.</span>
+                </h1>
+
+                <p className="text-base sm:text-lg text-white/75 mb-8 max-w-xl leading-relaxed">
+                  Winipat holds buyer payments in escrow until delivery is
+                  confirmed. Every seller is KYC-verified. You pick the courier
+                  at checkout. If something goes wrong, your money stays put
+                  until our team reviews evidence from both sides.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link href="/register">
+                    <Button variant="gold" size="lg" className="w-full sm:w-auto">
+                      Start shopping
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                  <Link href="/register?role=seller">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full sm:w-auto border-white/30 text-white hover:bg-white hover:text-midnight"
+                    >
+                      Apply to sell
+                    </Button>
+                  </Link>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald" />
-                  Buyer-Chosen Delivery
+
+                <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-white/65 text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald" />
+                    KYC-verified sellers
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald" />
+                    Escrow on every order
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald" />
+                    Courier choice at checkout
+                  </span>
                 </div>
               </div>
-            </div>
 
-            {/* Hero image */}
-            <div className="hidden lg:block relative">
-              <div className="relative rounded-[--radius-xl] overflow-hidden shadow-2xl">
-                <Image
-                  src="/images/products/handbags-collection.jpg"
-                  alt="Designer handbags on Winipat"
-                  width={600}
-                  height={500}
-                  className="w-full h-[500px] object-cover"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-midnight/60 via-transparent to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6">
-                  <div className="glass rounded-[--radius-lg] px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald/20 flex items-center justify-center">
-                        <CheckCircle2 className="h-5 w-5 text-emerald" />
-                      </div>
-                      <div>
-                        <p className="text-white text-sm font-semibold">Payment Protected</p>
-                        <p className="text-white/60 text-xs">Escrow holds funds until delivery confirmed</p>
+              <div className="hidden lg:block lg:col-span-5">
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                  <Image
+                    src="/images/products/handbags-collection.jpg"
+                    alt="Verified sellers list real products on Winipat"
+                    width={600}
+                    height={500}
+                    className="w-full h-[460px] object-cover"
+                    priority
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-midnight/80 via-midnight/40 to-transparent p-5">
+                    <div className="rounded-xl bg-white/10 backdrop-blur-md border border-white/10 px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Lock className="h-5 w-5 text-gold shrink-0" />
+                        <div>
+                          <p className="text-white text-sm font-semibold leading-tight">
+                            Payment held in escrow
+                          </p>
+                          <p className="text-white/60 text-xs mt-0.5">
+                            Released 48 hours after you confirm delivery
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -125,538 +122,472 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ===== WHAT IS WINIPAT ===== */}
-      <section className="py-16 sm:py-24 bg-white">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-[--radius-full] bg-royal/10 px-4 py-2 mb-6">
-            <Sparkles className="h-4 w-4 text-royal" />
-            <span className="text-sm text-royal font-medium">What is Winipat?</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-6 max-w-3xl mx-auto">
-            Not just another marketplace. A trust infrastructure for African commerce.
-          </h2>
-          <p className="text-slate-light text-base sm:text-lg mb-6 leading-relaxed max-w-2xl mx-auto">
-            Winipat solves the biggest problem in Nigerian online commerce: <strong className="text-midnight">trust</strong>.
-            Too many buyers have paid for products they never received, or received something completely different
-            from what was advertised. Sellers struggle to prove their legitimacy.
-          </p>
-          <p className="text-slate-light text-base sm:text-lg mb-12 leading-relaxed max-w-2xl mx-auto">
-            Winipat changes this by combining <strong className="text-midnight">verified sellers</strong>,
-            <strong className="text-midnight"> escrow-backed payments</strong>,
-            <strong className="text-midnight"> buyer-chosen logistics</strong>, and a
-            <strong className="text-midnight"> proof-based delivery flow</strong> into one platform.
-            Your money is protected until you confirm you received exactly what you ordered.
-          </p>
-
-          {/* 4-column trust pillars — wider grid now that we've removed the photo */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-            {[
-              { icon: ShieldCheck, label: "Verified Sellers", desc: "KYC + ID verified" },
-              { icon: Lock, label: "Escrow Payments", desc: "Funds held safely" },
-              { icon: Truck, label: "You Choose Delivery", desc: "Your preferred logistics" },
-              { icon: Star, label: "Real Reviews", desc: "Only from real buyers" },
-            ].map((item) => (
-              <div key={item.label} className="flex flex-col items-center text-center gap-2 p-5 rounded-[--radius-md] bg-cloud border border-mist">
-                <div className="h-10 w-10 rounded-[--radius-md] bg-royal/10 flex items-center justify-center">
-                  <item.icon className="h-5 w-5 text-royal" />
+        {/* ===== TRUST STRIP ===== */}
+        <section className="border-y border-mist bg-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
+              {[
+                { stat: "48h", label: "Buyer protection window after delivery" },
+                { stat: "12%", label: "Flat platform commission. No listing fees." },
+                { stat: "3 couriers", label: "GIG, Sendbox, Kwik — you choose" },
+                { stat: "36 states", label: "+ FCT. Nationwide delivery coverage." },
+              ].map((s) => (
+                <div key={s.label} className="flex flex-col md:items-start items-center">
+                  <p className="text-2xl sm:text-3xl font-bold text-midnight font-[family-name:var(--font-sora)]">
+                    {s.stat}
+                  </p>
+                  <p className="text-xs sm:text-sm text-slate-light mt-1 max-w-[180px]">
+                    {s.label}
+                  </p>
                 </div>
-                <p className="text-sm font-semibold text-midnight mt-1">{item.label}</p>
-                <p className="text-xs text-slate-light">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== KOKO'S STORY ===== */}
-      <section className="py-16 sm:py-24 bg-cloud">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-2 rounded-[--radius-full] bg-gold/10 px-4 py-2 mb-6">
-              <Heart className="h-4 w-4 text-gold-dark" />
-              <span className="text-sm text-gold-dark font-medium">The Winipat Story</span>
+              ))}
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-4">
-              See how Koko shops with confidence
-            </h2>
-            <p className="text-slate-light max-w-2xl mx-auto text-base sm:text-lg">
-              A real scenario of how Winipat protects every step of a transaction.
+          </div>
+        </section>
+
+        {/* ===== FEATURED CATEGORIES ===== */}
+        <section className="py-16 sm:py-20 bg-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-end justify-between gap-4 mb-8 flex-wrap">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
+                  Shop by category
+                </p>
+                <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)]">
+                  What people are buying right now.
+                </h2>
+              </div>
+              <Link
+                href="/dashboard/browse"
+                className="text-sm font-semibold text-violet hover:underline inline-flex items-center gap-1 shrink-0"
+              >
+                Browse all <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {[
+                {
+                  label: "Fashion",
+                  slug: "fashion",
+                  icon: Shirt,
+                  // Swap with /images/categories/fashion.jpg when uploaded
+                  img: "/images/products/ankara-dress.png",
+                  blurb: "Aso-Oke, Ankara, ready-to-wear",
+                },
+                {
+                  label: "Electronics",
+                  slug: "electronics",
+                  icon: Smartphone,
+                  img: "/images/products/handbags-collection.jpg",
+                  blurb: "Phones, laptops, accessories",
+                },
+                {
+                  label: "Home & Living",
+                  slug: "home-living",
+                  icon: Sofa,
+                  img: "/images/products/handbags-collection.jpg",
+                  blurb: "Appliances, kitchenware, furniture",
+                },
+                {
+                  label: "Beauty",
+                  slug: "health-beauty",
+                  icon: Sparkles,
+                  img: "/images/products/ankara-dress.png",
+                  blurb: "Skincare, fragrance, hair",
+                },
+              ].map((c) => (
+                <Link
+                  key={c.slug}
+                  href={`/dashboard/browse?category=${c.slug}`}
+                  className="group relative aspect-[4/5] rounded-xl overflow-hidden bg-cloud border border-mist hover:shadow-lg transition-shadow"
+                >
+                  <Image
+                    src={c.img}
+                    alt={`${c.label} on Winipat`}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 25vw"
+                    className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-midnight/85 via-midnight/30 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-7 h-7 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                        <c.icon size={14} className="text-white" />
+                      </div>
+                      <p className="text-white font-semibold text-sm sm:text-base">
+                        {c.label}
+                      </p>
+                    </div>
+                    <p className="text-xs text-white/70 leading-tight">{c.blurb}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== HOW IT WORKS ===== */}
+        <section id="how-it-works" className="py-16 sm:py-20 bg-cloud">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl mb-10">
+              <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
+                How it works
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-4">
+                Five steps. One protection layer the whole way through.
+              </h2>
+              <p className="text-slate-light text-base">
+                You don&apos;t need to trust the seller. You trust the system holding
+                the money.
+              </p>
+            </div>
+
+            <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+              {[
+                {
+                  n: "1",
+                  icon: CreditCard,
+                  title: "You pay",
+                  desc: "Card or transfer via Paystack. Funds land in Winipat escrow, not the seller's account.",
+                },
+                {
+                  n: "2",
+                  icon: PackageCheck,
+                  title: "Seller prepares",
+                  desc: "Verified seller accepts within 24h, packs the order, uploads a package photo.",
+                },
+                {
+                  n: "3",
+                  icon: Truck,
+                  title: "Courier delivers",
+                  desc: "The partner you picked at checkout (GIG, Sendbox, Kwik) picks up and ships.",
+                },
+                {
+                  n: "4",
+                  icon: ShieldCheck,
+                  title: "You confirm",
+                  desc: "Inspect the package within 48h. Confirm delivery or open a dispute with photos.",
+                },
+                {
+                  n: "5",
+                  icon: CheckCircle2,
+                  title: "Seller is paid",
+                  desc: "Once confirmation or auto-confirm lands, payout is processed within 24h.",
+                },
+              ].map((s) => (
+                <li
+                  key={s.n}
+                  className="rounded-xl border border-mist bg-white p-5 relative"
+                >
+                  <span className="absolute top-3 right-4 text-3xl font-bold text-mist font-[family-name:var(--font-sora)]">
+                    {s.n}
+                  </span>
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-violet/10 text-violet mb-3">
+                    <s.icon className="h-5 w-5" />
+                  </div>
+                  <p className="font-semibold text-midnight text-sm mb-1.5">
+                    {s.title}
+                  </p>
+                  <p className="text-xs text-slate-light leading-relaxed">
+                    {s.desc}
+                  </p>
+                </li>
+              ))}
+            </ol>
+
+            <p className="mt-6 text-xs text-slate-light">
+              Want the long version with SLA windows and what happens when things
+              go wrong?{" "}
+              <Link href="/shipping" className="text-violet hover:underline">
+                Read the shipping & delivery page
+              </Link>
+              .
             </p>
           </div>
+        </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                step: "1",
-                title: "Koko finds a designer bag",
-                description: "She watches a live demo video from seller Peace, who shows the bag's details, texture, and quality on camera. Koko trusts what she sees.",
-                icon: Video,
-                color: "bg-royal/10 text-royal",
-              },
-              {
-                step: "2",
-                title: "She pays with confidence",
-                description: "Koko pays through Winipat. Her money is held in escrow — Peace won't receive payment until Koko confirms delivery. No risk.",
-                icon: Lock,
-                color: "bg-emerald/10 text-emerald-dark",
-              },
-              {
-                step: "3",
-                title: "She also pays her bills",
-                description: "While shopping, Koko recharges her airtime and pays her electricity bill — all inside the same app. Three tasks, two minutes.",
-                icon: Banknote,
-                color: "bg-violet/10 text-violet",
-              },
-              {
-                step: "4",
-                title: "Peace prepares the order",
-                description: "Peace photographs the bag before and after packaging. Winipat generates a unique QR code for the order. Eight-second pickup confirmation.",
-                icon: QrCode,
-                color: "bg-gold/10 text-gold-dark",
-              },
-              {
-                step: "5",
-                title: "GIG delivers to Koko's door",
-                description: "Koko tracks delivery in-app. When the bag arrives, it's exactly what Peace showed. She uploads a delivery photo. Match confirmed.",
-                icon: Truck,
-                color: "bg-info/10 text-info",
-              },
-              {
-                step: "6",
-                title: "Everyone wins",
-                description: "Payment releases to Peace. Koko leaves a verified review. Peace's trust score rises. No scams. No arguments. Just trust.",
-                icon: Star,
-                color: "bg-emerald/10 text-emerald-dark",
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="rounded-[--radius-lg] bg-white border border-mist p-6 sm:p-8 hover:shadow-lg transition-shadow duration-300 relative"
-              >
-                <div className="absolute top-6 right-6 sm:top-8 sm:right-8 text-4xl font-bold text-mist font-[family-name:var(--font-sora)]">
-                  {item.step}
+        {/* ===== WHY TRUST WINIPAT ===== */}
+        <section id="features" className="py-16 sm:py-20 bg-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl mb-10">
+              <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
+                Why trust us
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)]">
+                Specific, operational, no marketing fluff.
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+              {[
+                {
+                  icon: UserCheck,
+                  title: "Sellers are reviewed by hand",
+                  body:
+                    "Every applying seller submits government ID, bank verification, and a phone number. We review applications individually for the first six months — no auto-approval, no rubber stamping.",
+                },
+                {
+                  icon: Lock,
+                  title: "Escrow only releases on proof",
+                  body:
+                    "Your money sits in a Paystack escrow account, not a seller's wallet. Release happens only after your confirmation or a 48-hour auto-confirm window — and freezes immediately if you open a dispute.",
+                },
+                {
+                  icon: Clock,
+                  title: "Real humans answer support",
+                  body:
+                    "Mon–Fri 09:00–18:00 WAT. The AI assistant on this site handles common questions, but anything stuck routes to a real teammate at support@winipat.com. Reply usually within one business day.",
+                },
+              ].map((c) => (
+                <div
+                  key={c.title}
+                  className="rounded-xl border border-mist bg-white p-6 hover:border-violet/30 transition-colors"
+                >
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-emerald/10 text-emerald mb-4">
+                    <c.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-base font-semibold text-midnight mb-2">
+                    {c.title}
+                  </h3>
+                  <p className="text-sm text-slate-light leading-relaxed">
+                    {c.body}
+                  </p>
                 </div>
-                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-[--radius-md] ${item.color} mb-5`}>
-                  <item.icon className="h-6 w-6" />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== FOR BUYERS / FOR SELLERS ===== */}
+        <section className="py-16 sm:py-20 bg-cloud">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* For Buyers */}
+              <div className="rounded-2xl bg-midnight text-white p-8 sm:p-10 relative overflow-hidden">
+                <div className="absolute -top-12 -right-12 w-48 h-48 bg-violet/20 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative">
+                  <p className="text-xs uppercase tracking-wider text-gold font-semibold mb-2">
+                    For Buyers
+                  </p>
+                  <h3 className="text-2xl sm:text-3xl font-bold font-[family-name:var(--font-sora)] mb-4">
+                    Pay with confidence.
+                  </h3>
+                  <ul className="space-y-3 text-sm text-white/80 mb-6">
+                    <li className="flex items-start gap-2.5">
+                      <ChevronRight className="h-4 w-4 text-gold shrink-0 mt-0.5" />
+                      <span>Browse without an account; only register at checkout</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <ChevronRight className="h-4 w-4 text-gold shrink-0 mt-0.5" />
+                      <span>Pick from saved addresses, change couriers per order</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <ChevronRight className="h-4 w-4 text-gold shrink-0 mt-0.5" />
+                      <span>Open a photo-backed dispute up to 48h after delivery</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <ChevronRight className="h-4 w-4 text-gold shrink-0 mt-0.5" />
+                      <span>Track any order without signing in via the order number</span>
+                    </li>
+                  </ul>
+                  <Link href="/register">
+                    <Button variant="gold" size="md">
+                      Create buyer account
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
                 </div>
-                <h3 className="text-lg font-semibold text-midnight mb-2 pr-8">
-                  {item.title}
+              </div>
+
+              {/* For Sellers */}
+              <div id="sellers" className="rounded-2xl bg-white border border-mist p-8 sm:p-10">
+                <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
+                  For Sellers
+                </p>
+                <h3 className="text-2xl sm:text-3xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-4">
+                  Sell without chasing payments.
                 </h3>
-                <p className="text-slate-light text-sm leading-relaxed">
-                  {item.description}
+                <ul className="space-y-3 text-sm text-slate mb-6">
+                  <li className="flex items-start gap-2.5">
+                    <ChevronRight className="h-4 w-4 text-violet shrink-0 mt-0.5" />
+                    <span>12% flat commission. No listing or monthly fees.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <ChevronRight className="h-4 w-4 text-violet shrink-0 mt-0.5" />
+                    <span>Daily payouts to your bank, 48h after buyer confirms</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <ChevronRight className="h-4 w-4 text-violet shrink-0 mt-0.5" />
+                    <span>Bulk product upload via CSV. Per-product custom escrow window.</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <ChevronRight className="h-4 w-4 text-violet shrink-0 mt-0.5" />
+                    <span>Trust score + badges (Verified, Trusted Seller, Fast Dispatch)</span>
+                  </li>
+                </ul>
+                <Link href="/register?role=seller">
+                  <Button variant="primary" size="md">
+                    Apply to sell
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== TESTIMONIALS (honest placeholder until we have real ones) ===== */}
+        <section className="py-16 sm:py-20 bg-white">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl mb-10">
+              <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
+                Voices from the early cohort
+              </p>
+              <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)]">
+                Real reviews coming as the first orders close.
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+              {[
+                {
+                  quote:
+                    "Three months in. We&apos;ll publish verified buyer testimonials here as orders complete — same buyer name, same star rating, no edits.",
+                  meta: "Reserved · Buyer testimonial",
+                },
+                {
+                  quote:
+                    "Reserved space for seller stories. We won&apos;t use AI-generated quotes or stock photos. If you&apos;re a seller and want to share your experience, email us.",
+                  meta: "Reserved · Seller testimonial",
+                },
+                {
+                  quote:
+                    "Reserved space for logistics partner feedback. We&apos;ll publish what GIG, Sendbox and Kwik teams say after their first month working with us.",
+                  meta: "Reserved · Partner testimonial",
+                },
+              ].map((t, i) => (
+                <figure
+                  key={i}
+                  className="rounded-xl border border-dashed border-mist-dark bg-cloud/50 p-6"
+                >
+                  <Quote className="h-5 w-5 text-violet/40 mb-3" />
+                  <blockquote className="text-sm text-slate leading-relaxed mb-4 italic">
+                    &ldquo;{t.quote}&rdquo;
+                  </blockquote>
+                  <figcaption className="text-xs text-slate-lighter font-medium">
+                    {t.meta}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            <p className="mt-6 text-xs text-slate-lighter">
+              We chose to leave these placeholders rather than fake them. Real
+              buyer reviews appear on every <Link href="/sellers" className="text-violet hover:underline">seller reputation page</Link> as soon as orders complete.
+            </p>
+          </div>
+        </section>
+
+        {/* ===== FAQ TEASER ===== */}
+        <section className="py-16 sm:py-20 bg-cloud">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
+              Questions we hear most
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-8">
+              The short answers.
+            </h2>
+
+            <div className="space-y-3">
+              {[
+                {
+                  q: "How is this different from Jumia or Konga?",
+                  a: "Two things. First, your money sits in escrow under our control until you confirm — not in the seller's wallet from the moment you click pay. Second, you pick the courier yourself; we don't bundle delivery into a black box.",
+                },
+                {
+                  q: "What if the seller never ships?",
+                  a: "Sellers have 24h to accept an order after payment. If they don't, the order is auto-cancelled and you get a full refund. If they accept but stall on shipping past 72h, you can open a dispute and we'll mediate.",
+                },
+                {
+                  q: "What does Winipat earn from this?",
+                  a: "12% commission on delivered orders. That's it. No listing fees, no buyer fees, no charges on refunded orders. Logistics fees go directly to the courier — we don't take a cut on those.",
+                },
+                {
+                  q: "Can I shop without registering?",
+                  a: "Yes, browse and view seller pages freely. You only need an account at checkout. You can also track any order at /track with just the order number and email.",
+                },
+              ].map((f) => (
+                <details
+                  key={f.q}
+                  className="group rounded-xl border border-mist bg-white p-5 open:border-violet/30"
+                >
+                  <summary className="cursor-pointer list-none flex items-start justify-between gap-3 text-midnight font-semibold text-[15px]">
+                    <span>{f.q}</span>
+                    <span className="text-violet text-xl leading-none shrink-0 transition-transform group-open:rotate-45">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 text-sm text-slate-light leading-relaxed">
+                    {f.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+
+            <p className="mt-6 text-sm">
+              <Link
+                href="/faq"
+                className="text-violet font-semibold hover:underline inline-flex items-center gap-1"
+              >
+                See all 17 FAQs <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </p>
+          </div>
+        </section>
+
+        {/* ===== FINAL CTA ===== */}
+        <section className="py-16 sm:py-20 bg-white">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <div className="relative rounded-2xl bg-gradient-to-br from-midnight via-midnight-light to-violet-dark p-8 sm:p-12 overflow-hidden">
+              <div className="absolute -top-16 -right-16 w-56 h-56 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative text-center max-w-2xl mx-auto">
+                <ShieldCheck className="h-10 w-10 text-gold mx-auto mb-4" />
+                <h2 className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-sora)] mb-3">
+                  Try one order. See if it feels different.
+                </h2>
+                <p className="text-white/70 text-sm sm:text-base mb-7">
+                  Sign up takes 30 seconds. You can browse first, decide later.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link href="/register">
+                    <Button variant="gold" size="lg" className="w-full sm:w-auto">
+                      Create account
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                  <Link href="/register?role=seller">
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full sm:w-auto border-white/30 text-white hover:bg-white hover:text-midnight"
+                    >
+                      Apply to sell
+                    </Button>
+                  </Link>
+                </div>
+                <p className="mt-5 text-xs text-white/55">
+                  Questions before signing up?{" "}
+                  <Link href="/contact" className="text-gold hover:underline">
+                    Contact support
+                  </Link>{" "}
+                  · Mon–Fri 09:00–18:00 WAT
                 </p>
               </div>
-            ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <div className="inline-flex items-center gap-3 rounded-[--radius-lg] bg-midnight text-white px-6 py-4 shadow-lg">
-              <ShieldCheck className="h-6 w-6 text-gold shrink-0" />
-              <p className="text-sm sm:text-base">
-                <strong>No scams. No arguments. No &quot;I received something different.&quot;</strong>
-                <span className="text-white/60 ml-2">Just trust, verified by video, backed by escrow.</span>
-              </p>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ===== HOW IT WORKS ===== */}
-      <section id="how-it-works" className="py-16 sm:py-24 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-4">
-              How Winipat Works
-            </h2>
-            <p className="text-slate-light max-w-2xl mx-auto text-base sm:text-lg">
-              A simple, secure flow that protects every transaction from browsing to delivery.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {[
-              {
-                step: "01",
-                icon: Eye,
-                title: "Browse & Discover",
-                description: "Find products from verified sellers. Watch demo videos, read verified reviews, and buy with confidence.",
-              },
-              {
-                step: "02",
-                icon: CreditCard,
-                title: "Pay Securely",
-                description: "Your payment is held in escrow by Winipat. The seller only gets paid after you confirm delivery.",
-              },
-              {
-                step: "03",
-                icon: Truck,
-                title: "Track Delivery",
-                description: "Choose your preferred logistics partner — GIG, DHL, or others. Track your package from seller to your door.",
-              },
-              {
-                step: "04",
-                icon: Star,
-                title: "Review & Complete",
-                description: "Confirm delivery, leave a verified review. Payment releases to seller after a 2-day hold period.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="relative group text-center sm:text-left">
-                <div className="mb-4 text-5xl font-bold text-mist font-[family-name:var(--font-sora)] group-hover:text-royal/20 transition-colors">
-                  {item.step}
-                </div>
-                <div className="mb-3 inline-flex items-center justify-center w-12 h-12 rounded-[--radius-md] bg-royal/10 text-royal">
-                  <item.icon className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-midnight mb-2">{item.title}</h3>
-                <p className="text-slate-light text-sm leading-relaxed">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FEATURES GRID ===== */}
-      <section id="features" className="py-16 sm:py-24 bg-cloud">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-4">
-              Built on Trust Infrastructure
-            </h2>
-            <p className="text-slate-light max-w-2xl mx-auto text-base sm:text-lg">
-              Every feature is designed to eliminate doubt and create accountability across every transaction.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {[
-              {
-                icon: ShieldCheck,
-                title: "Verified Sellers",
-                description: "Every seller passes government ID verification, bank validation, and phone confirmation before listing a single product.",
-                color: "text-emerald",
-                bg: "bg-emerald/10",
-              },
-              {
-                icon: Lock,
-                title: "Escrow Payments",
-                description: "Payments are held securely until delivery is confirmed. Sellers get paid, buyers stay protected. No exceptions.",
-                color: "text-royal",
-                bg: "bg-royal/10",
-              },
-              {
-                icon: Truck,
-                title: "Buyer-Chosen Logistics",
-                description: "Select your preferred logistics partner at checkout. Compare options, costs, and delivery times. You decide.",
-                color: "text-violet",
-                bg: "bg-violet/10",
-              },
-              {
-                icon: Star,
-                title: "Verified Reviews Only",
-                description: "Only buyers who completed and received their orders can leave reviews. No fake reviews, no manipulation.",
-                color: "text-gold-dark",
-                bg: "bg-gold/10",
-              },
-              {
-                icon: MessageSquareWarning,
-                title: "Fair Dispute Resolution",
-                description: "Upload photo and video evidence, get fair resolution by our team. Funds remain protected until disputes are resolved.",
-                color: "text-error",
-                bg: "bg-error/10",
-              },
-              {
-                icon: Package,
-                title: "Proof-Based Delivery",
-                description: "Photo proof at pickup and delivery. QR-code verified handoffs. Complete transparency from seller to your hands.",
-                color: "text-info",
-                bg: "bg-info/10",
-              },
-            ].map((feature) => (
-              <div
-                key={feature.title}
-                className="rounded-[--radius-lg] bg-white border border-mist p-6 sm:p-8 hover:shadow-lg transition-shadow duration-300"
-              >
-                <div className={`inline-flex items-center justify-center w-12 h-12 rounded-[--radius-md] ${feature.bg} ${feature.color} mb-5`}>
-                  <feature.icon className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-midnight mb-2">{feature.title}</h3>
-                <p className="text-slate-light text-sm leading-relaxed">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FOR BUYERS ===== */}
-      <section className="py-16 sm:py-24 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="order-2 lg:order-1">
-              <div className="inline-flex items-center gap-2 rounded-[--radius-full] bg-emerald/10 px-4 py-2 mb-6">
-                <Package className="h-4 w-4 text-emerald-dark" />
-                <span className="text-sm text-emerald-dark font-medium">For Buyers</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-6">
-                Shop like you&apos;re buying in person — but from anywhere in Nigeria
-              </h2>
-              <p className="text-slate-light text-base sm:text-lg mb-8 leading-relaxed">
-                Watch product videos before you buy. Choose how it gets delivered.
-                Your payment stays protected until you say it&apos;s right. If something is wrong,
-                we hold the funds and resolve it fairly.
-              </p>
-              <ul className="space-y-4 mb-8">
-                {[
-                  "Watch live product demos and short videos",
-                  "Choose your own logistics partner at checkout",
-                  "Track delivery from seller to your door",
-                  "Your money is 100% protected by escrow",
-                  "Leave verified reviews after confirmed delivery",
-                  "Open disputes with photo/video evidence",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald shrink-0 mt-0.5" />
-                    <span className="text-slate text-sm sm:text-base">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register">
-                <Button variant="primary" size="lg" className="w-full sm:w-auto">
-                  Start Shopping
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-            <div className="order-1 lg:order-2 relative">
-              <div className="rounded-[--radius-xl] overflow-hidden shadow-lg">
-                <Image
-                  src="/images/products/designer-bags.png"
-                  alt="Designer bags on Winipat"
-                  width={600}
-                  height={450}
-                  className="w-full h-[280px] sm:h-[400px] object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-4 -left-4 sm:-bottom-6 sm:-left-6 bg-emerald rounded-[--radius-lg] p-4 sm:p-5 shadow-xl">
-                <Lock className="h-6 w-6 text-white mb-1" />
-                <p className="text-white text-xs sm:text-sm font-semibold">Payment Protected</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FOR SELLERS ===== */}
-      <section id="sellers" className="py-16 sm:py-24 bg-hero-gradient-subtle">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-[--radius-full] bg-white/10 px-4 py-2 mb-6">
-                <BadgeCheck className="h-4 w-4 text-gold" />
-                <span className="text-sm text-white/90">For Sellers</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-white font-[family-name:var(--font-sora)] mb-6">
-                Grow your business with trust as your competitive edge
-              </h2>
-              <p className="text-white/70 text-base sm:text-lg mb-8 leading-relaxed">
-                Join Winipat as a verified seller and access a marketplace where
-                your credibility drives sales. Get paid faster, build customer
-                loyalty, and earn trust badges that boost your visibility.
-              </p>
-
-              <ul className="space-y-4 mb-10">
-                {[
-                  "Structured daily settlement to your bank account",
-                  "Trust badges: Verified, Trusted Seller, Fast Dispatch",
-                  "Earnings dashboard with full payout transparency",
-                  "In-app buyer messaging (no phone number exposure)",
-                  "Dispute protection with evidence-based resolution",
-                  "Upload product videos and live demos",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-emerald shrink-0 mt-0.5" />
-                    <span className="text-white/80 text-sm sm:text-base">{item}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link href="/register?role=seller">
-                <Button variant="gold" size="lg" className="w-full sm:w-auto">
-                  Apply to Sell
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-            </div>
-
-            <div>
-              <div className="rounded-[--radius-xl] overflow-hidden shadow-2xl mb-6">
-                <Image
-                  src="/images/products/ankara-dress.png"
-                  alt="Ankara fashion on Winipat"
-                  width={600}
-                  height={350}
-                  className="w-full h-[250px] sm:h-[350px] object-cover"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { icon: UserCheck, label: "Verified Identity", value: "KYC + Bank" },
-                  { icon: TrendingUp, label: "Avg. Settlement", value: "24hrs" },
-                  { icon: ShieldCheck, label: "Escrow Protection", value: "100%" },
-                  { icon: Star, label: "Review System", value: "Verified Only" },
-                ].map((stat) => (
-                  <div key={stat.label} className="glass rounded-[--radius-lg] p-4 sm:p-6 text-center">
-                    <stat.icon className="h-6 w-6 sm:h-8 sm:w-8 text-gold mx-auto mb-2 sm:mb-3" />
-                    <p className="text-xl sm:text-2xl font-bold text-white font-[family-name:var(--font-sora)]">{stat.value}</p>
-                    <p className="text-xs sm:text-sm text-white/60 mt-1">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== LOGISTICS SECTION ===== */}
-      <section className="py-16 sm:py-24 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="relative">
-              <div className="rounded-[--radius-xl] overflow-hidden shadow-lg">
-                <Image
-                  src="/images/delivery.jpg"
-                  alt="Delivery partner on Winipat"
-                  width={600}
-                  height={400}
-                  className="w-full h-[280px] sm:h-[400px] object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 bg-gold rounded-[--radius-lg] p-4 sm:p-5 shadow-xl">
-                <Clock className="h-6 w-6 text-midnight mb-1" />
-                <p className="text-midnight text-xs sm:text-sm font-semibold">8-Second Pickup</p>
-              </div>
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-[--radius-full] bg-violet/10 px-4 py-2 mb-6">
-                <Truck className="h-4 w-4 text-violet" />
-                <span className="text-sm text-violet font-medium">Logistics Partners</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-6">
-                Cleaner coordination. Faster pickups. Zero disputes.
-              </h2>
-              <p className="text-slate-light text-base sm:text-lg mb-8 leading-relaxed">
-                Logistics partners get structured pickup assignments with QR-verified handoffs.
-                No more ambiguity at collection. No more &quot;the package doesn&apos;t match&quot; disputes.
-                Every order has photo proof and a digital trail.
-              </p>
-              <div className="space-y-4">
-                {[
-                  { icon: QrCode, title: "QR-Verified Pickup", desc: "Scan, verify, confirm — in seconds" },
-                  { icon: Package, title: "Order-Linked Visibility", desc: "Every delivery tied to a verified order" },
-                  { icon: CheckCircle2, title: "Proof of Delivery", desc: "Photo proof logged for every handoff" },
-                ].map((item) => (
-                  <div key={item.title} className="flex items-start gap-4 p-4 rounded-[--radius-md] bg-cloud">
-                    <item.icon className="h-6 w-6 text-violet shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-midnight text-sm sm:text-base">{item.title}</p>
-                      <p className="text-slate-light text-sm">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===== ESCROW EXPLAINER ===== */}
-      <section className="py-16 sm:py-24 bg-midnight text-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-sora)] mb-4">
-              How your money stays{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold to-gold-light">
-                protected
-              </span>
-            </h2>
-            <p className="text-white/60 max-w-2xl mx-auto text-base sm:text-lg">
-              Winipat&apos;s escrow system ensures sellers get paid fairly and buyers never lose money to scams.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[
-              { step: "1", title: "You Pay", desc: "Funds go to Winipat escrow", icon: CreditCard },
-              { step: "2", title: "Seller Prepares", desc: "Photos + QR code generated", icon: Package },
-              { step: "3", title: "Logistics Delivers", desc: "Tracked and proof-verified", icon: Truck },
-              { step: "4", title: "You Confirm", desc: "2-day hold for safety", icon: CheckCircle2 },
-              { step: "5", title: "Seller Gets Paid", desc: "Less 12% commission", icon: Banknote },
-            ].map((item) => (
-              <div key={item.step} className="text-center p-4 sm:p-6 rounded-[--radius-lg] bg-white/5 border border-white/10">
-                <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-gold font-bold text-sm">{item.step}</span>
-                </div>
-                <item.icon className="h-6 w-6 text-gold mx-auto mb-2" />
-                <h3 className="font-semibold text-sm sm:text-base mb-1">{item.title}</h3>
-                <p className="text-white/50 text-xs sm:text-sm">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FINAL CTA ===== */}
-      <section className="py-16 sm:py-24 bg-cloud">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="rounded-[--radius-xl] bg-hero-gradient p-8 sm:p-12 lg:p-16 shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute -top-20 -right-20 w-64 h-64 bg-violet/20 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-gold/10 rounded-full blur-3xl" />
-            </div>
-
-            <div className="relative">
-              <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-gold mx-auto mb-6" />
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white font-[family-name:var(--font-sora)] mb-4">
-                Ready to shop with confidence?
-              </h2>
-              <p className="text-white/70 text-base sm:text-lg mb-8 max-w-xl mx-auto">
-                Join Winipat today. No scams. No surprises. Just trust, verified by video,
-                backed by escrow, sealed with a QR code.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/register">
-                  <Button variant="gold" size="lg" className="w-full sm:w-auto">
-                    Create Free Account
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
-                <Link href="/register?role=seller">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="w-full sm:w-auto border-white/30 text-white hover:bg-white hover:text-midnight"
-                  >
-                    Apply to Sell
-                  </Button>
-                </Link>
-              </div>
-              <p className="mt-6 text-sm text-white/60">
-                Have questions before signing up?{" "}
-                <Link
-                  href="/contact"
-                  className="text-gold hover:text-gold/80 underline underline-offset-4"
-                >
-                  Contact our support team
-                </Link>
-                .
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
+        </section>
       </main>
 
       <Footer />

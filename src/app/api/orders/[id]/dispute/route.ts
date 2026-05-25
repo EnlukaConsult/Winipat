@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail, emails } from "@/lib/email";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -72,7 +74,7 @@ export async function POST(
     .update({ status: "disputed" })
     .eq("order_id", orderId);
 
-  // Notify seller and admin
+  // Notify seller via in-app bell
   await supabase.from("notifications").insert([
     {
       user_id: order.seller_id,
@@ -82,6 +84,28 @@ export async function POST(
       data: { order_id: orderId, dispute_id: dispute.id },
     },
   ]);
+
+  // Email the seller — use admin client to read their email (sellers
+  // table has no SELECT-other-sellers policy for the buyer role).
+  const admin = createAdminClient();
+  const { data: sellerInfo } = await admin
+    .from("sellers")
+    .select("profile:profiles!id(full_name, email)")
+    .eq("id", order.seller_id)
+    .single();
+  const sellerProfile = Array.isArray(sellerInfo?.profile)
+    ? sellerInfo.profile[0]
+    : sellerInfo?.profile;
+  if (sellerProfile?.email) {
+    await sendEmail({
+      to: sellerProfile.email,
+      ...emails.disputeOpened({
+        toSellerName: sellerProfile.full_name || "there",
+        orderNumber: order.order_number,
+        reason,
+      }),
+    });
+  }
 
   return NextResponse.json({ disputeId: dispute.id });
 }

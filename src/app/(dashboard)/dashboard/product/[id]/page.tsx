@@ -289,19 +289,90 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
 
-          {/* Price */}
-          <div className="flex items-baseline gap-3">
+          {/* Price + stock indicator */}
+          <div className="flex items-baseline gap-3 flex-wrap">
             <p className="text-3xl font-bold text-violet font-[family-name:var(--font-sora)]">
               {formatNaira(productPrice)}
             </p>
-            {product.stock_quantity <= 5 && (
-              <Badge variant="error" className="text-xs">Only {product.stock_quantity} left!</Badge>
+            {product.stock_quantity === 0 ? (
+              <Badge variant="error" className="text-xs">Out of stock</Badge>
+            ) : product.stock_quantity <= 5 ? (
+              <Badge variant="error" className="text-xs">Low stock — only {product.stock_quantity} left</Badge>
+            ) : product.stock_quantity <= 20 ? (
+              <Badge variant="warning" className="text-xs">{product.stock_quantity} in stock</Badge>
+            ) : (
+              <Badge variant="success" className="text-xs">In stock</Badge>
             )}
           </div>
 
           {/* Description */}
           <div className="bg-cloud rounded-[--radius-lg] p-4">
-            <p className="text-sm text-slate leading-relaxed">{product.description}</p>
+            <p className="text-sm text-slate leading-relaxed whitespace-pre-line">
+              {product.description}
+            </p>
+          </div>
+
+          {/* Specifications — operational details that signal a real listing */}
+          <div className="rounded-[--radius-lg] border border-mist bg-white">
+            <div className="px-4 py-2.5 border-b border-mist">
+              <p className="text-xs font-semibold text-midnight uppercase tracking-wide">
+                Specifications
+              </p>
+            </div>
+            <dl className="divide-y divide-mist text-sm">
+              <div className="flex justify-between px-4 py-2.5">
+                <dt className="text-slate-light">Category</dt>
+                <dd className="text-midnight font-medium">{product.categories?.name || "—"}</dd>
+              </div>
+              <div className="flex justify-between px-4 py-2.5">
+                <dt className="text-slate-light">SKU</dt>
+                <dd className="text-midnight font-mono text-xs">
+                  {product.slug?.split("-").pop()?.toUpperCase() || product.id.slice(0, 8).toUpperCase()}
+                </dd>
+              </div>
+              <div className="flex justify-between px-4 py-2.5">
+                <dt className="text-slate-light">Listed</dt>
+                <dd className="text-midnight font-medium">
+                  {new Date(product.created_at).toLocaleDateString("en-NG", { month: "short", day: "numeric", year: "numeric" })}
+                </dd>
+              </div>
+              <div className="flex justify-between px-4 py-2.5">
+                <dt className="text-slate-light">Escrow hold after delivery</dt>
+                <dd className="text-midnight font-medium">48 hours (standard)</dd>
+              </div>
+              <div className="flex justify-between px-4 py-2.5">
+                <dt className="text-slate-light">Ships from</dt>
+                <dd className="text-midnight font-medium">
+                  {product.sellers?.pickup_address?.split(",").pop()?.trim() || "Nigeria"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Delivery ETA per partner — uses the LOGISTICS_PARTNERS constant */}
+          <div className="rounded-[--radius-lg] border border-mist bg-white">
+            <div className="px-4 py-2.5 border-b border-mist flex items-center gap-2">
+              <Truck size={12} className="text-violet" />
+              <p className="text-xs font-semibold text-midnight uppercase tracking-wide">
+                Delivery options
+              </p>
+            </div>
+            <ul className="divide-y divide-mist text-sm">
+              {LOGISTICS_PARTNERS.filter((p) => p.type === "door_to_door").map((p) => (
+                <li key={p.id} className="px-4 py-2.5 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-midnight truncate">{p.name}</p>
+                    <p className="text-[11px] text-slate-light">{p.eta}</p>
+                  </div>
+                  <span className="text-sm font-bold text-violet shrink-0">
+                    {formatNaira(p.fee / 100)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="px-4 py-2 text-[10px] text-slate-lighter border-t border-mist bg-cloud">
+              Final cost confirmed at checkout based on your delivery address.
+            </p>
           </div>
 
           {/* Seller info */}

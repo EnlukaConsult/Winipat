@@ -19,9 +19,9 @@ export default function AuthLayout({
       {/* Background gradient layers */}
       <div className="absolute inset-0 bg-hero-gradient opacity-90" />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Was 3 blur clouds — kept one for atmosphere, dropped the rest
+            so the page feels calmer and the auth card is the focal point. */}
         <div className="absolute -top-64 -right-64 w-[600px] h-[600px] bg-violet/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -left-32 w-96 h-96 bg-royal/25 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/3 w-80 h-80 bg-gold/8 rounded-full blur-3xl" />
         {/* Subtle grid overlay */}
         <div
           className="absolute inset-0 opacity-[0.03]"

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { sendEmail, emails } from "@/lib/email";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -79,22 +80,59 @@ async function handleChargeSuccess(data: {
     .update({ status: "held" })
     .eq("order_id", orderId);
 
-  // Notify seller
+  // Pull rich order + party details for the email
   const { data: order } = await supabaseAdmin
     .from("orders")
-    .select("seller_id, order_number")
+    .select(
+      `seller_id, buyer_id, order_number, total,
+       buyer:profiles!buyer_id(full_name, email),
+       seller:sellers!seller_id(business_name, profile:profiles!id(full_name, email))`
+    )
     .eq("id", orderId)
     .single();
 
-  if (order) {
-    await supabaseAdmin.from("notifications").insert({
-      user_id: order.seller_id,
-      title: "New Order Received",
-      body: `Order ${order.order_number} has been paid. Please prepare the item.`,
-      type: "order",
-      data: { order_id: orderId },
-    });
-  }
+  if (!order) return;
+
+  const buyer = Array.isArray(order.buyer) ? order.buyer[0] : order.buyer;
+  const sellerRow = Array.isArray(order.seller) ? order.seller[0] : order.seller;
+  const sellerProfile = Array.isArray(sellerRow?.profile) ? sellerRow.profile[0] : sellerRow?.profile;
+
+  // In-app notification for seller (kept alongside email — bell pings too)
+  await supabaseAdmin.from("notifications").insert({
+    user_id: order.seller_id,
+    title: "New Order Received",
+    body: `Order ${order.order_number} has been paid. Please prepare the item.`,
+    type: "order",
+    data: { order_id: orderId },
+  });
+
+  // Email both parties in parallel — fire-and-forget; payment is already
+  // recorded so failed emails should never roll the transaction back.
+  const totalNaira = (order.total ?? 0) / 100;
+  await Promise.all([
+    buyer?.email
+      ? sendEmail({
+          to: buyer.email,
+          ...emails.orderPlaced({
+            toName: buyer.full_name || "there",
+            orderNumber: order.order_number,
+            sellerName: sellerRow?.business_name || "the seller",
+            totalNaira,
+          }),
+        })
+      : Promise.resolve(),
+    sellerProfile?.email
+      ? sendEmail({
+          to: sellerProfile.email,
+          ...emails.newOrderForSeller({
+            toName: sellerProfile.full_name || "there",
+            orderNumber: order.order_number,
+            buyerName: buyer?.full_name || "A buyer",
+            totalNaira,
+          }),
+        })
+      : Promise.resolve(),
+  ]);
 }
 
 async function handleTransferSuccess(data: { reference: string }) {

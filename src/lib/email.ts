@@ -220,6 +220,133 @@ export const emails = {
     ),
   }),
 
+  /** Sent to buyer when an order is placed + paid. */
+  orderPlaced: (params: {
+    toName: string;
+    orderNumber: string;
+    sellerName: string;
+    totalNaira: number;
+    deliveryEta?: string;
+  }) => ({
+    subject: `Order ${params.orderNumber} placed — payment held in escrow`,
+    text:
+      `Hi ${params.toName},\n\n` +
+      `Your order ${params.orderNumber} for NGN ${params.totalNaira.toLocaleString()} ` +
+      `from ${params.sellerName} has been placed and your payment is held in escrow.\n\n` +
+      `${params.sellerName} has 24 hours to accept. ${params.deliveryEta ? `Estimated delivery: ${params.deliveryEta}.` : ""}\n\n` +
+      `Track at: https://winipat.com/dashboard/orders\n\n` +
+      `— Winipat`,
+    html: shell(
+      "Order placed",
+      `<p>Hi ${escapeHtml(params.toName)},</p>
+       <p>Your order is in. Your payment of <strong>NGN ${params.totalNaira.toLocaleString()}</strong> is held in escrow until you confirm delivery.</p>
+       <table style="font-size:13px;color:#334155;border-collapse:collapse;">
+         <tr><td style="padding:4px 12px 4px 0;color:#94A3B8;">Order</td><td><code>${escapeHtml(params.orderNumber)}</code></td></tr>
+         <tr><td style="padding:4px 12px 4px 0;color:#94A3B8;">Seller</td><td>${escapeHtml(params.sellerName)}</td></tr>
+         ${params.deliveryEta ? `<tr><td style="padding:4px 12px 4px 0;color:#94A3B8;">ETA</td><td>${escapeHtml(params.deliveryEta)}</td></tr>` : ""}
+       </table>
+       <p>The seller has 24 hours to accept and prepare. You&apos;ll get an email at each major step.</p>
+       <p style="margin-top:18px;">
+         <a href="https://winipat.com/dashboard/orders" style="background:#3C4FE0;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">Track your order</a>
+       </p>`
+    ),
+  }),
+
+  /** Sent to seller when a buyer pays — gives them 24h to accept. */
+  newOrderForSeller: (params: {
+    toName: string;
+    orderNumber: string;
+    buyerName: string;
+    totalNaira: number;
+  }) => ({
+    subject: `New order ${params.orderNumber} — accept within 24h`,
+    text:
+      `Hi ${params.toName},\n\n` +
+      `${params.buyerName} just placed order ${params.orderNumber} (NGN ${params.totalNaira.toLocaleString()}).\n\n` +
+      `Accept within 24 hours via your seller dashboard. Missed-accept SLA: order auto-cancels.\n\n` +
+      `https://winipat.com/seller/orders\n\n— Winipat`,
+    html: shell(
+      "New paid order",
+      `<p>Hi ${escapeHtml(params.toName)},</p>
+       <p>A buyer just paid for an order from you.</p>
+       <table style="font-size:13px;color:#334155;border-collapse:collapse;">
+         <tr><td style="padding:4px 12px 4px 0;color:#94A3B8;">Order</td><td><code>${escapeHtml(params.orderNumber)}</code></td></tr>
+         <tr><td style="padding:4px 12px 4px 0;color:#94A3B8;">Buyer</td><td>${escapeHtml(params.buyerName)}</td></tr>
+         <tr><td style="padding:4px 12px 4px 0;color:#94A3B8;">Total</td><td><strong>NGN ${params.totalNaira.toLocaleString()}</strong></td></tr>
+       </table>
+       <p><strong>Accept within 24 hours</strong> or the order auto-cancels and the buyer is refunded.</p>
+       <p style="margin-top:18px;">
+         <a href="https://winipat.com/seller/orders" style="background:#3C4FE0;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">View order</a>
+       </p>`
+    ),
+  }),
+
+  /** Sent to seller when a buyer opens a dispute. */
+  disputeOpened: (params: {
+    toSellerName: string;
+    orderNumber: string;
+    reason: string;
+  }) => ({
+    subject: `Dispute opened on order ${params.orderNumber}`,
+    text:
+      `Hi ${params.toSellerName},\n\n` +
+      `A buyer opened a dispute on order ${params.orderNumber}. Reason: "${params.reason}".\n\n` +
+      `Escrow is frozen. You have 48 hours to respond with your side and any evidence ` +
+      `(photos, tracking, packaging) via your seller dashboard.\n\n` +
+      `https://winipat.com/seller/disputes\n\n— Winipat`,
+    html: shell(
+      "Dispute opened",
+      `<p>Hi ${escapeHtml(params.toSellerName)},</p>
+       <p>A buyer opened a dispute on order <code>${escapeHtml(params.orderNumber)}</code>.</p>
+       <p style="background:#FEF2F2;border:1px solid #FCA5A5;color:#7F1D1D;padding:12px 14px;border-radius:8px;font-size:13px;">
+         <strong>Reason:</strong> ${escapeHtml(params.reason)}
+       </p>
+       <p>Escrow is now frozen. <strong>You have 48 hours</strong> to respond with your side and upload any evidence (photos, tracking, packaging proof). After that, our team will review based on what&apos;s submitted.</p>
+       <p style="margin-top:18px;">
+         <a href="https://winipat.com/seller/disputes" style="background:#3C4FE0;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">Respond now</a>
+       </p>`
+    ),
+  }),
+
+  /** Sent to both buyer + seller when a dispute resolves. */
+  disputeResolved: (params: {
+    toName: string;
+    orderNumber: string;
+    resolution: "release_to_seller" | "full_refund" | "partial_refund";
+    refundAmountNaira?: number;
+    notes?: string;
+    isBuyer: boolean;
+  }) => {
+    const verdict =
+      params.resolution === "release_to_seller"
+        ? "released to the seller"
+        : params.resolution === "full_refund"
+        ? "fully refunded to the buyer"
+        : `partially refunded${params.refundAmountNaira ? ` (NGN ${params.refundAmountNaira.toLocaleString()} back to buyer)` : ""}`;
+
+    return {
+      subject: `Dispute resolved on order ${params.orderNumber}`,
+      text:
+        `Hi ${params.toName},\n\n` +
+        `The dispute on order ${params.orderNumber} has been resolved: escrow was ${verdict}.\n\n` +
+        (params.notes ? `Admin notes: ${params.notes}\n\n` : "") +
+        `— Winipat`,
+      html: shell(
+        "Dispute resolved",
+        `<p>Hi ${escapeHtml(params.toName)},</p>
+         <p>The dispute on order <code>${escapeHtml(params.orderNumber)}</code> has been resolved.</p>
+         <p style="background:#F0FDF4;border:1px solid #86EFAC;color:#14532D;padding:12px 14px;border-radius:8px;font-size:13px;">
+           <strong>Outcome:</strong> escrow was ${escapeHtml(verdict)}
+         </p>
+         ${params.notes ? `<p><strong>Reviewer notes:</strong> ${escapeHtml(params.notes)}</p>` : ""}
+         <p>${params.isBuyer
+           ? "If a refund was issued, expect it to land in your account within 5-10 working days (depending on your bank)."
+           : "If escrow was released, your payout will follow our normal 48-hour batch."}</p>
+         <p>Disagree with the outcome? Reply to this email and we&apos;ll have a senior reviewer take another look.</p>`
+      ),
+    };
+  },
+
   /** Sent to seller when admin approves their KYC. */
   sellerApproved: (toName: string, businessName: string) => ({
     subject: `Your Winipat seller account is approved`,

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Sora, Inter } from "next/font/google";
 import "./globals.css";
 import { ChatWidget } from "@/components/chat/chat-widget";
+import { WhatsAppButton } from "@/components/chat/whatsapp-button";
 import { CookieBanner } from "@/components/ui/cookie-banner";
 
 const sora = Sora({
@@ -92,6 +93,7 @@ export default function RootLayout({
         </a>
         {children}
         <ChatWidget />
+        <WhatsAppButton />
         <CookieBanner />
         <ServiceWorkerRegistrar />
       </body>

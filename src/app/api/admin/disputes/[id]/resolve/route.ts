@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin-guard";
+import { sendEmail, emails } from "@/lib/email";
 
 // POST /api/admin/disputes/[id]/resolve
 // body: { resolution: 'release_to_seller' | 'full_refund' | 'partial_refund',
@@ -126,7 +127,7 @@ export async function POST(
     await admin.from("orders").update({ status: "completed" }).eq("id", order.id);
   }
 
-  // Notify both parties
+  // Notify both parties in-app
   await admin.from("notifications").insert([
     {
       user_id: order.buyer_id,
@@ -142,6 +143,53 @@ export async function POST(
       type: "system",
       data: { order_id: order.id, dispute_id: disputeId, resolution },
     },
+  ]);
+
+  // Email both parties — pull their emails via service-role
+  const [{ data: buyerProfile }, { data: sellerWithProfile }] = await Promise.all([
+    admin.from("profiles").select("full_name, email").eq("id", order.buyer_id).single(),
+    admin
+      .from("sellers")
+      .select("profile:profiles!id(full_name, email)")
+      .eq("id", order.seller_id)
+      .single(),
+  ]);
+  const sellerProfile = Array.isArray(sellerWithProfile?.profile)
+    ? sellerWithProfile.profile[0]
+    : sellerWithProfile?.profile;
+
+  const refundAmountNaira =
+    resolution === "partial_refund" && refundAmount
+      ? Math.round(refundAmount / 100)
+      : undefined;
+
+  await Promise.all([
+    buyerProfile?.email
+      ? sendEmail({
+          to: buyerProfile.email,
+          ...emails.disputeResolved({
+            toName: buyerProfile.full_name || "there",
+            orderNumber: order.order_number,
+            resolution,
+            refundAmountNaira,
+            notes: notes ?? undefined,
+            isBuyer: true,
+          }),
+        })
+      : Promise.resolve(),
+    sellerProfile?.email
+      ? sendEmail({
+          to: sellerProfile.email,
+          ...emails.disputeResolved({
+            toName: sellerProfile.full_name || "there",
+            orderNumber: order.order_number,
+            resolution,
+            refundAmountNaira,
+            notes: notes ?? undefined,
+            isBuyer: false,
+          }),
+        })
+      : Promise.resolve(),
   ]);
 
   return NextResponse.json({ ok: true, status: newDisputeStatus });
