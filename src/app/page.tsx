@@ -567,51 +567,65 @@ export default async function HomePage() {
             </div>
 
             {/*
-              4 vertical rows. Each tile renders one slice of a single PNG
-              via CSS background-position-y, so we ship one image per
-              breakpoint instead of 4 separate files per layout. Clicks
-              still route dynamically via featuredCategories hrefs.
-
-              - mobile: categories-mobile.png   (taller per-row, wide
-                rounded cards with arrow on the right)
-              - lg+:    categories-rows.png     (wider per-row format)
+              Render the source image whole (no slicing — slicing caused
+              aspect-ratio mismatches that showed seams between rows).
+              Overlay 4 transparent click zones, one per quarter of the
+              image height, each routing to the right category page.
+              One image per breakpoint:
+                <lg : categories-mobile.png   (portrait, 4 stacked rows)
+                lg+ : categories-rows.png     (wide, 4 stacked rows)
             */}
-            <div className="space-y-3 sm:space-y-4">
-              {featuredCategories.map((c, i) => {
-                const rowPositions = ["0%", "33.333%", "66.667%", "100%"];
-                return (
-                  <Link
-                    key={c.label}
-                    href={c.href}
-                    aria-label={`Shop ${c.label} on Winipat`}
-                    className="group block relative rounded-2xl overflow-hidden bg-cloud border border-mist hover:shadow-lg hover:border-violet/30 transition-all aspect-[16/9] sm:aspect-[16/7] lg:aspect-[16/2.5]"
-                  >
-                    {/* Mobile slice (taller rows) */}
-                    <div
-                      className="lg:hidden absolute inset-0 bg-no-repeat"
-                      style={{
-                        backgroundImage: "url(/images/categories-mobile.png)",
-                        backgroundSize: "100% 400%",
-                        backgroundPosition: `50% ${rowPositions[i]}`,
-                      }}
-                      role="img"
-                      aria-hidden="true"
-                    />
-                    {/* Desktop slice (wide rows) */}
-                    <div
-                      className="hidden lg:block absolute inset-0 bg-no-repeat"
-                      style={{
-                        backgroundImage: "url(/images/categories-rows.png)",
-                        backgroundSize: "100% 400%",
-                        backgroundPosition: `50% ${rowPositions[i]}`,
-                      }}
-                      role="img"
-                      aria-hidden="true"
-                    />
-                    <span className="sr-only">Shop {c.label}</span>
-                  </Link>
-                );
-              })}
+
+            {/* Mobile version (<lg) */}
+            <div className="lg:hidden relative rounded-2xl overflow-hidden">
+              <Image
+                src="/images/categories-mobile.png"
+                alt="Featured categories on Winipat: Fashion, Electronics, Home & Living, Beauty"
+                width={750}
+                height={1500}
+                className="w-full h-auto block"
+                sizes="(max-width: 1024px) 100vw"
+              />
+              {featuredCategories.map((c, i) => (
+                <Link
+                  key={`m-${c.label}`}
+                  href={c.href}
+                  aria-label={`Shop ${c.label} on Winipat`}
+                  className="absolute left-0 right-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet rounded-md"
+                  style={{
+                    top: `${i * 25}%`,
+                    height: "25%",
+                  }}
+                >
+                  <span className="sr-only">Shop {c.label}</span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop version (lg+) */}
+            <div className="hidden lg:block relative rounded-2xl overflow-hidden">
+              <Image
+                src="/images/categories-rows.png"
+                alt="Featured categories on Winipat: Fashion, Electronics, Home & Living, Beauty"
+                width={1700}
+                height={900}
+                className="w-full h-auto block"
+                sizes="1280px"
+              />
+              {featuredCategories.map((c, i) => (
+                <Link
+                  key={`d-${c.label}`}
+                  href={c.href}
+                  aria-label={`Shop ${c.label} on Winipat`}
+                  className="absolute left-0 right-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet rounded-md"
+                  style={{
+                    top: `${i * 25}%`,
+                    height: "25%",
+                  }}
+                >
+                  <span className="sr-only">Shop {c.label}</span>
+                </Link>
+              ))}
             </div>
           </div>
         </section>
