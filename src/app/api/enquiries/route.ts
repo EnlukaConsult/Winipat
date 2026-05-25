@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // POST /api/enquiries
 // Accepts a public contact-form submission. Works for both signed-in
@@ -65,12 +66,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid category." }, { status: 400 });
   }
 
+  // Look up signed-in user (so we can stamp user_id), then insert with
+  // the service-role client. The route does all its own validation +
+  // honeypot, so bypassing RLS here is intentional — the alternative is
+  // granting INSERT on this table to the anon role, which we don't want
+  // since this is a public form open to abuse.
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from("support_enquiries")
     .insert({
       user_id: user?.id ?? null,
