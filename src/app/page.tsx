@@ -13,13 +13,8 @@ import {
   CreditCard,
   UserCheck,
   Clock,
-  PackageCheck,
   Quote,
   ChevronRight,
-  Shirt,
-  Smartphone,
-  Sofa,
-  Sparkles,
 } from "lucide-react";
 
 // Marketing landing page. Structured top → bottom as:
@@ -94,36 +89,6 @@ async function getCategoryTile(
   };
 }
 
-// Live stats for the trust strip — pulled at render time so the
-// numbers reflect actual platform state, not made-up marketing
-// figures. All counts cap at 1 to avoid showing "0 sellers" while
-// you're still onboarding.
-async function getPlatformStats(): Promise<{
-  sellers: number;
-  orders: number;
-  states: number;
-  couriers: number;
-}> {
-  const supabase = await createClient();
-  const [s, o, p] = await Promise.all([
-    supabase
-      .from("sellers")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "approved"),
-    supabase.from("orders").select("id", { count: "exact", head: true }),
-    supabase
-      .from("logistics_partners")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
-  ]);
-  return {
-    sellers:  s.count ?? 0,
-    orders:   o.count ?? 0,
-    states:   36, // FCT + 36 states is a geographic fact, not a count
-    couriers: p.count ?? 0,
-  };
-}
-
 async function getFeaturedCategories(): Promise<CategoryTile[]> {
   return Promise.all([
     getCategoryTile(["fashion-accessories", "fashion"], {
@@ -154,10 +119,7 @@ async function getFeaturedCategories(): Promise<CategoryTile[]> {
 }
 
 export default async function HomePage() {
-  const [featuredCategories, stats] = await Promise.all([
-    getFeaturedCategories(),
-    getPlatformStats(),
-  ]);
+  const featuredCategories = await getFeaturedCategories();
   return (
     <>
       <Navbar />
@@ -195,48 +157,45 @@ export default async function HomePage() {
               sizes="(max-width: 1024px) 100vw"
             />
 
-            {/* Real CTAs — equal width via grid-cols-2 + items-stretch.
-                size="md" + whitespace-nowrap + reduced horizontal padding
-                so "Start shopping" doesn't wrap to two lines at narrow
-                phone widths (was rendering as a 2-line button vs the
-                1-line "Apply to sell" — the perceived height mismatch). */}
-            <div className="mt-5 grid grid-cols-2 gap-2.5 items-stretch">
-              <Link href="/register" className="flex">
+            {/* One dominant CTA. Seller route demoted to a text link so the
+                primary action wins visual focus on phones. */}
+            <div className="mt-6">
+              <Link href="/register" className="block">
                 <Button
                   variant="gold"
-                  size="md"
-                  className="w-full h-12 justify-center whitespace-nowrap px-3 text-sm"
+                  size="lg"
+                  className="w-full justify-center"
                 >
                   Start shopping
+                  <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
                 </Button>
               </Link>
-              <Link href="/register?role=seller" className="flex">
-                <Button
-                  variant="outline"
-                  size="md"
-                  className="w-full h-12 justify-center whitespace-nowrap px-3 text-sm border-white/30 text-white hover:bg-white hover:text-midnight"
+
+              <p className="mt-4 text-center text-sm text-white/80">
+                Selling on Winipat?{" "}
+                <Link
+                  href="/register?role=seller"
+                  className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
                 >
                   Apply to sell
-                </Button>
-              </Link>
+                </Link>
+              </p>
+              <p className="mt-2 text-center text-xs text-white/55">
+                <Link
+                  href="/login"
+                  className="text-white/75 hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
+                >
+                  Log in
+                </Link>
+                {" · "}
+                <Link
+                  href="/track"
+                  className="text-white/75 hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
+                >
+                  Track an order
+                </Link>
+              </p>
             </div>
-
-            <p className="mt-4 text-center text-xs text-white/75">
-              Already a member?{" "}
-              <Link
-                href="/login"
-                className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-              >
-                Log in
-              </Link>
-              {" · "}
-              <Link
-                href="/track"
-                className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-              >
-                Track an order
-              </Link>
-            </p>
           </div>
         </section>
 
@@ -263,206 +222,51 @@ export default async function HomePage() {
               sizes="1280px"
             />
 
-            {/* Real CTAs — the only set on the page (no duplicates). */}
-            <div className="mt-7 flex gap-4 justify-center">
+            {/* One dominant CTA. Seller route demoted to a text link so the
+                primary action wins visual focus. */}
+            <div className="mt-8 flex flex-col items-center">
               <Link href="/register">
-                <Button variant="gold" size="lg">
+                <Button variant="gold" size="lg" className="min-w-[260px] justify-center">
                   Start shopping
                   <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                 </Button>
               </Link>
-              <Link href="/register?role=seller">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-white/30 text-white hover:bg-white hover:text-midnight"
+
+              <p className="mt-5 text-center text-sm text-white/80">
+                Selling on Winipat?{" "}
+                <Link
+                  href="/register?role=seller"
+                  className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
                 >
-                  Apply to sell
-                </Button>
-              </Link>
-            </div>
-
-            <p className="mt-5 text-center text-sm text-white/75">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-              >
-                Log in
-              </Link>
-              {" · "}
-              <Link
-                href="/track"
-                className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
-              >
-                Track an order
-              </Link>
-            </p>
-          </div>
-        </section>
-
-        {/* ===== HOW IT WORKS BAR =====
-            Compact mobile-first: vertical list on small screens with
-            connecting dots between steps, horizontal row on lg+. */}
-        <section
-          className="bg-white border-y border-mist"
-          aria-labelledby="how-it-works-bar-heading"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-6">
-              <h2
-                id="how-it-works-bar-heading"
-                className="text-sm sm:text-base font-bold text-midnight font-[family-name:var(--font-sora)] lg:w-32 shrink-0 uppercase tracking-wide lg:normal-case lg:tracking-normal"
-              >
-                How it works
-              </h2>
-              <ol
-                className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-3 sm:gap-4"
-                role="list"
-              >
-                {[
-                  { icon: "🛒", title: "Buyer places",   sub: "order & pays" },
-                  { icon: "🛡️", title: "Payment held",   sub: "in escrow" },
-                  { icon: "🚚", title: "Item delivered", sub: "safely" },
-                  { icon: "✅", title: "Buyer confirms", sub: "& seller gets paid" },
-                ].map((s, i, arr) => (
-                  <li key={s.title} className="relative flex items-center gap-2.5">
-                    <span
-                      className="text-base sm:text-lg shrink-0"
-                      aria-hidden="true"
-                    >
-                      {s.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-[11px] sm:text-xs font-semibold text-midnight leading-tight">
-                        {s.title}
-                      </p>
-                      <p className="text-[10px] sm:text-[11px] text-slate leading-tight mt-0.5">
-                        {s.sub}
-                      </p>
-                    </div>
-                    {i < arr.length - 1 && (
-                      <span
-                        className="hidden lg:inline absolute -right-3 top-1/2 -translate-y-1/2 text-slate-lighter"
-                        aria-hidden="true"
-                      >
-                        →
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-              <aside className="lg:w-72 shrink-0 rounded-lg bg-violet/8 border border-violet/20 px-3 py-2.5 sm:px-4 sm:py-3 flex items-start gap-2.5 sm:gap-3">
-                <Lock
-                  className="h-4 w-4 sm:h-5 sm:w-5 text-violet shrink-0 mt-0.5"
-                  aria-hidden="true"
-                />
-                <div>
-                  <p className="text-[11px] sm:text-xs font-semibold text-midnight leading-tight">
-                    Payment held securely in escrow
-                  </p>
-                  <p className="text-[10px] sm:text-[11px] text-slate mt-0.5 leading-tight">
-                    Released to seller only after buyer confirms delivery
-                  </p>
-                </div>
-              </aside>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== YOUR TRUST IS OUR PRIORITY (dark bar) =====
-            Mobile stacks vertically with tighter spacing. White/80 supporting
-            text contrast passes WCAG AA Large Text on the dark gradient. */}
-        <section
-          className="bg-gradient-to-r from-midnight via-midnight-light to-violet-dark text-white"
-          aria-labelledby="trust-priority-heading"
-        >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 lg:items-center">
-              <div className="lg:col-span-4 flex items-start gap-3 sm:gap-4">
-                <div
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-emerald/20 flex items-center justify-center shrink-0"
-                  aria-hidden="true"
+                  Apply to sell →
+                </Link>
+              </p>
+              <p className="mt-2 text-center text-xs text-white/55">
+                <Link
+                  href="/login"
+                  className="text-white/75 hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
                 >
-                  <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald" />
-                </div>
-                <div>
-                  <h2
-                    id="trust-priority-heading"
-                    className="text-sm sm:text-base font-bold font-[family-name:var(--font-sora)] leading-tight"
-                  >
-                    Your trust is our priority.
-                  </h2>
-                  <p className="text-xs text-white/80 mt-1 leading-relaxed">
-                    We protect your money, verify every seller, and make every
-                    transaction worry-free.
-                  </p>
-                </div>
-              </div>
-              <ul
-                className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
-                role="list"
-                aria-label="What we promise"
-              >
-                {[
-                  { icon: UserCheck,     title: "Real People",        sub: "Verified buyers and sellers" },
-                  { icon: Lock,          title: "Real Protection",    sub: "Secure escrow keeps you covered" },
-                  { icon: CheckCircle2,  title: "Real Peace of Mind", sub: "Shop or sell with confidence" },
-                ].map((c) => (
-                  <li key={c.title} className="flex items-start gap-2.5 sm:gap-3">
-                    <c.icon
-                      className="h-4 w-4 sm:h-5 sm:w-5 text-white/85 shrink-0 mt-0.5"
-                      aria-hidden="true"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold leading-tight">
-                        {c.title}
-                      </p>
-                      <p className="text-xs text-white/80 mt-0.5 leading-tight">
-                        {c.sub}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                  Log in
+                </Link>
+                {" · "}
+                <Link
+                  href="/track"
+                  className="text-white/75 hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"
+                >
+                  Track an order
+                </Link>
+              </p>
             </div>
           </div>
         </section>
 
-        {/* ===== TRUST STRIP =====
-            Mix of platform facts (48h protection, 12% commission, 36 states)
-            and live DB-backed numbers (couriers, sellers) so the strip
-            updates as the platform grows. */}
-        <section className="border-y border-mist bg-white">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
-              {[
-                { stat: "48h", label: "Buyer protection window after delivery" },
-                { stat: "12%", label: "Flat platform commission. No listing fees." },
-                {
-                  stat: stats.couriers > 0 ? `${stats.couriers} couriers` : "Multi-courier",
-                  label:
-                    stats.couriers > 0
-                      ? "GIG, Sendbox, Kwik — pick yours at checkout"
-                      : "Adding partners across Nigeria — pick yours at checkout",
-                },
-                { stat: "36 states", label: "+ FCT. Nationwide delivery coverage." },
-              ].map((s) => (
-                <div key={s.label} className="flex flex-col md:items-start items-center">
-                  <p className="text-2xl sm:text-3xl font-bold text-midnight font-[family-name:var(--font-sora)]">
-                    {s.stat}
-                  </p>
-                  <p className="text-xs sm:text-sm text-slate-light mt-1 max-w-[200px]">
-                    {s.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Trust bars / process strip / stats grid intentionally removed
+            from above-the-fold. The hero image already implies the trust
+            promise; the long "How it works" lives below the featured
+            categories, where readers ready for detail will find it. */}
 
         {/* ===== FEATURED CATEGORIES ===== */}
-        <section className="py-16 sm:py-20 bg-white">
+        <section className="py-20 sm:py-28 bg-white">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex items-end justify-between gap-4 mb-8 flex-wrap">
               <div>
@@ -545,88 +349,78 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ===== HOW IT WORKS ===== */}
-        <section id="how-it-works" className="py-16 sm:py-20 bg-cloud">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl mb-10">
-              <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
+        {/* ===== SINGLE TRUST LINE =====
+            One slim, low-emphasis sentence that anchors the page after the
+            categories without restating escrow in six different boxes. */}
+        <section className="bg-white" aria-label="How escrow protects you">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12 text-center">
+            <p className="inline-flex items-center gap-2 text-sm text-slate">
+              <Lock className="h-4 w-4 text-violet" aria-hidden="true" />
+              Your payment stays in escrow until you confirm delivery.
+            </p>
+          </div>
+        </section>
+
+        {/* ===== HOW IT WORKS — 3 steps =====
+            Trimmed from 5 to 3 so the model is graspable at a glance.
+            SLA detail still lives on /shipping for readers who want it. */}
+        <section id="how-it-works" className="py-20 sm:py-28 bg-cloud">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-xl mx-auto mb-12 sm:mb-16">
+              <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-3">
                 How it works
               </p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)] mb-4">
-                Five steps. One protection layer the whole way through.
+              <h2 className="text-3xl sm:text-4xl font-bold text-midnight font-[family-name:var(--font-sora)]">
+                Three steps. One protection layer.
               </h2>
-              <p className="text-slate-light text-base">
-                You don&apos;t need to trust the seller. You trust the system holding
-                the money.
-              </p>
             </div>
 
-            <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <ol className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
               {[
                 {
                   n: "1",
                   icon: CreditCard,
-                  title: "You pay",
-                  desc: "Card or transfer via Paystack. Funds land in Winipat escrow, not the seller's account.",
+                  title: "Buyer pays securely",
+                  desc: "Funds land in Winipat escrow — not in the seller's account.",
                 },
                 {
                   n: "2",
-                  icon: PackageCheck,
-                  title: "Seller prepares",
-                  desc: "Verified seller accepts within 24h, packs the order, uploads a package photo.",
+                  icon: Truck,
+                  title: "Seller delivers item",
+                  desc: "Your chosen courier picks up and ships, with photo proof at each step.",
                 },
                 {
                   n: "3",
-                  icon: Truck,
-                  title: "Courier delivers",
-                  desc: "The partner you picked at checkout (GIG, Sendbox, Kwik) picks up and ships.",
-                },
-                {
-                  n: "4",
-                  icon: ShieldCheck,
-                  title: "You confirm",
-                  desc: "Inspect the package within 48h. Confirm delivery or open a dispute with photos.",
-                },
-                {
-                  n: "5",
                   icon: CheckCircle2,
-                  title: "Seller is paid",
-                  desc: "Once confirmation or auto-confirm lands, payout is processed within 24h.",
+                  title: "Seller gets paid",
+                  desc: "Payment releases only after you confirm delivery — or 48 hours of silence.",
                 },
               ].map((s) => (
-                <li
-                  key={s.n}
-                  className="rounded-xl border border-mist bg-white p-5 relative"
-                >
-                  <span className="absolute top-3 right-4 text-3xl font-bold text-mist font-[family-name:var(--font-sora)]">
-                    {s.n}
-                  </span>
-                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-md bg-violet/10 text-violet mb-3">
+                <li key={s.n} className="text-center sm:text-left">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-violet/10 text-violet mb-4">
                     <s.icon className="h-5 w-5" />
                   </div>
-                  <p className="font-semibold text-midnight text-sm mb-1.5">
+                  <p className="text-base font-semibold text-midnight mb-2">
+                    <span className="text-violet font-bold mr-2">{s.n}.</span>
                     {s.title}
                   </p>
-                  <p className="text-xs text-slate-light leading-relaxed">
+                  <p className="text-sm text-slate-light leading-relaxed">
                     {s.desc}
                   </p>
                 </li>
               ))}
             </ol>
 
-            <p className="mt-6 text-xs text-slate-light">
-              Want the long version with SLA windows and what happens when things
-              go wrong?{" "}
+            <p className="mt-10 text-xs text-slate-light text-center">
               <Link href="/shipping" className="text-violet hover:underline">
-                Read the shipping & delivery page
+                See the full delivery & SLA breakdown →
               </Link>
-              .
             </p>
           </div>
         </section>
 
         {/* ===== WHY TRUST WINIPAT ===== */}
-        <section id="features" className="py-16 sm:py-20 bg-white">
+        <section id="features" className="py-20 sm:py-28 bg-white">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl mb-10">
               <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
@@ -678,7 +472,7 @@ export default async function HomePage() {
         </section>
 
         {/* ===== FOR BUYERS / FOR SELLERS ===== */}
-        <section className="py-16 sm:py-20 bg-cloud">
+        <section className="py-20 sm:py-28 bg-cloud">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* For Buyers */}
@@ -756,7 +550,7 @@ export default async function HomePage() {
         </section>
 
         {/* ===== TESTIMONIALS (honest placeholder until we have real ones) ===== */}
-        <section className="py-16 sm:py-20 bg-white">
+        <section className="py-20 sm:py-28 bg-white">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl mb-10">
               <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
@@ -807,7 +601,7 @@ export default async function HomePage() {
         </section>
 
         {/* ===== FAQ TEASER ===== */}
-        <section className="py-16 sm:py-20 bg-cloud">
+        <section className="py-20 sm:py-28 bg-cloud">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <p className="text-xs uppercase tracking-wider text-violet font-semibold mb-2">
               Questions we hear most
@@ -864,7 +658,7 @@ export default async function HomePage() {
         </section>
 
         {/* ===== FINAL CTA ===== */}
-        <section className="py-16 sm:py-20 bg-white">
+        <section className="py-20 sm:py-28 bg-white">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <div className="relative rounded-2xl bg-gradient-to-br from-midnight via-midnight-light to-violet-dark p-8 sm:p-12 overflow-hidden">
               <div className="absolute -top-16 -right-16 w-56 h-56 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
