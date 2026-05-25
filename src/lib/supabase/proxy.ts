@@ -55,30 +55,48 @@ export async function updateSession(request: NextRequest) {
       .single();
     const role = profile?.role || "buyer";
 
+    // Admins are restricted to /admin/* — they were previously allowed
+    // everywhere, but that caused brand confusion: admin sidebar +
+    // buyer page content side-by-side. If admin needs to inspect a
+    // specific product, use the admin-side tools in /admin (or paste
+    // the URL into a private window as a regular buyer).
     const isAllowed =
-      role === "admin" || // admins can see everything
+      (role === "admin"     && path.startsWith("/admin")) ||
       (role === "seller"    && (path.startsWith("/seller")    || path.startsWith("/dashboard"))) ||
-      (role === "buyer"     && (path.startsWith("/dashboard"))) ||
+      (role === "buyer"     && path.startsWith("/dashboard")) ||
       (role === "logistics" && (path.startsWith("/logistics") || path.startsWith("/dashboard")));
 
     if (!isAllowed) {
       const url = request.nextUrl.clone();
       url.pathname =
-        role === "seller"    ? "/seller"    :
+        role === "admin"     ? "/admin"             :
+        role === "seller"    ? "/seller"            :
         role === "logistics" ? "/logistics/pickups" :
-        role === "admin"     ? "/admin"     :
                                "/dashboard/browse";
       return NextResponse.redirect(url);
     }
   }
 
-  // Redirect logged-in users away from auth pages
+  // Redirect logged-in users away from auth pages. Use the same
+  // role-based landing logic as above so admins go to /admin, not
+  // /dashboard/browse.
   const authPaths = ["/login", "/register"];
   const isAuthPage = authPaths.some((p) => path.startsWith(p));
 
   if (isAuthPage && user) {
+    // Look up role to send them to the right landing page
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const role = profile?.role || "buyer";
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard/browse";
+    url.pathname =
+      role === "admin"     ? "/admin"             :
+      role === "seller"    ? "/seller"            :
+      role === "logistics" ? "/logistics/pickups" :
+                             "/dashboard/browse";
     return NextResponse.redirect(url);
   }
 
