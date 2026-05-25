@@ -55,13 +55,17 @@ export async function updateSession(request: NextRequest) {
       .single();
     const role = profile?.role || "buyer";
 
-    // Admins are restricted to /admin/* — they were previously allowed
-    // everywhere, but that caused brand confusion: admin sidebar +
-    // buyer page content side-by-side. If admin needs to inspect a
-    // specific product, use the admin-side tools in /admin (or paste
-    // the URL into a private window as a regular buyer).
+    // Admins are restricted to /admin/* — except for shared user-level
+    // pages that EVERY signed-in user needs (profile, messages). Those
+    // live under /dashboard/* but apply to any role, so we whitelist
+    // them explicitly to avoid creating /admin/profile duplicates.
+    const SHARED_DASHBOARD_PATHS = ["/dashboard/profile", "/dashboard/messages"];
+    const isSharedDashboardPath = SHARED_DASHBOARD_PATHS.some(
+      (p) => path === p || path.startsWith(p + "/")
+    );
+
     const isAllowed =
-      (role === "admin"     && path.startsWith("/admin")) ||
+      (role === "admin"     && (path.startsWith("/admin")    || isSharedDashboardPath)) ||
       (role === "seller"    && (path.startsWith("/seller")    || path.startsWith("/dashboard"))) ||
       (role === "buyer"     && path.startsWith("/dashboard")) ||
       (role === "logistics" && (path.startsWith("/logistics") || path.startsWith("/dashboard")));

@@ -18,6 +18,9 @@ import {
   Trash2,
   Save,
   Check,
+  Camera,
+  Loader2,
+  X,
 } from "lucide-react";
 
 // Matches the addresses table in schema.sql exactly — no postal_code column.
@@ -61,6 +64,10 @@ export default function ProfilePage() {
   // Form state
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+
+  // Avatar upload state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   // Address form
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -107,6 +114,90 @@ export default function ProfilePage() {
 
     setAddresses((addrs as unknown as Address[]) || []);
     setLoading(false);
+  }
+
+  async function uploadAvatar(file: File) {
+    setAvatarError(null);
+
+    // Client-side validation — matches the bucket constraints from
+    // migration 008 (2MB, JPG/PNG/WebP only).
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setAvatarError("Use JPG, PNG, or WebP.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError("Image must be under 2 MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const ext = file.name.split(".").pop() || "jpg";
+      // Stable path per user so each upload overwrites the previous
+      // one (no orphaned files to clean up later).
+      const path = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) {
+        setAvatarError(uploadError.message);
+        return;
+      }
+
+      // Append a cache-buster so the browser refreshes the image
+      // immediately (Supabase Storage serves long cache headers).
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", user.id);
+
+      if (updateError) {
+        setAvatarError(updateError.message);
+        return;
+      }
+
+      setProfile((prev) => (prev ? { ...prev, avatar_url: publicUrl } : prev));
+    } catch (e) {
+      setAvatarError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
+
+  async function removeAvatar() {
+    if (!profile?.avatar_url) return;
+    if (!confirm("Remove your profile picture?")) return;
+    setUploadingAvatar(true);
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setUploadingAvatar(false);
+      return;
+    }
+    // Delete every variant the user might have uploaded so changing
+    // ext later doesn't leave a stale file.
+    const { data: list } = await supabase.storage.from("avatars").list(user.id);
+    if (list && list.length > 0) {
+      await supabase.storage
+        .from("avatars")
+        .remove(list.map((f) => `${user.id}/${f.name}`));
+    }
+    await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
+    setProfile((prev) => (prev ? { ...prev, avatar_url: null } : prev));
+    setUploadingAvatar(false);
   }
 
   async function saveProfile() {
@@ -216,19 +307,92 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      {/* Avatar + email row */}
+      {/* Avatar upload + email row.
+          Tap the avatar (or the "Change photo" link below it on mobile)
+          to pick a new image. Click X to remove the current one. */}
       <Card padding="md">
-        <div className="flex items-center gap-4">
-          <Avatar
-            src={profile?.avatar_url}
-            name={profile?.full_name || "User"}
-            size="lg"
-          />
-          <div>
-            <p className="font-semibold text-midnight">{profile?.full_name}</p>
-            <p className="flex items-center gap-1.5 text-sm text-slate-light">
-              <Mail size={13} />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
+          <div className="relative shrink-0 self-center sm:self-auto">
+            <label
+              htmlFor="avatar-upload"
+              className="relative block cursor-pointer group"
+              aria-label="Upload profile picture"
+            >
+              <Avatar
+                src={profile?.avatar_url}
+                name={profile?.full_name || "User"}
+                size="lg"
+              />
+              {/* Hover/tap overlay */}
+              <div className="absolute inset-0 rounded-full bg-midnight/60 opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                {uploadingAvatar ? (
+                  <Loader2 className="h-6 w-6 text-white animate-spin" aria-hidden="true" />
+                ) : (
+                  <Camera className="h-6 w-6 text-white" aria-hidden="true" />
+                )}
+              </div>
+              {/* Mobile-visible camera badge so tap target is obvious */}
+              <span
+                aria-hidden="true"
+                className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-royal text-white flex items-center justify-center shadow-md border-2 border-white sm:hidden"
+              >
+                {uploadingAvatar ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Camera className="h-3.5 w-3.5" />
+                )}
+              </span>
+            </label>
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              disabled={uploadingAvatar}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadAvatar(f);
+                // Reset so picking the SAME file twice still fires onChange
+                e.target.value = "";
+              }}
+            />
+          </div>
+
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            <p className="font-semibold text-midnight">
+              {profile?.full_name || "Your profile"}
+            </p>
+            <p className="flex items-center justify-center sm:justify-start gap-1.5 text-sm text-slate-light mt-0.5">
+              <Mail size={13} aria-hidden="true" />
               {profile?.email}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <label
+                htmlFor="avatar-upload"
+                className="inline-flex items-center gap-1.5 cursor-pointer text-xs font-medium text-royal hover:text-royal-dark min-h-[44px] sm:min-h-0 px-2"
+              >
+                <Camera size={14} aria-hidden="true" />
+                {profile?.avatar_url ? "Change photo" : "Upload photo"}
+              </label>
+              {profile?.avatar_url && (
+                <button
+                  type="button"
+                  onClick={removeAvatar}
+                  disabled={uploadingAvatar}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-error hover:text-red-700 min-h-[44px] sm:min-h-0 px-2 disabled:opacity-50"
+                >
+                  <X size={14} aria-hidden="true" />
+                  Remove
+                </button>
+              )}
+            </div>
+            {avatarError && (
+              <p className="mt-1 text-xs text-error" role="alert">
+                {avatarError}
+              </p>
+            )}
+            <p className="mt-1 text-[11px] text-slate-lighter">
+              JPG, PNG or WebP · Max 2 MB · Square images work best
             </p>
           </div>
         </div>
