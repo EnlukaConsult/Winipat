@@ -64,6 +64,7 @@ export default function AdminEnquiriesPage() {
   const [filter, setFilter] = useState<Status | "all">("new");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notesById, setNotesById] = useState<Record<string, string>>({});
+  const [replyById, setReplyById] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -97,6 +98,32 @@ export default function AdminEnquiriesPage() {
       alert(b.error || "Failed.");
       return;
     }
+    await load();
+  }
+
+  async function sendReply(id: string) {
+    const body = replyById[id]?.trim();
+    if (!body) {
+      alert("Type your reply first.");
+      return;
+    }
+    setActionLoading(id);
+    const res = await fetch(`/api/admin/enquiries/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reply: { body } }),
+    });
+    setActionLoading(null);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.error || "Failed to send reply.");
+      return;
+    }
+    setReplyById((m) => {
+      const next = { ...m };
+      delete next[id];
+      return next;
+    });
     await load();
   }
 
@@ -260,8 +287,27 @@ export default function AdminEnquiriesPage() {
                       </div>
                     )}
 
+                    <div>
+                      <CardTitle className="text-xs uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                        <Mail size={12} className="text-violet" />
+                        Reply
+                      </CardTitle>
+                      <Textarea
+                        placeholder={`Hi ${e.name},\n\nThanks for reaching out. …`}
+                        rows={4}
+                        value={replyById[e.id] ?? ""}
+                        onChange={(ev) =>
+                          setReplyById((m) => ({ ...m, [e.id]: ev.target.value }))
+                        }
+                      />
+                      <p className="mt-1 text-[10px] text-slate-lighter">
+                        Sends a branded email from <strong>support@winipat.com</strong> via Resend.
+                        Reply lands back here if the user responds.
+                      </p>
+                    </div>
+
                     <Textarea
-                      placeholder="Add or update internal notes…"
+                      placeholder="Internal notes (not sent to the user)…"
                       rows={2}
                       value={notesById[e.id] ?? ""}
                       onChange={(ev) =>
@@ -270,18 +316,16 @@ export default function AdminEnquiriesPage() {
                     />
 
                     <div className="flex flex-wrap gap-2">
-                      <a
-                        href={`mailto:${e.email}?subject=Re: ${encodeURIComponent(
-                          e.subject
-                        )}&body=${encodeURIComponent(
-                          `Hi ${e.name},\n\nThanks for reaching out.\n\n---\nYou wrote:\n${e.message}`
-                        )}`}
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => sendReply(e.id)}
+                        loading={actionLoading === e.id}
+                        disabled={!replyById[e.id]?.trim()}
                       >
-                        <Button variant="primary" size="sm">
-                          <Mail size={14} className="mr-1.5" />
-                          Reply via email
-                        </Button>
-                      </a>
+                        <Mail size={14} className="mr-1.5" />
+                        Send reply &amp; resolve
+                      </Button>
                       {e.status !== "in_progress" && (
                         <Button
                           variant="outline"

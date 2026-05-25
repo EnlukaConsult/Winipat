@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin-guard";
+import { sendEmail, emails } from "@/lib/email";
 
 // POST /api/admin/sellers/[id]/status
 // body: { status: 'approved' | 'rejected' | 'under_review', notes?: string }
@@ -34,6 +35,14 @@ export async function POST(
   const { error } = await admin.from("sellers").update(update).eq("id", sellerId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Fetch seller details for email + in-app notification copy
+  const { data: seller } = await admin
+    .from("sellers")
+    .select("business_name, profile:profiles!id(full_name, email)")
+    .eq("id", sellerId)
+    .single();
+  const profile = Array.isArray(seller?.profile) ? seller.profile[0] : seller?.profile;
+
   // Look up seller's user id (sellers.id IS the profile id) — notify
   const title =
     status === "approved"
@@ -53,6 +62,19 @@ export async function POST(
     type: "system",
     data: { seller_id: sellerId, status },
   });
+
+  // Send branded email — only for approval right now; rejection/under-review
+  // gets the in-app notification only, since those notes are often back-and-
+  // forth and we don't want to email at every status flip.
+  if (status === "approved" && profile?.email) {
+    await sendEmail({
+      to: profile.email,
+      ...emails.sellerApproved(
+        profile.full_name || "there",
+        seller?.business_name || "your store"
+      ),
+    });
+  }
 
   return NextResponse.json({ ok: true, status });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin-guard";
+import { sendEmail, emails } from "@/lib/email";
 
 // PATCH /api/admin/payouts/[id]
 // body: { status: 'processing' | 'completed' | 'failed', reference?: string }
@@ -52,6 +53,23 @@ export async function PATCH(
       type: "payment",
       data: { payout_id: payoutId, reference: payout.reference },
     });
+
+    // Fetch seller email for branded payout email
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", payout.seller_id)
+      .single();
+    if (profile?.email) {
+      await sendEmail({
+        to: profile.email,
+        ...emails.payoutCompleted({
+          toName: profile.full_name || "there",
+          amountNaira: payout.amount / 100,
+          reference: payout.reference || reference || "—",
+        }),
+      });
+    }
   } else if (status === "failed") {
     await admin.from("notifications").insert({
       user_id: payout.seller_id,

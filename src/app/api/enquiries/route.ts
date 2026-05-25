@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail, emails, SUPPORT_INBOX } from "@/lib/email";
 
 // POST /api/enquiries
 // Accepts a public contact-form submission. Works for both signed-in
@@ -95,6 +96,30 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Fire-and-forget the two emails. If Resend isn't configured yet, the
+  // calls no-op gracefully; if delivery fails, we still return success
+  // because the enquiry IS saved in the DB and admins will see it via
+  // the in-app notification.
+  await Promise.all([
+    sendEmail({
+      to: email,
+      ...emails.enquiryAck(name, subject),
+    }),
+    sendEmail({
+      to: SUPPORT_INBOX,
+      replyTo: email, // hitting reply in Gmail goes back to the user
+      ...emails.enquiryToSupport({
+        name,
+        email,
+        phone: body.phone?.trim() || null,
+        category,
+        subject,
+        message,
+        chatContext: body.chatContext?.trim() || null,
+      }),
+    }),
+  ]);
 
   return NextResponse.json({ ok: true, id: data.id });
 }
