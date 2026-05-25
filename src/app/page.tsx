@@ -195,16 +195,17 @@ export default async function HomePage() {
               sizes="(max-width: 1024px) 100vw"
             />
 
-            {/* Real CTAs — the only set on the page (no duplicates).
-                Uses CSS grid with items-stretch so both buttons get
-                identical width + height regardless of which variant
-                they use (gold solid vs outline border). */}
+            {/* Real CTAs — equal width via grid-cols-2 + items-stretch.
+                size="md" + whitespace-nowrap + reduced horizontal padding
+                so "Start shopping" doesn't wrap to two lines at narrow
+                phone widths (was rendering as a 2-line button vs the
+                1-line "Apply to sell" — the perceived height mismatch). */}
             <div className="mt-5 grid grid-cols-2 gap-2.5 items-stretch">
               <Link href="/register" className="flex">
                 <Button
                   variant="gold"
-                  size="lg"
-                  className="w-full h-14 justify-center"
+                  size="md"
+                  className="w-full h-12 justify-center whitespace-nowrap px-3 text-sm"
                 >
                   Start shopping
                 </Button>
@@ -212,8 +213,8 @@ export default async function HomePage() {
               <Link href="/register?role=seller" className="flex">
                 <Button
                   variant="outline"
-                  size="lg"
-                  className="w-full h-14 justify-center border-white/30 text-white hover:bg-white hover:text-midnight"
+                  size="md"
+                  className="w-full h-12 justify-center whitespace-nowrap px-3 text-sm border-white/30 text-white hover:bg-white hover:text-midnight"
                 >
                   Apply to sell
                 </Button>
