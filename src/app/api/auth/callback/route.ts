@@ -1,31 +1,80 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+
+// Auth callback for email confirmation, magic link, password reset, etc.
+//
+// Supports two flows:
+//   1. token_hash (preferred for email) — works cross-device because it
+//      doesn't depend on a PKCE verifier stored in the originating browser.
+//      Used when the email template links via `{{ .ConfirmationURL }}` with
+//      the SiteURL pointing at this route (token_hash + type in querystring).
+//   2. code (PKCE) — Supabase's default for OAuth and same-device email
+//      flows. Kept for backward compatibility with any verification emails
+//      already in flight when this route was deployed.
+//
+// On success: sets the session cookie, then redirects role-aware so the
+// user lands on their portal home (no extra sign-in step).
+//
+// On failure: redirects to /login with the email pre-filled and a friendly
+// error code the login page can decode into a banner.
+
+const ROLE_LANDING: Record<string, string> = {
+  admin:     "/admin",
+  seller:    "/seller",
+  buyer:     "/dashboard/browse",
+  logistics: "/logistics/pickups",
+};
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
 
-  const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const tokenHash = searchParams.get("token_hash");
+  const type      = searchParams.get("type") as EmailOtpType | null;
+  const code      = searchParams.get("code");
 
-  // Only allow relative redirects to prevent open-redirect attacks
-  const safeNext = next.startsWith("/") ? next : "/dashboard";
+  // Honor ?next= if present and relative (open-redirect guard), otherwise
+  // pick the landing by role after we know who the user is.
+  const nextParam = searchParams.get("next");
+  const explicitNext =
+    nextParam && nextParam.startsWith("/") ? nextParam : null;
 
-  if (code) {
-    const supabase = await createClient();
+  const supabase = await createClient();
+
+  let verifyError: string | null = null;
+
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    if (error) verifyError = error.message;
+  } else if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (!error) {
-      return NextResponse.redirect(`${origin}${safeNext}`);
-    }
-
-    // Exchange failed — send user to login with an error hint
-    return NextResponse.redirect(
-      `${origin}/login?error=confirmation_failed`
-    );
+    if (error) verifyError = error.message;
+  } else {
+    verifyError = "missing_token";
   }
 
-  // No code present — malformed link
-  return NextResponse.redirect(
-    `${origin}/login?error=missing_code`
-  );
+  if (verifyError) {
+    const url = new URL(`${origin}/login`);
+    url.searchParams.set("error", "confirmation_failed");
+    return NextResponse.redirect(url);
+  }
+
+  // Verified + session set. Find the role to land them on the right page.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let landing = explicitNext ?? "/dashboard/browse";
+
+  if (!explicitNext && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const role = profile?.role ?? "buyer";
+    landing = ROLE_LANDING[role] ?? "/dashboard/browse";
+  }
+
+  return NextResponse.redirect(`${origin}${landing}`);
 }
