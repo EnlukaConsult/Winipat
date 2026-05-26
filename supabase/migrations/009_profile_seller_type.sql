@@ -15,5 +15,4 @@ ALTER TABLE profiles
 -- choice on the sellers table.
 
 COMMENT ON COLUMN profiles.seller_type IS
-  'Onboarding intent: individual or business. Optional — only set when ' ||
-  'the user picks ''Sell'' on /welcome. Final value is captured at KYC.';
+  'Onboarding intent: individual or business. Optional - only set when the user picks Sell on /welcome. Final value is captured at KYC.';
