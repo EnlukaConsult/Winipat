@@ -15,11 +15,16 @@ type OAuthButtonsProps = {
 // from Google Cloud Console). Facebook is rendered disabled until the
 // Meta Developer app is created.
 export function OAuthButtons({ next }: OAuthButtonsProps) {
-  const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<
+    "google" | "facebook" | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function signInWithGoogle() {
-    setLoadingGoogle(true);
+  // Shared launcher — Supabase signInWithOAuth redirects the browser if the
+  // provider call succeeds, so the only state we need to handle locally is
+  // the error path.
+  async function signInWith(provider: "google" | "facebook") {
+    setLoadingProvider(provider);
     setError(null);
     try {
       const supabase = createClient();
@@ -33,18 +38,17 @@ export function OAuthButtons({ next }: OAuthButtonsProps) {
         : callbackBase;
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: { redirectTo },
       });
 
       if (oauthError) {
         setError(oauthError.message);
-        setLoadingGoogle(false);
+        setLoadingProvider(null);
       }
-      // On success, browser is redirected by Supabase; no further state to set.
     } catch {
-      setError("Couldn't start Google sign-in. Please try again.");
-      setLoadingGoogle(false);
+      setError(`Couldn't start ${provider} sign-in. Please try again.`);
+      setLoadingProvider(null);
     }
   }
 
@@ -71,31 +75,33 @@ export function OAuthButtons({ next }: OAuthButtonsProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           type="button"
-          onClick={signInWithGoogle}
-          disabled={loadingGoogle}
+          onClick={() => signInWith("google")}
+          disabled={loadingProvider !== null}
           className="h-12 flex items-center justify-center gap-2 rounded-xl border border-mist-dark bg-white text-slate font-semibold hover:bg-cloud transition-colors disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
         >
-          {loadingGoogle ? (
+          {loadingProvider === "google" ? (
             <span className="h-4 w-4 border-2 border-slate-light border-t-transparent rounded-full animate-spin" />
           ) : (
             <GoogleIcon />
           )}
           <span className="text-sm">
-            {loadingGoogle ? "Connecting…" : "Google"}
+            {loadingProvider === "google" ? "Connecting…" : "Google"}
           </span>
         </button>
 
         <button
           type="button"
-          disabled
-          aria-disabled="true"
-          title="Coming soon"
-          className="h-12 flex items-center justify-center gap-2 rounded-xl border border-mist-dark bg-cloud text-slate-light font-semibold cursor-not-allowed min-h-[44px] relative"
+          onClick={() => signInWith("facebook")}
+          disabled={loadingProvider !== null}
+          className="h-12 flex items-center justify-center gap-2 rounded-xl border border-mist-dark bg-white text-slate font-semibold hover:bg-cloud transition-colors disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
         >
-          <FacebookIcon muted />
-          <span className="text-sm">Facebook</span>
-          <span className="absolute -top-2 right-2 text-[9px] bg-slate-light text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-            Soon
+          {loadingProvider === "facebook" ? (
+            <span className="h-4 w-4 border-2 border-slate-light border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <FacebookIcon />
+          )}
+          <span className="text-sm">
+            {loadingProvider === "facebook" ? "Connecting…" : "Facebook"}
           </span>
         </button>
       </div>
@@ -126,11 +132,11 @@ function GoogleIcon() {
   );
 }
 
-function FacebookIcon({ muted }: { muted?: boolean }) {
+function FacebookIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
       <path
-        fill={muted ? "#9aa6bd" : "#1877F2"}
+        fill="#1877F2"
         d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"
       />
     </svg>
