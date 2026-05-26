@@ -9,15 +9,17 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function VerifyPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="rounded-[--radius-xl] bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20 p-12 text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-royal border-t-transparent rounded-full mx-auto" />
-        </div>
-      }
-    >
-      <VerifyContent />
-    </Suspense>
+    <div className="max-w-md mx-auto">
+      <Suspense
+        fallback={
+          <div className="rounded-[--radius-xl] bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20 p-12 text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-royal border-t-transparent rounded-full mx-auto" />
+          </div>
+        }
+      >
+        <VerifyContent />
+      </Suspense>
+    </div>
   );
 }
 

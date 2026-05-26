@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Logo } from "@/components/ui/logo";
+import { Navbar } from "@/components/marketing/navbar";
 
 export const metadata: Metadata = {
   title: {
@@ -9,55 +9,60 @@ export const metadata: Metadata = {
   },
 };
 
+// Auth shell — provides the radial brand gradient + shared marketing nav.
+// Pages control their own internal layout: /login and /register use a wide
+// two-column (marketing + form card); /verify, /forgot-password, and
+// /update-password render a single centered card.
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh flex flex-col bg-midnight relative overflow-hidden">
-      {/* Background gradient layers */}
-      <div className="absolute inset-0 bg-hero-gradient opacity-90" />
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Was 3 blur clouds — kept one for atmosphere, dropped the rest
-            so the page feels calmer and the auth card is the focal point. */}
-        <div className="absolute -top-64 -right-64 w-[600px] h-[600px] bg-violet/20 rounded-full blur-3xl" />
-        {/* Subtle grid overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
-            backgroundSize: "48px 48px",
-          }}
-        />
-      </div>
+    <div
+      className="min-h-dvh flex flex-col text-white relative overflow-hidden"
+      style={{
+        background: `
+          radial-gradient(circle at 78% 14%, rgba(109,61,242,0.96), transparent 36%),
+          radial-gradient(circle at 20% 78%, rgba(19,197,168,0.16), transparent 34%),
+          linear-gradient(120deg,#050a22 0%,#14236f 52%,#7138ef 100%)
+        `,
+      }}
+    >
+      {/* Subtle grid overlay */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-[0.045] pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+          backgroundSize: "72px 72px",
+        }}
+      />
 
-      {/* Top logo bar */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 max-w-7xl mx-auto w-full">
-        <Link href="/" aria-label="Back to Winipat home">
-          <Logo size="lg" theme="dark" />
-        </Link>
-        <p className="hidden sm:block text-sm text-white/50">
-          Trust-First Commerce for Nigeria
-        </p>
-      </header>
+      <Navbar />
 
-      {/* Main content area */}
-      <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
+      {/* Spacer for the fixed navbar (h-16) so content doesn't slide under it */}
+      <main className="relative z-[1] flex-1 pt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
           {children}
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 py-6 px-6 text-center">
-        <p className="text-xs text-white/30">
+      <footer className="relative z-[1] py-6 px-6 text-center">
+        <p className="text-xs text-white/40">
           &copy; {new Date().getFullYear()} Winipat. All rights reserved. &middot;{" "}
-          <Link href="/legal/privacy" className="hover:text-white/60 transition-colors">
+          <Link
+            href="/legal/privacy"
+            className="hover:text-white/70 transition-colors"
+          >
             Privacy Policy
           </Link>{" "}
           &middot;{" "}
-          <Link href="/legal/terms" className="hover:text-white/60 transition-colors">
+          <Link
+            href="/legal/terms"
+            className="hover:text-white/70 transition-colors"
+          >
             Terms of Service
           </Link>
         </p>

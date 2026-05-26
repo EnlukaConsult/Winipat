@@ -1,25 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Mail, Lock, ShieldCheck, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
+import { AuthMarketing } from "@/components/auth/auth-marketing";
+import { AuthCard } from "@/components/auth/auth-card";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    form?: string;
+  }>({});
+
+  // Pre-fill from the callback's confirmation_failed redirect
+  const urlError = searchParams.get("error");
+  const initialBanner =
+    urlError === "confirmation_failed"
+      ? "Verification link expired or already used. Please sign in or request a fresh link."
+      : null;
 
   function validate() {
     const next: typeof errors = {};
     if (!email.trim()) next.email = "Email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) next.email = "Enter a valid email address.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      next.email = "Enter a valid email address.";
     if (!password) next.password = "Password is required.";
     return next;
   }
@@ -36,10 +52,15 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (error) {
         if (error.message.toLowerCase().includes("invalid")) {
-          setErrors({ form: "Incorrect email or password. Please try again." });
+          setErrors({
+            form: "Incorrect email or password. Please try again.",
+          });
         } else if (error.message.toLowerCase().includes("confirm")) {
           setErrors({ form: "Please verify your email before signing in." });
         } else {
@@ -56,26 +77,19 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div className="rounded-[--radius-xl] bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20 overflow-hidden">
-      {/* Card header */}
-      <div className="bg-gradient-to-br from-midnight to-midnight-lighter px-8 py-8 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-[--radius-lg] bg-gold/20 border border-gold/30 mb-4">
-          <ShieldCheck className="h-7 w-7 text-gold" />
-        </div>
-        <h1 className="text-2xl font-bold text-white font-[family-name:var(--font-sora)]">
-          Welcome back
-        </h1>
-        <p className="mt-1.5 text-sm text-white/60">
-          Sign in to your Winipat account
-        </p>
-      </div>
+  const formError = errors.form ?? initialBanner;
 
-      {/* Form */}
-      <div className="px-8 py-8">
-        {errors.form && (
-          <div className="mb-5 rounded-[--radius-md] bg-error/8 border border-error/20 px-4 py-3">
-            <p className="text-sm text-error font-medium">{errors.form}</p>
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_480px] gap-10 lg:gap-16 items-start">
+      <AuthMarketing />
+
+      <AuthCard
+        heading="Welcome back"
+        subheading="Sign in to your Winipat account to continue"
+      >
+        {formError && (
+          <div className="mb-5 rounded-md bg-error/8 border border-error/20 px-4 py-3">
+            <p className="text-sm text-error font-medium">{formError}</p>
           </div>
         )}
 
@@ -92,36 +106,40 @@ export default function LoginPage() {
             icon={<Mail className="h-4 w-4" />}
           />
 
-          <div>
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              label="Password"
-              placeholder="••••••••"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={errors.password}
-              icon={<Lock className="h-4 w-4" />}
-              suffix={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="cursor-pointer hover:text-slate transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              }
-            />
-            <div className="mt-2 text-right">
-              <Link
-                href="/forgot-password"
-                className="text-xs text-royal hover:text-royal-dark font-medium transition-colors"
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            label="Password"
+            placeholder="Your password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={errors.password}
+            icon={<Lock className="h-4 w-4" />}
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="cursor-pointer hover:text-slate transition-colors pointer-events-auto"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                Forgot your password?
-              </Link>
-            </div>
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            }
+          />
+
+          <div className="flex justify-end -mt-2">
+            <Link
+              href="/forgot-password"
+              className="text-sm font-semibold text-violet hover:text-violet-dark transition-colors"
+            >
+              Forgot password?
+            </Link>
           </div>
 
           <Button
@@ -129,31 +147,41 @@ export default function LoginPage() {
             variant="gold"
             size="lg"
             loading={loading}
-            className="w-full mt-2"
+            className="w-full"
           >
             Sign In
             {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
           </Button>
         </form>
 
+        <div className="mt-6">
+          <OAuthButtons />
+        </div>
+
         <p className="mt-6 text-center text-sm text-slate-light">
-          Don&apos;t have an account?{" "}
+          New to Winipat?{" "}
           <Link
             href="/register"
-            className="font-semibold text-royal hover:text-royal-dark transition-colors"
+            className="font-semibold text-violet hover:text-violet-dark transition-colors"
           >
-            Create one free
+            Create an account
           </Link>
         </p>
-      </div>
-
-      {/* Trust footer */}
-      <div className="border-t border-mist bg-cloud/50 px-8 py-4">
-        <p className="text-xs text-slate-lighter text-center flex items-center justify-center gap-1.5">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald shrink-0" />
-          Your account is protected by escrow-backed security
-        </p>
-      </div>
+      </AuthCard>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="rounded-3xl bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20 p-12 text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-violet border-t-transparent rounded-full mx-auto" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="rounded-[--radius-xl] bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20 overflow-hidden">
+      <div className="max-w-md mx-auto rounded-[--radius-xl] bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20 overflow-hidden">
         <div className="bg-gradient-to-br from-midnight to-midnight-lighter px-8 py-8 text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-[--radius-lg] bg-emerald/20 border border-emerald/30 mb-4">
             <CheckCircle2 className="h-7 w-7 text-emerald" />
@@ -106,7 +106,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="rounded-[--radius-xl] bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20 overflow-hidden">
+    <div className="max-w-md mx-auto rounded-[--radius-xl] bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20 overflow-hidden">
       {/* Card header */}
       <div className="bg-gradient-to-br from-midnight to-midnight-lighter px-8 py-8 text-center">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-[--radius-lg] bg-gold/20 border border-gold/30 mb-4">
