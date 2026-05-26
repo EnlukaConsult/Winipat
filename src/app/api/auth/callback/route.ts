@@ -82,10 +82,18 @@ export async function GET(request: NextRequest) {
   if (!explicitNext && user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, phone")
       .eq("id", user.id)
       .single();
-    const role = profile?.role ?? "buyer";
+
+    // OAuth signups (Google etc.) skip our /register form entirely, so they
+    // have no phone and the default role. Send them through /welcome to
+    // pick a role + provide a phone before they hit a dashboard.
+    if (!profile?.phone) {
+      return NextResponse.redirect(`${origin}/welcome`);
+    }
+
+    const role = profile.role ?? "buyer";
     landing = ROLE_LANDING[role] ?? "/dashboard/browse";
   }
 
