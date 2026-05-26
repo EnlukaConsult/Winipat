@@ -59,6 +59,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Recovery (password reset) — send to the set-new-password page even
+  // though a session is now set. We don't want to drop them on a dashboard
+  // because the whole point of clicking the email is to change the password.
+  // Honor explicit ?next= if the caller (e.g. forgot-password page) set one.
+  if (type === "recovery") {
+    return NextResponse.redirect(`${origin}${explicitNext ?? "/update-password"}`);
+  }
+
+  // Email change — confirm the new address, land on the profile page.
+  if (type === "email_change") {
+    return NextResponse.redirect(`${origin}/dashboard/profile`);
+  }
+
   // Verified + session set. Find the role to land them on the right page.
   const {
     data: { user },
