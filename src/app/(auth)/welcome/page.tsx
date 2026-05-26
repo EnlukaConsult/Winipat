@@ -8,6 +8,8 @@ import {
   ShoppingBag,
   Store,
   ArrowRight,
+  User,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AuthCard } from "@/components/auth/auth-card";
 
 type Role = "buyer" | "seller";
+type SellerType = "individual" | "business";
 
 // Post-OAuth onboarding. Google signup gives us an email and a name —
 // nothing else. Sellers especially need a phone (required for KYC) and
@@ -23,6 +26,7 @@ type Role = "buyer" | "seller";
 export default function WelcomePage() {
   const router = useRouter();
   const [role, setRole] = useState<Role>("buyer");
+  const [sellerType, setSellerType] = useState<SellerType>("individual");
   const [phone, setPhone] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [name, setName] = useState("");
@@ -30,6 +34,7 @@ export default function WelcomePage() {
   const [checking, setChecking] = useState(true);
   const [errors, setErrors] = useState<{
     phone?: string;
+    seller_type?: string;
     terms?: string;
     form?: string;
   }>({});
@@ -74,7 +79,11 @@ export default function WelcomePage() {
       const res = await fetch("/api/auth/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, phone: phone.replace(/\s/g, "") }),
+        body: JSON.stringify({
+          role,
+          phone: phone.replace(/\s/g, ""),
+          ...(role === "seller" ? { seller_type: sellerType } : {}),
+        }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -166,6 +175,62 @@ export default function WelcomePage() {
               </p>
             )}
           </div>
+
+          {/* Seller-only: individual vs business. Surfaced here so we can
+              route the right KYC docs later (CAC for business, ID-only
+              for individual). Only persisted when role === 'seller'. */}
+          {role === "seller" && (
+            <div>
+              <p className="mb-2 text-sm font-medium text-slate">Seller type</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSellerType("individual")}
+                  className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-all cursor-pointer min-h-[44px] ${
+                    sellerType === "individual"
+                      ? "border-violet bg-violet/5 text-violet"
+                      : "border-mist text-slate-light hover:border-mist-dark"
+                  }`}
+                  aria-pressed={sellerType === "individual"}
+                >
+                  <User className="h-5 w-5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold leading-tight">
+                      Individual
+                    </p>
+                    <p className="text-xs text-slate-lighter leading-tight mt-0.5">
+                      Sole trader
+                    </p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSellerType("business")}
+                  className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-all cursor-pointer min-h-[44px] ${
+                    sellerType === "business"
+                      ? "border-violet bg-violet/5 text-violet"
+                      : "border-mist text-slate-light hover:border-mist-dark"
+                  }`}
+                  aria-pressed={sellerType === "business"}
+                >
+                  <Building2 className="h-5 w-5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold leading-tight">
+                      Business
+                    </p>
+                    <p className="text-xs text-slate-lighter leading-tight mt-0.5">
+                      CAC-registered
+                    </p>
+                  </div>
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-light">
+                {sellerType === "business"
+                  ? "You'll need a CAC certificate at KYC."
+                  : "Government ID is enough at KYC for sole traders."}
+              </p>
+            </div>
+          )}
 
           <Input
             id="phone"
