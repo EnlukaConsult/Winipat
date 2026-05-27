@@ -200,8 +200,12 @@ export default function SellerDashboardPage() {
 
       if (orders && orders.length > 0) {
         const buyerIds = [...new Set(orders.map((o) => o.buyer_id))];
+        // public_profiles view (migration 012) — bypasses the strict
+        // profiles RLS so sellers can see the buyer's first name in
+        // their recent-orders list. Old code queried `profiles` directly
+        // and got null back, falling through to "Customer".
         const { data: buyers } = await supabase
-          .from("profiles")
+          .from("public_profiles")
           .select("id, full_name")
           .in("id", buyerIds);
 

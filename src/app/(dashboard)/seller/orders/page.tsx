@@ -332,8 +332,12 @@ export default function SellerOrdersPage() {
     if (!rawOrders) { setLoading(false); return; }
 
     const buyerIds = [...new Set(rawOrders.map((o) => o.buyer_id))];
+    // public_profiles view (migration 012) bypasses the profiles RLS so
+    // sellers can see buyer names on their orders. Querying `profiles`
+    // directly here used to silently return null due to the
+    // owner-or-admin-only SELECT policy.
     const { data: buyers } = buyerIds.length
-      ? await supabase.from("profiles").select("id, full_name").in("id", buyerIds)
+      ? await supabase.from("public_profiles").select("id, full_name").in("id", buyerIds)
       : { data: [] };
 
     const buyerMap = Object.fromEntries((buyers || []).map((b) => [b.id, b.full_name]));

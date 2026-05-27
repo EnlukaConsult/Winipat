@@ -134,34 +134,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setProduct(p);
 
         if (p.sellers?.id) {
-          const [{ data: ts }, { data: rs }, { data: { user } }] = await Promise.all([
+          const [{ data: ts }, reviewsList, { data: { user } }] = await Promise.all([
             supabase
               .from("trust_scores")
               .select("average_rating, total_reviews, dispute_rate, on_time_rate, badge")
               .eq("seller_id", p.sellers.id)
               .single(),
-            supabase
-              .from("reviews")
-              .select(
-                "id, rating, comment, created_at, buyer:profiles!buyer_id(full_name), review_media(id)"
-              )
-              .eq("seller_id", p.sellers.id)
-              .order("created_at", { ascending: false })
-              .limit(50),
+            loadSellerReviews(supabase, p.sellers.id),
             supabase.auth.getUser(),
           ]);
           if (ts) setTrustScore(ts as TrustScore);
-          if (rs) {
-            const shaped: Review[] = (rs as unknown as Array<Record<string, unknown>>).map((r) => ({
-              id: r.id as string,
-              rating: r.rating as number,
-              comment: r.comment as string | null,
-              created_at: r.created_at as string,
-              buyer: Array.isArray(r.buyer) ? (r.buyer[0] as Review["buyer"]) : (r.buyer as Review["buyer"]),
-              has_media: Array.isArray(r.review_media) ? r.review_media.length > 0 : false,
-            }));
-            setReviews(shaped);
-          }
+          setReviews(reviewsList);
 
           // Check this buyer's completed orders with this seller that haven't
           // been reviewed yet — used to gate the "Write a review" button.
@@ -227,32 +210,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       // Refresh reviews + trust score so the new entry shows immediately.
       if (product?.sellers?.id) {
         const supabase = createClient();
-        const [{ data: rs }, { data: ts }] = await Promise.all([
-          supabase
-            .from("reviews")
-            .select(
-              "id, rating, comment, created_at, buyer:profiles!buyer_id(full_name), review_media(id)"
-            )
-            .eq("seller_id", product.sellers.id)
-            .order("created_at", { ascending: false })
-            .limit(50),
+        const [reviewsList, { data: ts }] = await Promise.all([
+          loadSellerReviews(supabase, product.sellers.id),
           supabase
             .from("trust_scores")
             .select("average_rating, total_reviews, dispute_rate, on_time_rate, badge")
             .eq("seller_id", product.sellers.id)
             .single(),
         ]);
-        if (rs) {
-          const shaped: Review[] = (rs as unknown as Array<Record<string, unknown>>).map((r) => ({
-            id: r.id as string,
-            rating: r.rating as number,
-            comment: r.comment as string | null,
-            created_at: r.created_at as string,
-            buyer: Array.isArray(r.buyer) ? (r.buyer[0] as Review["buyer"]) : (r.buyer as Review["buyer"]),
-            has_media: Array.isArray(r.review_media) ? r.review_media.length > 0 : false,
-          }));
-          setReviews(shaped);
-        }
+        setReviews(reviewsList);
         if (ts) setTrustScore(ts as TrustScore);
       }
 
@@ -1179,4 +1145,55 @@ function TrustChip({
       </div>
     </div>
   );
+}
+
+// ─── Data loaders ──────────────────────────────────────────────
+
+// Loads the latest 50 reviews for a seller along with the reviewer's
+// display name. Done as two queries instead of an inline join because
+// the profiles table's RLS blocks one user from reading another's row —
+// the public_profiles view (migration 012) is the safe display-only
+// surface for cross-user name lookups.
+type SupabaseClient = ReturnType<typeof createClient>;
+async function loadSellerReviews(
+  supabase: SupabaseClient,
+  sellerId: string
+): Promise<Review[]> {
+  const { data } = await supabase
+    .from("reviews")
+    .select("id, rating, comment, created_at, buyer_id, review_media(id)")
+    .eq("seller_id", sellerId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  type RawReview = {
+    id: string;
+    rating: number;
+    comment: string | null;
+    created_at: string;
+    buyer_id: string;
+    review_media?: Array<{ id: string }>;
+  };
+  const rows = (data as unknown as RawReview[] | null) ?? [];
+  if (rows.length === 0) return [];
+
+  const buyerIds = Array.from(new Set(rows.map((r) => r.buyer_id)));
+  const { data: profiles } = await supabase
+    .from("public_profiles")
+    .select("id, full_name")
+    .in("id", buyerIds);
+
+  const nameById = Object.fromEntries(
+    ((profiles as Array<{ id: string; full_name: string | null }> | null) ?? [])
+      .map((p) => [p.id, p.full_name])
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    comment: r.comment,
+    created_at: r.created_at,
+    buyer: { full_name: nameById[r.buyer_id] ?? "Verified buyer" },
+    has_media: Array.isArray(r.review_media) ? r.review_media.length > 0 : false,
+  }));
 }

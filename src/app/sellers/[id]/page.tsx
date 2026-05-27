@@ -41,12 +41,47 @@ export default async function PublicSellerPage({
     .order("created_at", { ascending: false })
     .limit(12);
 
-  const { data: reviews } = await supabase
+  // Two-pass review fetch — the inline `buyer:profiles!buyer_id` join
+  // returns null because the profiles RLS blocks cross-user reads.
+  // Instead pull reviews first, then look up the reviewer's display
+  // name from the public_profiles view (migration 012, GRANT to both
+  // anon + authenticated so public storefronts work too).
+  const { data: rawReviews } = await supabase
     .from("reviews")
-    .select("id, rating, comment, created_at, buyer:profiles!buyer_id(full_name)")
+    .select("id, rating, comment, created_at, buyer_id")
     .eq("seller_id", id)
     .order("created_at", { ascending: false })
     .limit(10);
+
+  type RawReview = {
+    id: string;
+    rating: number;
+    comment: string | null;
+    created_at: string;
+    buyer_id: string;
+  };
+  const reviewRows = (rawReviews as RawReview[] | null) ?? [];
+
+  let buyerNames: Record<string, string | null> = {};
+  if (reviewRows.length > 0) {
+    const reviewerIds = Array.from(new Set(reviewRows.map((r) => r.buyer_id)));
+    const { data: profileRows } = await supabase
+      .from("public_profiles")
+      .select("id, full_name")
+      .in("id", reviewerIds);
+    buyerNames = Object.fromEntries(
+      ((profileRows as Array<{ id: string; full_name: string | null }> | null) ?? [])
+        .map((p) => [p.id, p.full_name])
+    );
+  }
+
+  const reviews = reviewRows.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    comment: r.comment,
+    created_at: r.created_at,
+    buyer: { full_name: buyerNames[r.buyer_id] ?? "Verified buyer" },
+  }));
 
   const rating = trust?.average_rating ? Number(trust.average_rating) : 0;
   const totalReviews = trust?.total_reviews ?? 0;
