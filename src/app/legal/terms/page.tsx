@@ -172,7 +172,7 @@ export default function TermsPage() {
           <li>Bank account in the seller&apos;s legal name for payouts</li>
           <li>Pickup address (street, city, state)</li>
           <li>Business name (if applicable)</li>
-          <li>Optionally: CAC certificate, utility bill, bank statement (faster approval)</li>
+          <li>Optionally: CAC certificate or recent utility bill (electricity, waste, water) showing your pickup address &mdash; speeds up approval</li>
         </Bullets>
         <Para>
           Review timeline is typically 1 business day. Rejected applications include reasons and may

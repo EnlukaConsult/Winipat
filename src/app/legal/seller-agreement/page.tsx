@@ -28,7 +28,7 @@ export default function SellerAgreementPage() {
           <li><strong className="text-midnight">Business information:</strong> business name, description, pickup address (street, city, state)</li>
           <li><strong className="text-midnight">Identity document:</strong> government-issued ID — NIN slip, international passport, driver&apos;s licence, or voter&apos;s card</li>
           <li><strong className="text-midnight">Bank account:</strong> NUBAN account number, bank name, name on the account. The name must match the seller&apos;s legal name and is verified via Paystack</li>
-          <li><strong className="text-midnight">Optional bank statement:</strong> a recent 3-month statement to expedite verification</li>
+          <li><strong className="text-midnight">Optional utility bill:</strong> a recent electricity, waste, or water bill showing the pickup address. Used to verify the seller&apos;s location. Replaced the older bank-statement requirement that many Nigerian sellers preferred not to share.</li>
           <li><strong className="text-midnight">Acceptance of agreements:</strong> this Seller Agreement and our Escrow Policy (see Section 4)</li>
         </Bullets>
         <Para>

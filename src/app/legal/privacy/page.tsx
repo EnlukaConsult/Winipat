@@ -35,7 +35,7 @@ export default function PrivacyPage() {
           <li>Pickup address (street, city, state)</li>
           <li>Government-issued ID document</li>
           <li>Bank account details (account number, bank name, account holder)</li>
-          <li>Optional bank statement for verification</li>
+          <li>Optional utility bill (electricity, waste, or water) showing the pickup address &mdash; used to verify seller location</li>
         </Bullets>
 
         <Para><strong className="text-midnight">Transactional data:</strong></Para>

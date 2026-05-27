@@ -69,7 +69,11 @@ interface FormData {
   pickupState: string;
   // Step 3 — KYC Documents
   govtIdFile: File | null;
-  bankStatementFile: File | null;
+  // Utility bill (electricity, waste, water) — recent issue with the
+  // seller's pickup address printed on it. Replaced an earlier
+  // "bank statement" requirement that many Nigerian sellers were
+  // uncomfortable sharing.
+  utilityBillFile: File | null;
   // Step 4 — Bank Account
   bankName: string;
   accountNumber: string;
@@ -154,7 +158,7 @@ export default function SellerOnboardingPage() {
     pickupCity: "",
     pickupState: "",
     govtIdFile: null,
-    bankStatementFile: null,
+    utilityBillFile: null,
     bankName: "",
     accountNumber: "",
     accountName: "",
@@ -261,12 +265,12 @@ export default function SellerOnboardingPage() {
 
       // 2. Upload KYC documents and create their records
       const govtIdUrl = await uploadToStorage(form.govtIdFile, "govt-id");
-      const docInserts: Array<{ seller_id: string; document_type: "government_id" | "bank_statement"; file_url: string }> = [
+      const docInserts: Array<{ seller_id: string; document_type: "government_id" | "utility_bill"; file_url: string }> = [
         { seller_id: user.id, document_type: "government_id", file_url: govtIdUrl },
       ];
-      if (form.bankStatementFile) {
-        const bankStmtUrl = await uploadToStorage(form.bankStatementFile, "bank-statement");
-        docInserts.push({ seller_id: user.id, document_type: "bank_statement", file_url: bankStmtUrl });
+      if (form.utilityBillFile) {
+        const utilityUrl = await uploadToStorage(form.utilityBillFile, "utility-bill");
+        docInserts.push({ seller_id: user.id, document_type: "utility_bill", file_url: utilityUrl });
       }
       const { error: docsError } = await supabase
         .from("seller_kyc_documents")
@@ -474,11 +478,11 @@ export default function SellerOnboardingPage() {
               required
             />
             <FileUploadArea
-              label="Bank Statement (optional but recommended)"
-              hint="Recent 3-month statement in PDF format"
-              file={form.bankStatementFile}
-              onFile={(f) => set("bankStatementFile", f)}
-              accept=".pdf"
+              label="Utility bill (optional but recommended)"
+              hint="Most recent electricity, waste or water bill — must show your pickup address. Speeds up approval."
+              file={form.utilityBillFile}
+              onFile={(f) => set("utilityBillFile", f)}
+              accept=".pdf,.jpg,.jpeg,.png"
             />
           </div>
         )}
@@ -526,8 +530,8 @@ export default function SellerOnboardingPage() {
                 badge={form.govtIdFile ? "success" : "error"}
               />
               <ReviewRow
-                label="Bank Statement"
-                value={form.bankStatementFile ? form.bankStatementFile.name : "Not provided"}
+                label="Utility bill"
+                value={form.utilityBillFile ? form.utilityBillFile.name : "Not provided"}
               />
               <ReviewRow label="Bank" value={`${form.bankName} — ${form.accountNumber}`} />
               <ReviewRow label="Account Name" value={form.accountName} />
