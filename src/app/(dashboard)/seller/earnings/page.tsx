@@ -15,7 +15,11 @@ import {
   RefreshCw,
   Hash,
   Calendar,
+  Banknote,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
+import { PayoutTimeline } from "@/components/seller/payout-timeline";
 
 // Default commission rate per FRD (BR-040). Falls back to this when no
 // commissions row exists yet for a given order.
@@ -219,31 +223,80 @@ export default function SellerEarningsPage() {
     },
   ];
 
+  const isFirstPayoutPending =
+    summary.totalPaidOut === 0 && summary.pendingSettlement > 0;
+  const isBrandNew =
+    summary.grossSales === 0 &&
+    summary.pendingSettlement === 0 &&
+    payouts.length === 0;
+
   return (
     <div className="space-y-6">
-      {/* ===== Header ===== */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
-            Earnings
-          </h1>
-          <p className="text-slate-light mt-0.5 text-sm">
-            Track revenue, commissions, and payout history.
-          </p>
+      {/* ===== Hero — gradient card, matches the rest of the seller portal ===== */}
+      <section
+        className="relative overflow-hidden rounded-2xl text-white px-6 py-6 sm:px-8 sm:py-7"
+        style={{
+          background: `
+            radial-gradient(circle at 92% 8%, rgba(16,185,129,0.45), transparent 38%),
+            radial-gradient(circle at 6% 92%, rgba(124,58,237,0.35), transparent 40%),
+            linear-gradient(125deg, #0B1020 0%, #15205A 55%, #047857 100%)
+          `,
+        }}
+      >
+        <div className="relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-6 items-start">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold uppercase tracking-wider mb-3">
+              <Banknote className="h-3 w-3 text-gold" aria-hidden="true" />
+              Earnings
+            </div>
+            <h1 className="font-[family-name:var(--font-sora)] text-2xl sm:text-3xl font-bold leading-tight">
+              {isBrandNew
+                ? "Your earnings dashboard"
+                : formatNaira(summary.netEarnings / 100)}
+            </h1>
+            <p className="mt-1.5 text-sm sm:text-base text-white/75 max-w-xl">
+              {isBrandNew
+                ? "Once orders complete, you'll see net earnings, commission, payouts and trends here."
+                : isFirstPayoutPending
+                ? `Your first payout is on the way — about ${formatNaira(summary.pendingSettlement / 100)} releases after the 48h escrow window.`
+                : "Net of platform commission and across all completed orders."}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={load}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-bold transition-colors min-h-[44px]"
+            >
+              <RefreshCw size={12} aria-hidden="true" />
+              Refresh
+            </button>
+            <Link href="/seller/onboarding">
+              <span className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-midnight text-xs font-bold hover:bg-cloud transition-colors min-h-[44px]">
+                Manage bank
+                <ArrowRight size={12} aria-hidden="true" />
+              </span>
+            </Link>
+          </div>
         </div>
-        <button
-          onClick={load}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-[--radius-md] border border-mist text-xs text-slate hover:border-violet/40 self-start sm:self-auto"
-        >
-          <RefreshCw size={12} />
-          Refresh
-        </button>
-      </div>
+      </section>
+
+      {/* ===== Payout flow timeline ===== */}
+      <PayoutTimeline
+        inFlightSales={inFlight.reduce((sum, o) => sum + (o.total ?? 0), 0) / 100}
+        escrowHoldValue={summary.pendingSettlement / 100}
+        awaitingPayout={
+          payouts
+            .filter((p) => p.status === "pending" || p.status === "processing")
+            .reduce((sum, p) => sum + (p.amount ?? 0), 0) / 100
+        }
+        paidOut={summary.totalPaidOut / 100}
+      />
 
       {/* ===== Commission banner ===== */}
-      <div className="relative overflow-hidden rounded-[--radius-lg] bg-gradient-to-r from-violet/8 via-teal/5 to-emerald/8 border border-violet/15 p-5">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet/8 via-teal/5 to-emerald/8 border border-violet/15 p-5">
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-[--radius-md] bg-violet/15 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-violet/15 flex items-center justify-center shrink-0">
             <Info size={16} className="text-violet" />
           </div>
           <div className="min-w-0">

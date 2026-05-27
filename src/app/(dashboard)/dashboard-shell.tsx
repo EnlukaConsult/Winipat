@@ -2,6 +2,7 @@
 
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
+import { SellerFab } from "@/components/seller/seller-fab";
 import { usePathname } from "next/navigation";
 
 interface DashboardShellProps {
@@ -73,6 +74,10 @@ export function DashboardShell({
           {children}
         </main>
       </div>
+
+      {/* Mobile floating "Add product" button — only renders for sellers
+          inside /seller/* (component does the path + role gate itself). */}
+      {role === "seller" && <SellerFab />}
     </div>
   );
 }
