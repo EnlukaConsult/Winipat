@@ -117,27 +117,42 @@ export default function SellerDisputesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
-            Disputes
-          </h1>
-          <p className="text-slate-light mt-1">
-            Respond to buyer disputes with evidence within your SLA to protect your account.
-          </p>
+      {/* Header — rebranded "Resolution Center" to feel less adversarial.
+          Same page, same data, friendlier framing. */}
+      <section
+        className="relative overflow-hidden rounded-2xl text-white px-5 py-5 sm:px-7 sm:py-6"
+        style={{
+          background: `
+            radial-gradient(circle at 90% 10%, rgba(20,184,166,0.32), transparent 40%),
+            linear-gradient(125deg, #0B1020 0%, #15205A 70%, #1E3A8A 100%)
+          `,
+        }}
+      >
+        <div className="flex items-start gap-4 flex-wrap">
+          <div className="shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/12 border border-white/15 text-teal-light">
+            <ShieldAlert className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="font-[family-name:var(--font-sora)] text-xl sm:text-2xl font-bold leading-tight">
+              Resolution Center
+            </h1>
+            <p className="mt-1 text-sm text-white/75">
+              Where buyers and sellers settle order issues with evidence.
+              Respond promptly to protect your trust score and earnings.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Heads-up banner */}
-      <div className="rounded-[--radius-lg] bg-warning/8 border border-warning/30 px-5 py-4 flex items-start gap-3">
+      {/* Heads-up banner — soft amber, sits below the hero */}
+      <div className="rounded-2xl bg-warning/8 border border-warning/30 px-5 py-4 flex items-start gap-3">
         <ShieldAlert size={16} className="text-amber-600 mt-0.5 shrink-0" />
         <div>
           <p className="text-sm font-semibold text-midnight">
             Why respond quickly?
           </p>
           <p className="text-sm text-slate-light mt-0.5">
-            Disputes left without a seller response are ruled in the buyer&apos;s favour by default
+            Cases left without a seller response are ruled in the buyer&apos;s favour by default
             (SEL-DSP-002). Upload packaging/shipping evidence and reply to the buyer&apos;s claim as
             soon as you can.
           </p>
@@ -180,11 +195,13 @@ export default function SellerDisputesPage() {
       ) : visible.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 text-center">
           <ShoppingBag size={36} className="text-mist-dark mb-3" />
-          <p className="font-semibold text-midnight">No {activeTab} disputes</p>
-          <p className="text-sm text-slate-light mt-1">
+          <p className="font-semibold text-midnight">
+            {activeTab === "open" ? "No open cases" : "No resolved cases"}
+          </p>
+          <p className="text-sm text-slate-light mt-1 max-w-sm">
             {activeTab === "open"
-              ? "Great — no active disputes against your orders right now."
-              : "No resolved disputes yet."}
+              ? "Great — buyers are happy with your orders right now. Keep dispatch on time and your shipping photos current."
+              : "Once cases are resolved (in your favour or the buyer's), they'll appear here for reference."}
           </p>
         </Card>
       ) : (

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Logo, ShieldIcon } from "@/components/ui/logo";
 import {
-  Home,
   Search,
   ShoppingCart,
   Package,
@@ -16,7 +15,6 @@ import {
   Plus,
   DollarSign,
   Users,
-  AlertTriangle,
   BarChart3,
   Banknote,
   Truck,
@@ -27,6 +25,10 @@ import {
   Sliders,
   Mail,
   X,
+  Wallet,
+  LifeBuoy,
+  ShieldCheck,
+  Upload,
 } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -38,49 +40,97 @@ type NavItem = {
   icon: React.ElementType;
 };
 
-const buyerNav: NavItem[] = [
-  { label: "Browse",   href: "/dashboard/browse",   icon: Search },
-  { label: "Cart",     href: "/dashboard/cart",     icon: ShoppingCart },
-  { label: "Orders",   href: "/dashboard/orders",   icon: Package },
-  { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
-  { label: "Profile",  href: "/dashboard/profile",  icon: User },
-  { label: "Support",  href: "/contact",            icon: Mail },
+// Sections are an optional grouping layer. Roles with 6+ items get
+// section headers ("Store", "Finance", "Trust & Compliance", "Support")
+// so the desktop sidebar reads less like a flat ERP menu. Roles with
+// fewer items keep the flat shape.
+type NavSection = { section: string | null; items: NavItem[] };
+
+const buyerNav: NavSection[] = [
+  {
+    section: null,
+    items: [
+      { label: "Browse",   href: "/dashboard/browse",   icon: Search },
+      { label: "Cart",     href: "/dashboard/cart",     icon: ShoppingCart },
+      { label: "Orders",   href: "/dashboard/orders",   icon: Package },
+      { label: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+      { label: "Profile",  href: "/dashboard/profile",  icon: User },
+      { label: "Support",  href: "/contact",            icon: Mail },
+    ],
+  },
 ];
 
-const sellerNav: NavItem[] = [
-  { label: "Dashboard",   href: "/seller",                icon: LayoutDashboard },
-  { label: "Products",    href: "/seller/products",       icon: Store },
-  { label: "Add Product", href: "/seller/products/new",   icon: Plus },
-  { label: "Bulk Upload", href: "/seller/products/bulk",  icon: ClipboardList },
-  { label: "Orders",      href: "/seller/orders",         icon: Package },
-  { label: "Disputes",    href: "/seller/disputes",       icon: AlertTriangle },
-  { label: "Earnings",    href: "/seller/earnings",       icon: DollarSign },
-  { label: "Support",     href: "/contact",               icon: Mail },
+const sellerNav: NavSection[] = [
+  {
+    section: "Store",
+    items: [
+      { label: "Dashboard",   href: "/seller",                icon: LayoutDashboard },
+      { label: "Products",    href: "/seller/products",       icon: Store },
+      { label: "Add Product", href: "/seller/products/new",   icon: Plus },
+      { label: "Bulk Upload", href: "/seller/products/bulk",  icon: Upload },
+      { label: "Orders",      href: "/seller/orders",         icon: Package },
+    ],
+  },
+  {
+    section: "Finance",
+    items: [
+      { label: "Earnings",    href: "/seller/earnings",       icon: Wallet },
+    ],
+  },
+  {
+    section: "Trust & Compliance",
+    items: [
+      { label: "Onboarding & KYC",  href: "/seller/onboarding", icon: ShieldCheck },
+      { label: "Resolution Center", href: "/seller/disputes",   icon: LifeBuoy },
+    ],
+  },
+  {
+    section: "Support",
+    items: [
+      { label: "Help Center", href: "/contact", icon: Mail },
+    ],
+  },
 ];
 
-const adminNav: NavItem[] = [
-  { label: "Overview",    href: "/admin",             icon: LayoutDashboard },
-  { label: "Sellers",     href: "/admin/sellers",     icon: Users },
-  { label: "Disputes",    href: "/admin/disputes",    icon: AlertTriangle },
-  { label: "Settlements", href: "/admin/settlements", icon: Banknote },
-  { label: "Payouts",     href: "/admin/payouts",     icon: DollarSign },
-  { label: "Enquiries",   href: "/admin/enquiries",   icon: Mail },
-  { label: "Analytics",   href: "/admin/analytics",   icon: BarChart3 },
-  { label: "Team",        href: "/admin/team",        icon: User },
-  { label: "Settings",    href: "/admin/settings",    icon: Sliders },
+const adminNav: NavSection[] = [
+  {
+    section: null,
+    items: [
+      { label: "Overview",    href: "/admin",             icon: LayoutDashboard },
+      { label: "Sellers",     href: "/admin/sellers",     icon: Users },
+      { label: "Disputes",    href: "/admin/disputes",    icon: LifeBuoy },
+      { label: "Settlements", href: "/admin/settlements", icon: Banknote },
+      { label: "Payouts",     href: "/admin/payouts",     icon: DollarSign },
+      { label: "Enquiries",   href: "/admin/enquiries",   icon: Mail },
+      { label: "Analytics",   href: "/admin/analytics",   icon: BarChart3 },
+      { label: "Team",        href: "/admin/team",        icon: User },
+      { label: "Settings",    href: "/admin/settings",    icon: Sliders },
+    ],
+  },
 ];
 
-const logisticsNav: NavItem[] = [
-  { label: "Pickups", href: "/logistics/pickups", icon: ClipboardList },
-  { label: "Deliveries", href: "/logistics/deliveries", icon: Truck },
+const logisticsNav: NavSection[] = [
+  {
+    section: null,
+    items: [
+      { label: "Pickups",    href: "/logistics/pickups",    icon: ClipboardList },
+      { label: "Deliveries", href: "/logistics/deliveries", icon: Truck },
+    ],
+  },
 ];
 
-const navMap: Record<string, NavItem[]> = {
+const navMap: Record<string, NavSection[]> = {
   buyer: buyerNav,
   seller: sellerNav,
   admin: adminNav,
   logistics: logisticsNav,
 };
+
+// Flatten sections back to a list — used by mobile bottom nav, which
+// can't show section headers and just slices the first N items.
+function flattenSections(sections: NavSection[]): NavItem[] {
+  return sections.flatMap((s) => s.items);
+}
 
 interface SidebarProps {
   role: string;
@@ -92,10 +142,11 @@ export function Sidebar({ role, userName }: SidebarProps) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const items = navMap[role] || buyerNav;
+  const sections = navMap[role] || buyerNav;
+  const items = flattenSections(sections);
 
   // Mobile nav strategy: show first 4 items inline, hide the rest behind
-  // a "More" overflow drawer. Sellers (8 items) and admins (9 items)
+  // a "More" overflow drawer. Sellers (9 items) and admins (9 items)
   // previously lost access to ~half their sidebar on mobile.
   const primaryMobile = items.slice(0, 4);
   const overflow = items.slice(4);
@@ -252,26 +303,45 @@ export function Sidebar({ role, userName }: SidebarProps) {
           </button>
         </div>
 
-        <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-          {items.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-[--radius-md] transition-colors text-sm",
-                  isActive
-                    ? "bg-royal text-white"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                )}
-                title={collapsed ? item.label : undefined}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 py-4 px-2 overflow-y-auto">
+          {sections.map((section, sectionIdx) => (
+            <div
+              key={section.section ?? `section-${sectionIdx}`}
+              className={sectionIdx > 0 ? "mt-5" : undefined}
+            >
+              {section.section && !collapsed && (
+                <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+                  {section.section}
+                </p>
+              )}
+              {section.section && collapsed && sectionIdx > 0 && (
+                <div className="mx-3 mb-2 h-px bg-white/10" aria-hidden="true" />
+              )}
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-[--radius-md] transition-colors text-sm",
+                        isActive
+                          ? "bg-royal text-white"
+                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                      )}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="p-3 border-t border-white/10">

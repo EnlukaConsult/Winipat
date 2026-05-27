@@ -25,7 +25,7 @@ const titleMap: Record<string, string> = {
   "/seller/orders":         "Seller Orders",
   "/seller/earnings":       "Earnings",
   "/seller/onboarding":     "Seller Onboarding",
-  "/seller/disputes":       "Disputes",
+  "/seller/disputes":       "Resolution Center",
   "/admin":                 "Admin Overview",
   "/admin/sellers":         "Manage Sellers",
   "/admin/disputes":        "Disputes",

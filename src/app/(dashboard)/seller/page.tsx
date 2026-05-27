@@ -10,8 +10,6 @@ import { formatNaira, formatDate, type OrderStatus } from "@/lib/utils";
 import {
   ShoppingBag,
   Plus,
-  ListOrdered,
-  Wallet,
   ArrowRight,
   Building2,
   MapPin,
@@ -23,6 +21,13 @@ import { OnboardingProgress } from "@/components/seller/onboarding-progress";
 import { QuickStats } from "@/components/seller/quick-stats";
 import { SellerHealth } from "@/components/seller/seller-health";
 import { getSellerLevel, ALL_TIERS } from "@/components/seller/seller-level";
+import { SalesChart, type SalesPoint } from "@/components/seller/sales-chart";
+import { TopProductsChart, type TopProduct } from "@/components/seller/top-products-chart";
+import {
+  MarketplaceInsights,
+  type TrendingCategory,
+} from "@/components/seller/marketplace-insights";
+import { SellerActionBar } from "@/components/seller/seller-action-bar";
 
 type SellerStatus = "draft" | "submitted" | "under_review" | "approved" | "rejected" | null;
 
@@ -78,6 +83,10 @@ export default function SellerDashboardPage() {
   const [hasKycDocs, setHasKycDocs] = useState(false);
   const [hasBankAccount, setHasBankAccount] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [salesSeries, setSalesSeries] = useState<SalesPoint[]>(() => emptySeries(30));
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [trending, setTrending] = useState<TrendingCategory[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -213,6 +222,147 @@ export default function SellerDashboardPage() {
       }
 
       setLoading(false);
+
+      // ── Phase 2 data: sales series, top products, trending categories ──
+      //
+      // Run these in a second pass so the dashboard's primary stats render
+      // immediately; charts/insights pop in a moment later. Saves the
+      // user from a long blank screen on a slow connection.
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const sinceIso = since.toISOString();
+
+      const previousSince = new Date();
+      previousSince.setDate(previousSince.getDate() - 28); // 14 days ago for trending
+      const previous = new Date();
+      previous.setDate(previous.getDate() - 14);
+
+      const [
+        { data: completedFor30d },
+        { data: orderItemsForTop },
+        { data: catsCurrent },
+        { data: catsPrevious },
+      ] = await Promise.all([
+        // Daily sales — completed orders in the last 30 days for this seller
+        supabase
+          .from("orders")
+          .select("total, completed_at, created_at")
+          .eq("seller_id", user.id)
+          .in("status", ["completed", "delivered"])
+          .gte("created_at", sinceIso),
+        // Top products — order_items joined with products, top 5 by count
+        supabase
+          .from("order_items")
+          .select(
+            "quantity, product_price, product_id, products!inner(id, name, seller_id), orders!inner(status)"
+          )
+          .eq("products.seller_id", user.id)
+          .in("orders.status", ["completed", "delivered"]),
+        // Trending — order_items joined with products+categories, last 14d, platform-wide
+        supabase
+          .from("order_items")
+          .select(
+            "products!inner(categories!inner(slug, name)), created_at"
+          )
+          .gte("created_at", previous.toISOString()),
+        // Previous 14d for growth comparison
+        supabase
+          .from("order_items")
+          .select(
+            "products!inner(categories!inner(slug, name)), created_at"
+          )
+          .gte("created_at", previousSince.toISOString())
+          .lt("created_at", previous.toISOString()),
+      ]);
+
+      // ── Sales series (30 daily points) ──
+      const dailyMap = new Map<string, { sales: number; orders: number }>();
+      (completedFor30d || []).forEach((o) => {
+        const dateKey = (o.completed_at || o.created_at || "").slice(0, 10);
+        if (!dateKey) return;
+        const existing = dailyMap.get(dateKey) ?? { sales: 0, orders: 0 };
+        existing.sales += (o.total || 0) / 100;
+        existing.orders += 1;
+        dailyMap.set(dateKey, existing);
+      });
+      setSalesSeries(buildSeries(30, dailyMap));
+
+      // ── Top products (top 5 by order count) ──
+      const productMap = new Map<
+        string,
+        { id: string; name: string; orders: number; revenue: number }
+      >();
+      type RawOrderItem = {
+        quantity?: number;
+        product_price?: number;
+        products?:
+          | { id?: string; name?: string }
+          | Array<{ id?: string; name?: string }>;
+      };
+      (orderItemsForTop as unknown as RawOrderItem[] | null)?.forEach((item) => {
+        const product = Array.isArray(item.products) ? item.products[0] : item.products;
+        if (!product?.id || !product.name) return;
+        const existing =
+          productMap.get(product.id) ??
+          { id: product.id, name: product.name, orders: 0, revenue: 0 };
+        existing.orders += item.quantity ?? 1;
+        existing.revenue +=
+          ((item.product_price ?? 0) * (item.quantity ?? 1)) / 100;
+        productMap.set(product.id, existing);
+      });
+      const ranked = [...productMap.values()]
+        .sort((a, b) => b.orders - a.orders)
+        .slice(0, 5);
+      setTopProducts(ranked);
+
+      // ── Trending categories (top 3 by recent platform-wide volume) ──
+      type CatRow = {
+        products?:
+          | { categories?: { slug: string; name: string } | { slug: string; name: string }[] }
+          | { categories?: { slug: string; name: string } | { slug: string; name: string }[] }[];
+      };
+      const countCategory = (rows: CatRow[] | null | undefined) => {
+        const counts = new Map<string, { slug: string; name: string; count: number }>();
+        (rows || []).forEach((row) => {
+          const product = Array.isArray(row.products) ? row.products[0] : row.products;
+          if (!product || !product.categories) return;
+          const cat = Array.isArray(product.categories)
+            ? product.categories[0]
+            : product.categories;
+          if (!cat) return;
+          const entry = counts.get(cat.slug) ?? {
+            slug: cat.slug,
+            name: cat.name,
+            count: 0,
+          };
+          entry.count += 1;
+          counts.set(cat.slug, entry);
+        });
+        return counts;
+      };
+      const current = countCategory(catsCurrent as CatRow[] | null);
+      const prev = countCategory(catsPrevious as CatRow[] | null);
+      const ranked3: TrendingCategory[] = [...current.values()]
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3)
+        .map((c) => {
+          const prevCount = prev.get(c.slug)?.count ?? 0;
+          const growthPct =
+            prevCount === 0
+              ? c.count > 0
+                ? null  // brand-new — show "New" pill
+                : 0
+              : ((c.count - prevCount) / prevCount) * 100;
+          return {
+            slug: c.slug,
+            name: c.name,
+            orders14d: c.count,
+            growthPct,
+          };
+        });
+      setTrending(ranked3);
+
+      setInsightsLoading(false);
     }
     load();
   }, []);
@@ -286,32 +436,20 @@ export default function SellerDashboardPage() {
         loading={loading}
       />
 
-      {/* ===== Quick actions ===== */}
-      <div>
-        <h2 className="font-[family-name:var(--font-sora)] text-base font-semibold text-midnight mb-3">
-          Quick actions
-        </h2>
-        <div className="flex flex-wrap gap-2.5">
-          <Link href="/seller/products/new">
-            <Button variant="primary" size="sm">
-              <Plus size={15} className="mr-2" />
-              Add product
-            </Button>
-          </Link>
-          <Link href="/seller/orders">
-            <Button variant="outline" size="sm">
-              <ListOrdered size={15} className="mr-2" />
-              View orders
-            </Button>
-          </Link>
-          <Link href="/seller/earnings">
-            <Button variant="outline" size="sm">
-              <Wallet size={15} className="mr-2" />
-              Earnings
-            </Button>
-          </Link>
-        </div>
+      {/* ===== Quick-action bar (chips row, mobile-scrollable) ===== */}
+      <SellerActionBar
+        isApproved={isApproved}
+        sellerId={sellerProfile?.id ?? null}
+      />
+
+      {/* ===== Sales chart + Top products (2-up on lg) ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 lg:gap-6">
+        <SalesChart data={salesSeries} loading={loading} />
+        <TopProductsChart data={topProducts} loading={loading} />
       </div>
+
+      {/* ===== Marketplace insights (full-width violet/teal card) ===== */}
+      <MarketplaceInsights trending={trending} loading={insightsLoading} />
 
       {/* ===== Seller health + level ladder ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
@@ -458,4 +596,36 @@ export default function SellerDashboardPage() {
       </Card>
     </div>
   );
+}
+
+// ───────── Helpers ─────────
+
+// Build a 30-day zero-filled series, then overlay actual aggregated daily
+// values. Guarantees the chart renders a clean X-axis even on days the
+// seller had no orders (otherwise Recharts would skip those days and
+// the line would look misleadingly continuous).
+function emptySeries(days: number): SalesPoint[] {
+  const out: SalesPoint[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    out.push({
+      date: d.toISOString().slice(0, 10),
+      sales: 0,
+      orders: 0,
+    });
+  }
+  return out;
+}
+
+function buildSeries(
+  days: number,
+  daily: Map<string, { sales: number; orders: number }>
+): SalesPoint[] {
+  return emptySeries(days).map((point) => {
+    const hit = daily.get(point.date);
+    return hit ? { ...point, sales: hit.sales, orders: hit.orders } : point;
+  });
 }
