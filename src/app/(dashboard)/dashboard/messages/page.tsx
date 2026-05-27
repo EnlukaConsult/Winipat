@@ -1,17 +1,22 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatNaira } from "@/lib/utils";
 import {
   MessageCircle,
   Send,
   ArrowLeft,
   Search,
+  ShieldCheck,
+  Package,
+  Lock,
+  ArrowRight,
 } from "lucide-react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -22,6 +27,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 type Conversation = {
   id: string;
   updated_at: string;
+  order_id: string | null;
   other_user: {
     id: string;
     full_name: string;
@@ -34,17 +40,27 @@ type Conversation = {
     sender_id: string;
   } | null;
   unread_count: number;
+  // Optional snapshot of the related order so the thread header can show
+  // "Re: Order #WNP-XYZ · ₦12,500" without a second fetch per conversation.
+  order_summary: {
+    id: string;
+    order_number: string;
+    total: number;
+    status: string;
+  } | null;
 };
 
 // Raw shape returned by the conversations select with both profile embeds.
 type ConversationRow = {
   id: string;
   updated_at: string;
+  order_id: string | null;
   buyer_id: string;
   seller_id: string;
   buyer:  { id: string; full_name: string; avatar_url: string | null; role: string } | null;
   seller: { id: string; full_name: string; avatar_url: string | null; role: string } | null;
   messages: { content: string; created_at: string; sender_id: string; is_read: boolean }[];
+  order?: { id: string; order_number: string; total: number; status: string } | null;
 };
 
 type Message = {
@@ -109,10 +125,11 @@ export default function MessagesPage() {
     const { data } = await supabase
       .from("conversations")
       .select(
-        `id, updated_at, buyer_id, seller_id,
+        `id, updated_at, order_id, buyer_id, seller_id,
          buyer:profiles!buyer_id(id, full_name, avatar_url, role),
          seller:profiles!seller_id(id, full_name, avatar_url, role),
-         messages(content, created_at, sender_id, is_read)`
+         messages(content, created_at, sender_id, is_read),
+         order:orders(id, order_number, total, status)`
       )
       .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
       .order("updated_at", { ascending: false });
@@ -126,9 +143,15 @@ export default function MessagesPage() {
       );
       const last = msgs[0] || null;
       const unread = msgs.filter((m) => !m.is_read && m.sender_id !== userId).length;
+      const orderSummary = row.order
+        ? Array.isArray(row.order)
+          ? row.order[0] ?? null
+          : row.order
+        : null;
       return {
         id: row.id,
         updated_at: row.updated_at,
+        order_id: row.order_id,
         other_user: other ?? {
           id: "",
           full_name: "Unknown user",
@@ -139,11 +162,36 @@ export default function MessagesPage() {
           ? { content: last.content, created_at: last.created_at, sender_id: last.sender_id }
           : null,
         unread_count: unread,
+        order_summary: orderSummary,
       };
     });
 
     setConversations(shaped);
   }
+
+  // Mark unread incoming messages as read whenever the buyer opens a
+  // conversation. Without this, the unread badge sticks around forever
+  // even after the message has clearly been read.
+  const markConversationRead = useCallback(
+    async (convId: string, userId: string) => {
+      const supabase = createClient();
+      await supabase
+        .from("messages")
+        .update({ is_read: true })
+        .eq("conversation_id", convId)
+        .eq("is_read", false)
+        .neq("sender_id", userId);
+
+      // Optimistically clear the badge in local state too — no need to
+      // re-fetch the whole conversation list.
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convId ? { ...c, unread_count: 0 } : c
+        )
+      );
+    },
+    []
+  );
 
   const fetchMessages = useCallback(
     async (convId: string) => {
@@ -181,8 +229,11 @@ export default function MessagesPage() {
   useEffect(() => {
     if (selectedConv) {
       fetchMessages(selectedConv.id);
+      if (currentUserId && selectedConv.unread_count > 0) {
+        markConversationRead(selectedConv.id, currentUserId);
+      }
     }
-  }, [selectedConv, fetchMessages]);
+  }, [selectedConv, fetchMessages, currentUserId, markConversationRead]);
 
   async function sendMessage() {
     if (!newMessage.trim() || !selectedConv || !currentUserId) return;
@@ -247,12 +298,21 @@ export default function MessagesPage() {
               ))}
             </div>
           ) : filteredConversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-              <MessageCircle size={36} className="mb-3 text-mist-dark" />
-              <p className="text-sm font-medium text-midnight">No conversations yet</p>
-              <p className="mt-1 text-xs text-slate-light">
-                Start a conversation with a seller
+            <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-violet/10 text-violet mb-3">
+                <MessageCircle size={20} aria-hidden="true" />
+              </div>
+              <p className="text-sm font-bold text-midnight">No conversations yet</p>
+              <p className="mt-1 text-xs text-slate-light max-w-[220px]">
+                Tap <strong className="text-midnight">Message</strong> on any product page to start a conversation with that seller.
               </p>
+              <Link
+                href="/dashboard/browse"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-violet hover:underline"
+              >
+                Browse products
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+              </Link>
             </div>
           ) : (
             <div className="space-y-0.5 p-2">
@@ -311,39 +371,81 @@ export default function MessagesPage() {
       >
         {!selectedConv ? (
           <div className="flex flex-1 flex-col items-center justify-center text-center p-8">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-royal/10">
-              <MessageCircle size={28} className="text-royal" />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet/15 to-teal/15">
+              <MessageCircle size={26} className="text-violet" aria-hidden="true" />
             </div>
-            <h3 className="font-[family-name:var(--font-sora)] text-lg font-semibold text-midnight">
-              Select a conversation
+            <h3 className="font-[family-name:var(--font-sora)] text-lg font-bold text-midnight">
+              Pick a conversation
             </h3>
-            <p className="mt-1 text-sm text-slate-light">
-              Choose a conversation from the list to start messaging
+            <p className="mt-1 text-sm text-slate-light max-w-sm">
+              {conversations.length === 0
+                ? "When you message a seller from a product page, the thread shows up here."
+                : "Choose a conversation from the list to open the thread."}
             </p>
+
+            {/* Tiny trust strip — same promises as the rest of the buyer
+                portal, but reframed for the messaging context. */}
+            <ul className="mt-6 grid grid-cols-1 gap-2 max-w-xs text-left text-xs text-slate-light">
+              <li className="flex items-start gap-2">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-dark shrink-0 mt-0.5" aria-hidden="true" />
+                Messages are with KYC-verified sellers only.
+              </li>
+              <li className="flex items-start gap-2">
+                <Lock className="h-3.5 w-3.5 text-violet shrink-0 mt-0.5" aria-hidden="true" />
+                Never share payment info here — pay through Winipat checkout so escrow protects you.
+              </li>
+            </ul>
           </div>
         ) : (
           <>
             {/* Thread header */}
-            <div className="flex items-center gap-3 border-b border-mist px-4 py-3">
-              <button
-                onClick={() => setShowList(true)}
-                className="md:hidden text-slate hover:text-royal transition-colors mr-1"
-              >
-                <ArrowLeft size={18} />
-              </button>
-              <Avatar
-                src={selectedConv.other_user?.avatar_url}
-                name={selectedConv.other_user?.full_name || "User"}
-                size="sm"
-              />
-              <div>
-                <p className="font-semibold text-midnight">
-                  {selectedConv.other_user?.full_name}
-                </p>
-                <p className="text-xs text-slate-light capitalize">
-                  {selectedConv.other_user?.role}
-                </p>
+            <div className="border-b border-mist">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <button
+                  onClick={() => setShowList(true)}
+                  className="md:hidden text-slate hover:text-royal transition-colors mr-1"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <Avatar
+                  src={selectedConv.other_user?.avatar_url}
+                  name={selectedConv.other_user?.full_name || "User"}
+                  size="sm"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-midnight truncate">
+                    {selectedConv.other_user?.full_name}
+                  </p>
+                  <p className="text-xs text-slate-light capitalize">
+                    {selectedConv.other_user?.role}
+                  </p>
+                </div>
               </div>
+
+              {/* Order context strip — only shown when the conversation is
+                  attached to a specific order (via the "Contact seller"
+                  flow on the order page). Gives the thread a clear
+                  subject so older conversations are not just disembodied. */}
+              {selectedConv.order_summary && (
+                <Link
+                  href={`/dashboard/orders/${selectedConv.order_summary.id}`}
+                  className="flex items-center gap-2.5 px-4 py-2 bg-violet/5 border-t border-violet/15 hover:bg-violet/8 transition-colors"
+                >
+                  <span className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white text-violet">
+                    <Package className="h-3.5 w-3.5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wider font-bold text-violet">
+                      About this order
+                    </p>
+                    <p className="text-xs text-midnight font-semibold truncate">
+                      {selectedConv.order_summary.order_number} ·{" "}
+                      {formatNaira(selectedConv.order_summary.total / 100)}
+                    </p>
+                  </div>
+                  <ArrowRight className="h-3.5 w-3.5 text-violet shrink-0" aria-hidden="true" />
+                </Link>
+              )}
             </div>
 
             {/* Messages */}
