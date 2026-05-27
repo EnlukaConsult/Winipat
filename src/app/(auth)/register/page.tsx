@@ -13,6 +13,7 @@ import {
   Store,
   Eye,
   EyeOff,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,14 @@ import {
 } from "@/components/auth/password-strength";
 
 type Role = "buyer" | "seller";
+
+// Two verification paths at signup. Email = classic confirmation link;
+// Phone = 6-digit OTP sent via SMS. The form collects all the same
+// fields either way (per the product decision) — only the confirmation
+// channel differs. Password is required for email signups so they can
+// sign back in later; phone signups don't need a password initially
+// (sign in via OTP each time, or set a password in profile later).
+type VerifyVia = "email" | "phone";
 
 interface FormErrors {
   full_name?: string;
@@ -46,6 +55,7 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState<Role>("buyer");
+  const [verifyVia, setVerifyVia] = useState<VerifyVia>("email");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,12 +68,16 @@ function RegisterForm() {
 
   const strength = getPasswordStrength(password);
   const passwordsMatch = !!password && password === confirmPassword;
+  // Email signups need a strong password + matching confirmation; phone
+  // signups skip password (sign in via OTP each time, optional password
+  // set later in profile).
+  const passwordChecksPass =
+    verifyVia === "email" ? strength.isStrong && passwordsMatch : true;
   const canSubmit =
     fullName.trim().length >= 2 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
     /^(\+?234|0)[789]\d{9}$/.test(phone.replace(/\s/g, "")) &&
-    strength.isStrong &&
-    passwordsMatch &&
+    passwordChecksPass &&
     acceptTerms;
 
   function validate(): FormErrors {
@@ -80,12 +94,15 @@ function RegisterForm() {
     else if (!/^(\+?234|0)[789]\d{9}$/.test(phone.replace(/\s/g, "")))
       next.phone = "Enter a valid Nigerian phone number (e.g. 08012345678).";
 
-    if (!strength.isStrong) {
-      next.password = "Password doesn't meet all the criteria below.";
+    // Password rules only apply to email signups
+    if (verifyVia === "email") {
+      if (!strength.isStrong) {
+        next.password = "Password doesn't meet all the criteria below.";
+      }
+      if (!confirmPassword) next.confirmPassword = "Confirm your password.";
+      else if (confirmPassword !== password)
+        next.confirmPassword = "Passwords don't match.";
     }
-    if (!confirmPassword) next.confirmPassword = "Confirm your password.";
-    else if (confirmPassword !== password)
-      next.confirmPassword = "Passwords don't match.";
 
     if (!acceptTerms)
       next.terms = "Please accept the Terms & Conditions before continuing.";
@@ -108,14 +125,63 @@ function RegisterForm() {
       const origin =
         process.env.NEXT_PUBLIC_APP_URL?.trim() ||
         (typeof window !== "undefined" ? window.location.origin : "");
+      const cleanedPhone = phone.replace(/\s/g, "");
 
+      // ──────────────────────────────────────────────────────────
+      // PHONE PATH — Supabase signInWithOtp sends a 6-digit SMS code
+      // to the phone, then redirects to /verify-phone where the user
+      // types it in. Requires Twilio (or another SMS provider) to be
+      // enabled in Supabase Auth dashboard; will surface a clear
+      // provider error here if not configured.
+      // ──────────────────────────────────────────────────────────
+      if (verifyVia === "phone") {
+        const phoneE164 = toE164Nigeria(cleanedPhone);
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          phone: phoneE164,
+          options: {
+            // shouldCreateUser: true is the default — creates a new
+            // auth.users row on first OTP send if the phone is new.
+            data: {
+              full_name: fullName.trim(),
+              email: email.trim(),
+              phone: cleanedPhone,
+              role,
+            },
+          },
+        });
+        if (otpError) {
+          // Friendly mapping for the common "provider not enabled" case
+          // so devs can spot the Twilio gap fast.
+          const msg = otpError.message.toLowerCase();
+          if (msg.includes("phone") && msg.includes("disabled")) {
+            setErrors({
+              form:
+                "Phone signup isn't enabled yet on this site. Please use email instead, or contact support.",
+            });
+          } else if (msg.includes("already")) {
+            setErrors({ phone: "An account with this phone already exists." });
+          } else {
+            setErrors({ form: otpError.message });
+          }
+          return;
+        }
+        router.push(
+          `/verify-phone?phone=${encodeURIComponent(phoneE164)}`
+        );
+        return;
+      }
+
+      // ──────────────────────────────────────────────────────────
+      // EMAIL PATH — classic supabase.auth.signUp with email + password
+      // confirmation link via Resend, callback to /api/auth/callback.
+      // ──────────────────────────────────────────────────────────
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName.trim(),
-            phone: phone.replace(/\s/g, ""),
+            phone: cleanedPhone,
             role,
           },
           emailRedirectTo: `${origin}/api/auth/callback`,
@@ -134,7 +200,7 @@ function RegisterForm() {
       if (data.user && data.session) {
         await supabase
           .from("profiles")
-          .update({ phone: phone.replace(/\s/g, "") })
+          .update({ phone: cleanedPhone })
           .eq("id", data.user.id);
       }
 
@@ -157,7 +223,11 @@ function RegisterForm() {
 
       <AuthCard
         heading="Create secure account"
-        subheading="Use a strong password to protect your wallet and orders"
+        subheading={
+          verifyVia === "phone"
+            ? "We'll send a 6-digit code to your phone to confirm"
+            : "Use a strong password to protect your wallet and orders"
+        }
         footerNote="Seller accounts undergo KYC verification before going live"
       >
         {errors.form && (
@@ -167,6 +237,54 @@ function RegisterForm() {
         )}
 
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          {/* Email / Phone verification toggle — picks how the
+              confirmation will be delivered. Form fields are identical
+              either way; only the verification channel differs. Password
+              fields hide when phone is chosen. */}
+          <div>
+            <p className="mb-2 text-sm font-medium text-slate">
+              Verify with
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setVerifyVia("email")}
+                aria-pressed={verifyVia === "email"}
+                className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-all cursor-pointer min-h-[44px] ${
+                  verifyVia === "email"
+                    ? "border-violet bg-violet/5 text-violet"
+                    : "border-mist text-slate-light hover:border-mist-dark"
+                }`}
+              >
+                <Mail className="h-5 w-5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold leading-tight">Email</p>
+                  <p className="text-xs text-slate-lighter leading-tight mt-0.5">
+                    Confirmation link
+                  </p>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVerifyVia("phone")}
+                aria-pressed={verifyVia === "phone"}
+                className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-all cursor-pointer min-h-[44px] ${
+                  verifyVia === "phone"
+                    ? "border-violet bg-violet/5 text-violet"
+                    : "border-mist text-slate-light hover:border-mist-dark"
+                }`}
+              >
+                <MessageSquare className="h-5 w-5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold leading-tight">Phone</p>
+                  <p className="text-xs text-slate-lighter leading-tight mt-0.5">
+                    6-digit SMS code
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Buy / Sell role */}
           <div>
             <p className="mb-2 text-sm font-medium text-slate">I want to</p>
@@ -244,51 +362,70 @@ function RegisterForm() {
             icon={<Phone className="h-4 w-4" />}
           />
 
-          <div>
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              label="Password"
-              placeholder="Create a strong password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={errors.password}
-              icon={<Lock className="h-4 w-4" />}
-              suffix={
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="cursor-pointer hover:text-slate transition-colors pointer-events-auto"
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              }
-            />
-            {/* Strength meter — only renders once the user starts typing
-                so it doesn't shout at first-paint */}
-            {(password || strength.score > 0) && (
-              <PasswordStrengthMeter value={password} />
-            )}
-          </div>
+          {/* Password fields — email verification only. Phone-verified
+              users can set a password later in their profile if they
+              want one; for now they sign in via OTP each time. */}
+          {verifyVia === "email" ? (
+            <>
+              <div>
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  label="Password"
+                  placeholder="Create a strong password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  error={errors.password}
+                  icon={<Lock className="h-4 w-4" />}
+                  suffix={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="cursor-pointer hover:text-slate transition-colors pointer-events-auto"
+                      tabIndex={-1}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  }
+                />
+                {(password || strength.score > 0) && (
+                  <PasswordStrengthMeter value={password} />
+                )}
+              </div>
 
-          <Input
-            id="confirmPassword"
-            type={showPassword ? "text" : "password"}
-            label="Confirm password"
-            placeholder="Re-enter the same password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            error={errors.confirmPassword}
-            icon={<Lock className="h-4 w-4" />}
-          />
+              <Input
+                id="confirmPassword"
+                type={showPassword ? "text" : "password"}
+                label="Confirm password"
+                placeholder="Re-enter the same password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                error={errors.confirmPassword}
+                icon={<Lock className="h-4 w-4" />}
+              />
+            </>
+          ) : (
+            <div className="rounded-md bg-teal/8 border border-teal/20 px-4 py-3 text-sm text-slate">
+              <p className="font-semibold text-midnight flex items-center gap-1.5">
+                <MessageSquare className="h-4 w-4 text-teal" aria-hidden="true" />
+                We&apos;ll text a 6-digit code
+              </p>
+              <p className="mt-1 text-xs text-slate-light leading-relaxed">
+                No password to remember &mdash; sign in via SMS each
+                time. You can add a password later from your profile.
+                Standard SMS rates may apply.
+              </p>
+            </div>
+          )}
 
           {/* Terms checkbox */}
           <label
@@ -413,4 +550,20 @@ export default function RegisterPage() {
       <RegisterForm />
     </Suspense>
   );
+}
+
+// ───────── helpers ─────────
+
+// Supabase signInWithOtp expects E.164 phone format (+234 followed by
+// 10 digits for Nigeria). The form accepts the common "08012345678" form
+// too, so we normalise here. Returns the original if it doesn't look
+// Nigerian — Supabase will reject it with a clear error.
+function toE164Nigeria(input: string): string {
+  const digits = input.replace(/\D/g, "");
+  // Already +234... and 13 total chars when stripped of '+': leave alone
+  if (digits.startsWith("234") && digits.length === 13) return `+${digits}`;
+  // "0" prefix Nigerian numbers (e.g. 08012345678): swap for +234
+  if (digits.startsWith("0") && digits.length === 11) return `+234${digits.slice(1)}`;
+  // Unknown — return as-is and let Supabase tell us why
+  return input.startsWith("+") ? input : `+${digits}`;
 }
