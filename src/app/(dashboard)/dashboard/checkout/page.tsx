@@ -50,17 +50,12 @@ type LogisticsPartner = {
   id: string;
   name: string;
   description: string | null;
+  delivery_fee_kobo: number;
 };
 
-// V1 flat rates per partner (in kobo). Real per-route pricing comes later;
-// for now the buyer sees a fixed quote on checkout so the escrow math is
-// deterministic. Logistics fee is NOT held in escrow — it goes to the
-// partner; only product subtotal is escrowed.
-const PARTNER_FEES_KOBO: Record<string, number> = {
-  "GIG Logistics": 250000,
-  Sendbox: 180000,
-  "Kwik Delivery": 150000,
-};
+// Fallback fee if a partner row is missing the column for some reason
+// (shouldn't happen after migration 011; defensive against malformed DB
+// rows or environments where the migration hasn't been applied).
 const DEFAULT_LOGISTICS_FEE_KOBO = 250000;
 
 export default function CheckoutPage() {
@@ -108,9 +103,9 @@ export default function CheckoutPage() {
           .order("is_default", { ascending: false }),
         supabase
           .from("logistics_partners")
-          .select("id, name, description")
+          .select("id, name, description, delivery_fee_kobo")
           .eq("is_active", true)
-          .order("name"),
+          .order("delivery_fee_kobo", { ascending: true }),
       ]);
 
       const normalized = (cartRes.items || []).map((item: Record<string, unknown>) => ({
@@ -146,8 +141,7 @@ export default function CheckoutPage() {
 
   const logisticsFeeKobo = (() => {
     const partner = partners.find((p) => p.id === selectedPartnerId);
-    if (!partner) return DEFAULT_LOGISTICS_FEE_KOBO;
-    return PARTNER_FEES_KOBO[partner.name] ?? DEFAULT_LOGISTICS_FEE_KOBO;
+    return partner?.delivery_fee_kobo ?? DEFAULT_LOGISTICS_FEE_KOBO;
   })();
   const logisticsFee = logisticsFeeKobo / 100;
   const total = subtotal + logisticsFee;
@@ -461,7 +455,7 @@ export default function CheckoutPage() {
               ) : (
                 <div className="space-y-2 mb-4">
                   {partners.map((p) => {
-                    const fee = (PARTNER_FEES_KOBO[p.name] ?? DEFAULT_LOGISTICS_FEE_KOBO) / 100;
+                    const fee = (p.delivery_fee_kobo ?? DEFAULT_LOGISTICS_FEE_KOBO) / 100;
                     return (
                       <button
                         key={p.id}

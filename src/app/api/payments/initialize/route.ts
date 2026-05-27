@@ -41,10 +41,19 @@ export async function POST(request: Request) {
     provider: "paystack",
   });
 
-  // Create escrow ledger entry
+  // Create escrow ledger entry.
+  //
+  // amount = order.total (NOT subtotal). Schema comment on
+  // escrow_ledger.amount says "always equals order total" — the whole
+  // payment lands in escrow, including logistics. The release function
+  // in migration 005 then routes the right portion to the seller, with
+  // the rest accounted for separately (logistics is routed to the
+  // courier via Paystack split / admin payout). Inserting subtotal
+  // here meant the seller's eventual payout was computed against the
+  // wrong base, undercounting any platform-wide reconciliation.
   await supabase.from("escrow_ledger").insert({
     order_id: orderId,
-    amount: order.subtotal, // Product amount only (not logistics)
+    amount: order.total,
     status: "initiated",
   });
 
