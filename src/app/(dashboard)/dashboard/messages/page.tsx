@@ -50,17 +50,27 @@ type Conversation = {
   } | null;
 };
 
-// Raw shape returned by the conversations select with both profile embeds.
+// Raw shape returned by the conversations select. We DON'T inline the
+// buyer/seller profile joins anymore because RLS on profiles blocks any
+// user from reading another user's row, which made the join silently
+// return null and broke the "other user" name in the UI. Instead we
+// fetch the conversation rows here and then look up names from the
+// public_profiles view (migration 012) in a second pass.
 type ConversationRow = {
   id: string;
   updated_at: string;
   order_id: string | null;
   buyer_id: string;
   seller_id: string;
-  buyer:  { id: string; full_name: string; avatar_url: string | null; role: string } | null;
-  seller: { id: string; full_name: string; avatar_url: string | null; role: string } | null;
   messages: { content: string; created_at: string; sender_id: string; is_read: boolean }[];
   order?: { id: string; order_number: string; total: number; status: string } | null;
+};
+
+type PublicProfile = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string;
 };
 
 type Message = {
@@ -126,8 +136,6 @@ export default function MessagesPage() {
       .from("conversations")
       .select(
         `id, updated_at, order_id, buyer_id, seller_id,
-         buyer:profiles!buyer_id(id, full_name, avatar_url, role),
-         seller:profiles!seller_id(id, full_name, avatar_url, role),
          messages(content, created_at, sender_id, is_read),
          order:orders(id, order_number, total, status)`
       )
@@ -136,8 +144,31 @@ export default function MessagesPage() {
 
     const rows = (data as unknown as ConversationRow[]) || [];
 
+    // Collect every "other side" user id and fetch their public profile
+    // in one go from the public_profiles view (migration 012). The view
+    // bypasses the strict profiles RLS so we get the display name +
+    // avatar without leaking email/phone.
+    const otherIds = Array.from(
+      new Set(
+        rows.map((r) => (r.buyer_id === userId ? r.seller_id : r.buyer_id))
+      )
+    );
+
+    let profilesById: Record<string, PublicProfile> = {};
+    if (otherIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("public_profiles")
+        .select("id, full_name, avatar_url, role")
+        .in("id", otherIds);
+
+      profilesById = Object.fromEntries(
+        ((profiles as PublicProfile[]) ?? []).map((p) => [p.id, p])
+      );
+    }
+
     const shaped: Conversation[] = rows.map((row) => {
-      const other = row.buyer_id === userId ? row.seller : row.buyer;
+      const otherId = row.buyer_id === userId ? row.seller_id : row.buyer_id;
+      const other = profilesById[otherId];
       const msgs = [...(row.messages || [])].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -152,12 +183,19 @@ export default function MessagesPage() {
         id: row.id,
         updated_at: row.updated_at,
         order_id: row.order_id,
-        other_user: other ?? {
-          id: "",
-          full_name: "Unknown user",
-          avatar_url: null,
-          role: "",
-        },
+        other_user: other
+          ? {
+              id: other.id,
+              full_name: other.full_name ?? "Winipat user",
+              avatar_url: other.avatar_url,
+              role: other.role ?? "",
+            }
+          : {
+              id: otherId,
+              full_name: "Winipat user",
+              avatar_url: null,
+              role: "",
+            },
         last_message: last
           ? { content: last.content, created_at: last.created_at, sender_id: last.sender_id }
           : null,
