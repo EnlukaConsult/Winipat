@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { formatNaira, formatDate } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/utils";
@@ -9,14 +8,17 @@ import {
   Package,
   MapPin,
   CreditCard,
-  CheckCircle2,
   ArrowLeft,
-  Clock,
   Truck,
-  ShieldCheck,
+  Lock,
+  Calendar,
+  ShoppingBag,
 } from "lucide-react";
 import Link from "next/link";
 import { OrderDetailActions } from "./order-detail-actions";
+import { OrderProgress } from "@/components/buyer/order-progress";
+import { OrderStateBanner } from "@/components/buyer/order-state-banner";
+import { ContactSellerButton } from "@/components/buyer/contact-seller-button";
 
 // Snapshot of an item at order time (price/name frozen so product changes don't
 // affect historical orders). product_id is kept for an optional best-effort
@@ -48,7 +50,8 @@ type Order = {
   total: number;             // kobo
   delivery_mode: string;
   buyer:    { full_name: string | null; email: string | null } | null;
-  seller:   { business_name: string | null } | null;
+  // seller.id needed for the Message-seller CTA; business_name for display.
+  seller:   { id: string; business_name: string | null } | null;
   delivery_address: Address | null;
   logistics: { name: string; logo_url: string | null } | null;
   shipment:  { tracking_number: string | null; status: string;
@@ -57,43 +60,41 @@ type Order = {
   items: OrderItem[];
 };
 
-const STATUS_STEPS: OrderStatus[] = [
-  "pending_payment",
-  "payment_confirmed",
-  "seller_preparing",
-  "awaiting_pickup",
-  "picked_up",
-  "in_transit",
-  "delivered",
-  "completed",
-];
+// Timeline labels + icons moved to the OrderProgress component (5-step
+// horizontal strip with stage hints) — this page used to render its own
+// vertical 8-step list which crowded the layout on mobile.
 
-const STEP_LABELS: Partial<Record<OrderStatus, string>> = {
-  pending_payment:   "Payment Pending",
-  payment_confirmed: "Payment Confirmed",
-  seller_preparing:  "Seller Preparing",
-  awaiting_pickup:   "Ready for Pickup",
-  picked_up:         "Picked Up",
-  in_transit:        "In Transit",
-  delivered:         "Delivered",
-  completed:         "Completed",
-};
-
-const STEP_ICONS: Partial<Record<OrderStatus, React.ElementType>> = {
-  pending_payment:   Clock,
-  payment_confirmed: CreditCard,
-  seller_preparing:  Package,
-  awaiting_pickup:   Package,
-  picked_up:         Truck,
-  in_transit:        Truck,
-  delivered:         CheckCircle2,
-  completed:         ShieldCheck,
-};
+const EXCEPTION_STATES = new Set<OrderStatus>([
+  "disputed",
+  "cancelled",
+  "refunded",
+]);
 
 function formatAddress(a: Address | null): string {
   if (!a) return "—";
   return [a.street, a.city, a.state, a.country].filter(Boolean).join(", ");
 }
+
+function daysSince(iso: string): number {
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
+// Status-aware hero headline. More personal than just "Order
+// #WNP-XYZ" — tells the buyer at a glance what state they're in.
+const STATUS_HEADLINE: Partial<Record<OrderStatus, string>> = {
+  pending_payment:   "Finish your payment",
+  payment_confirmed: "Payment received — seller notified",
+  seller_preparing:  "Seller is preparing your order",
+  awaiting_pickup:   "Packed and ready for courier",
+  picked_up:         "Courier has your package",
+  in_transit:        "On the way to you",
+  delivered:         "Delivered — please confirm",
+  completed:         "Order complete",
+  disputed:          "Dispute open",
+  cancelled:         "Order cancelled",
+  refunded:          "Refund processed",
+};
 
 export default async function OrderDetailPage({
   params,
@@ -124,7 +125,7 @@ export default async function OrderDetailPage({
       id, order_number, created_at, status,
       subtotal, logistics_fee, platform_fee, total, delivery_mode,
       buyer:profiles!buyer_id ( full_name, email ),
-      seller:sellers!seller_id ( business_name ),
+      seller:sellers!seller_id ( id, business_name ),
       delivery_address:addresses!delivery_address_id ( label, street, city, state, country ),
       logistics:logistics_partners!logistics_partner_id ( name, logo_url ),
       shipment:shipments ( tracking_number, status, picked_up_at, delivered_at ),
@@ -164,138 +165,167 @@ export default async function OrderDetailPage({
     }
   }
 
-  const currentStepIndex = STATUS_STEPS.indexOf(o.status);
   const isDisputable = ["delivered", "in_transit", "picked_up"].includes(o.status);
   const canConfirmDelivery = o.status === "delivered";
   const isTerminal = ["completed", "refunded", "cancelled", "disputed"].includes(o.status);
+  const isException = EXCEPTION_STATES.has(o.status);
+  const totalItems = o.items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Back + header */}
-      <div>
-        <Link
-          href="/dashboard/orders"
-          className="inline-flex items-center gap-1.5 text-sm text-slate-light hover:text-royal transition-colors mb-4"
-        >
-          <ArrowLeft size={16} />
-          Back to Orders
-        </Link>
+    <div className="space-y-5 max-w-4xl">
+      {/* Back link — stays compact above the hero */}
+      <Link
+        href="/dashboard/orders"
+        className="inline-flex items-center gap-1.5 text-sm text-slate-light hover:text-violet transition-colors"
+      >
+        <ArrowLeft size={16} />
+        Back to orders
+      </Link>
 
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="font-[family-name:var(--font-sora)] text-2xl font-bold text-midnight">
+      {/* Hero — gradient, status badge, key stats, Message-seller CTA.
+          Matches the visual weight of the buyer dashboard hero. */}
+      <section
+        className="relative overflow-hidden rounded-2xl text-white px-6 py-6 sm:px-8 sm:py-7"
+        style={{
+          background: `
+            radial-gradient(circle at 88% 12%, rgba(20,184,166,0.32), transparent 36%),
+            radial-gradient(circle at 8% 88%, rgba(124,58,237,0.38), transparent 36%),
+            linear-gradient(125deg, #0B1020 0%, #15205A 55%, #4B23C0 100%)
+          `,
+        }}
+      >
+        <div className="relative grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-5 items-start">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold uppercase tracking-wider mb-3">
+              <ShoppingBag className="h-3 w-3 text-teal-light" aria-hidden="true" />
               Order #{o.order_number}
+            </div>
+
+            <h1 className="font-[family-name:var(--font-sora)] text-2xl sm:text-3xl font-bold leading-tight">
+              {isException
+                ? STATUS_HEADLINE[o.status as "disputed" | "cancelled" | "refunded"]
+                : STATUS_HEADLINE[o.status] ?? "Your order"}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-light">
-              Placed {formatDate(o.created_at)}
-              {o.seller?.business_name && <> • Seller: {o.seller.business_name}</>}
-            </p>
+            {o.seller?.business_name && (
+              <p className="mt-1.5 text-sm sm:text-base text-white/75">
+                Sold by{" "}
+                <strong className="font-semibold">{o.seller.business_name}</strong>
+              </p>
+            )}
+
+            {/* Compact 3-up stats — total / items / days */}
+            <ul className="mt-5 flex flex-wrap items-baseline gap-x-6 gap-y-2 text-sm" role="list">
+              <li>
+                <span className="text-white/55 text-[11px] uppercase tracking-wider font-bold block">
+                  Total
+                </span>
+                <span className="font-[family-name:var(--font-sora)] text-lg font-bold">
+                  {formatNaira(o.total)}
+                </span>
+              </li>
+              <li>
+                <span className="text-white/55 text-[11px] uppercase tracking-wider font-bold block">
+                  Items
+                </span>
+                <span className="font-[family-name:var(--font-sora)] text-lg font-bold">
+                  {totalItems}
+                </span>
+              </li>
+              <li>
+                <span className="text-white/55 text-[11px] uppercase tracking-wider font-bold block">
+                  Placed
+                </span>
+                <span className="font-[family-name:var(--font-sora)] text-lg font-bold inline-flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-white/70" aria-hidden="true" />
+                  {daysSince(o.created_at) === 0
+                    ? "Today"
+                    : `${daysSince(o.created_at)}d ago`}
+                </span>
+              </li>
+            </ul>
           </div>
-          <StatusBadge status={o.status} />
+
+          {/* Message-seller CTA — only when there's a seller to message. */}
+          {o.seller?.id && (
+            <ContactSellerButton sellerId={o.seller.id} orderId={o.id} />
+          )}
         </div>
-      </div>
+      </section>
 
-      {/* Order timeline */}
-      {!["disputed", "refunded", "cancelled"].includes(o.status) && (
-        <Card padding="md">
-          <CardHeader>
-            <CardTitle>Order Progress</CardTitle>
-          </CardHeader>
-          <ol className="relative space-y-0">
-            {STATUS_STEPS.map((step, idx) => {
-              const isCompleted = idx < currentStepIndex;
-              const isCurrent = idx === currentStepIndex;
-              const Icon = STEP_ICONS[step] || Clock;
+      {/* Order progress (5-step) — hidden for disputed/cancelled/refunded,
+          which get the OrderStateBanner instead. */}
+      {!isException && <OrderProgress status={o.status} />}
 
-              return (
-                <li key={step} className="flex gap-4 pb-6 last:pb-0">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 z-10 ${
-                        isCompleted
-                          ? "border-emerald bg-emerald text-white"
-                          : isCurrent
-                          ? "border-royal bg-royal text-white shadow-lg shadow-royal/30"
-                          : "border-mist-dark bg-white text-slate-lighter"
-                      }`}
-                    >
-                      <Icon size={14} />
-                    </div>
-                    {idx < STATUS_STEPS.length - 1 && (
-                      <div
-                        className={`mt-1 w-0.5 flex-1 ${isCompleted ? "bg-emerald" : "bg-mist-dark"}`}
-                        style={{ minHeight: "24px" }}
-                      />
-                    )}
-                  </div>
-
-                  <div className="pt-1 pb-2">
-                    <p
-                      className={`text-sm font-medium ${
-                        isCurrent ? "text-royal" : isCompleted ? "text-emerald" : "text-slate-lighter"
-                      }`}
-                    >
-                      {STEP_LABELS[step] ?? step}
-                    </p>
-                    {isCurrent && (
-                      <p className="mt-0.5 text-xs text-slate-light">Current status</p>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </Card>
+      {/* Disputed / cancelled / refunded banner */}
+      {isException && (
+        <OrderStateBanner
+          status={o.status as "disputed" | "cancelled" | "refunded"}
+          orderId={o.id}
+        />
       )}
 
-      {/* Disputed / cancelled banner */}
-      {["disputed", "cancelled", "refunded"].includes(o.status) && (
-        <div className="flex items-start gap-3 rounded-[--radius-lg] border border-error/20 bg-error/5 p-4">
-          <span className="text-error mt-0.5">⚠</span>
-          <div>
-            <p className="font-semibold text-error">
-              {o.status === "disputed"
-                ? "Dispute Opened"
-                : o.status === "refunded"
-                ? "Order Refunded"
-                : "Order Cancelled"}
-            </p>
-            <p className="mt-0.5 text-sm text-slate-light">
-              {o.status === "disputed"
-                ? "This order is currently under review. Our team will contact you."
-                : "This order has been resolved."}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Order items */}
+      {/* Order items — bigger thumbs, name links back to product page
+          when the product still exists (FK is SET NULL on deletion). */}
       <Card padding="md">
         <CardHeader>
-          <CardTitle>Order Items</CardTitle>
+          <CardTitle>Order items</CardTitle>
           <CardDescription>
             {o.items.length} item{o.items.length !== 1 ? "s" : ""}
+            {totalItems !== o.items.length && (
+              <> &middot; {totalItems} unit{totalItems !== 1 ? "s" : ""}</>
+            )}
           </CardDescription>
         </CardHeader>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {o.items.map((item) => {
             const imgUrl = item.product_id ? imagesByProduct.get(item.product_id) : undefined;
+            const productHref = item.product_id ? `/dashboard/product/${item.product_id}` : null;
             return (
-              <div key={item.id} className="flex items-center gap-4">
-                <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[--radius-md] bg-gradient-to-br from-royal/10 to-violet/10 overflow-hidden">
-                  {imgUrl ? (
-                    <img src={imgUrl} alt={item.product_name} className="h-full w-full object-cover" />
-                  ) : (
-                    <Package size={20} className="text-royal/40" />
-                  )}
-                </div>
+              <div
+                key={item.id}
+                className="flex items-center gap-3 sm:gap-4 p-2 -mx-2 rounded-xl hover:bg-cloud transition-colors"
+              >
+                {productHref ? (
+                  <Link
+                    href={productHref}
+                    className="flex h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet/10 to-teal/10 overflow-hidden group"
+                  >
+                    {imgUrl ? (
+                      <img
+                        src={imgUrl}
+                        alt={item.product_name}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <Package size={22} className="text-violet/40" />
+                    )}
+                  </Link>
+                ) : (
+                  <div className="flex h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 items-center justify-center rounded-xl bg-mist">
+                    <Package size={22} className="text-slate-lighter" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-midnight truncate">{item.product_name}</p>
-                  <p className="text-sm text-slate-light">
-                    Qty: {item.quantity} × {formatNaira(item.product_price)}
+                  {productHref ? (
+                    <Link
+                      href={productHref}
+                      className="font-semibold text-midnight hover:text-violet transition-colors line-clamp-2"
+                    >
+                      {item.product_name}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold text-slate-light line-clamp-2">
+                      {item.product_name}{" "}
+                      <span className="text-[10px] font-normal uppercase tracking-wider ml-1 text-slate-lighter">
+                        no longer listed
+                      </span>
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-sm text-slate-light">
+                    Qty {item.quantity} &middot; {formatNaira(item.product_price)} each
                   </p>
                 </div>
-                <p className="font-semibold text-midnight flex-shrink-0">
+                <p className="font-bold text-midnight flex-shrink-0">
                   {formatNaira(item.quantity * item.product_price)}
                 </p>
               </div>
@@ -328,17 +358,50 @@ export default async function OrderDetailPage({
         </div>
       </Card>
 
-      {/* Payment info */}
+      {/* Payment info — adds the protection callout buyers care about
+          (escrow status + what it means in plain English). */}
       <Card padding="md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CreditCard size={18} className="text-royal" />
-            Payment Info
+            <CreditCard size={18} className="text-violet" />
+            Payment &amp; escrow
           </CardTitle>
         </CardHeader>
-        <div className="space-y-2 text-sm">
+
+        {/* Top escrow callout — coloured by current escrow state */}
+        <div
+          className={`mb-4 rounded-xl border p-3.5 flex items-start gap-3 ${
+            o.escrow?.status === "released"
+              ? "border-emerald/30 bg-emerald/8"
+              : "border-violet/30 bg-violet/8"
+          }`}
+        >
+          <span
+            className={`shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg ${
+              o.escrow?.status === "released"
+                ? "bg-emerald/15 text-emerald-dark"
+                : "bg-violet/15 text-violet"
+            }`}
+          >
+            <Lock className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-midnight">
+              {o.escrow?.status === "released"
+                ? "Funds released to seller"
+                : "Payment held in escrow"}
+            </p>
+            <p className="text-xs text-slate-light mt-0.5 leading-relaxed">
+              {o.escrow?.status === "released"
+                ? "Your protection window has closed. If you have any concerns, contact support."
+                : "Your payment stays safe with Winipat until you confirm delivery (or 48 hours after). If anything goes wrong, you can open a dispute."}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-1.5 text-sm">
           <div className="flex justify-between">
-            <span className="text-slate-light">Escrow Status</span>
+            <span className="text-slate-light">Status</span>
             {o.escrow ? (
               <Badge variant={o.escrow.status === "released" ? "success" : "warning"}>
                 {o.escrow.status.replace(/_/g, " ")}
@@ -348,29 +411,55 @@ export default async function OrderDetailPage({
             )}
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-light">Amount in escrow</span>
+            <span className="text-slate-light">Amount held</span>
             <span className="font-medium text-midnight">
               {formatNaira(o.escrow?.amount ?? o.total)}
             </span>
           </div>
           {o.escrow?.released_at && (
             <div className="flex justify-between">
-              <span className="text-slate-light">Released</span>
+              <span className="text-slate-light">Released on</span>
               <span className="font-medium text-midnight">{formatDate(o.escrow.released_at)}</span>
             </div>
           )}
         </div>
       </Card>
 
-      {/* Delivery info */}
+      {/* Delivery info — tracking number gets a hero callout (most-asked
+          question), then the structured fact-list, then the address as
+          its own card-within-a-card so it reads at a glance on mobile. */}
       <Card padding="md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MapPin size={18} className="text-royal" />
-            Delivery Info
+            <Truck size={18} className="text-royal" />
+            Delivery
           </CardTitle>
         </CardHeader>
-        <div className="space-y-2 text-sm">
+
+        {/* Tracking callout — the single most useful piece of delivery
+            info once the courier has the package. */}
+        {o.shipment?.tracking_number && (
+          <div className="mb-4 rounded-xl border border-royal/25 bg-royal/8 p-3.5 flex items-start gap-3">
+            <span className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-royal/15 text-royal">
+              <Truck className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] uppercase tracking-wider font-bold text-royal">
+                Tracking number
+              </p>
+              <p className="mt-0.5 font-mono text-base font-bold text-midnight break-all">
+                {o.shipment.tracking_number}
+              </p>
+              {o.logistics?.name && (
+                <p className="mt-1 text-xs text-slate-light">
+                  Use this on {o.logistics.name}&apos;s tracking page.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-1.5 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-light">Mode</span>
             <span className="font-medium text-midnight capitalize">
@@ -378,19 +467,11 @@ export default async function OrderDetailPage({
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-light">Logistics Partner</span>
+            <span className="text-slate-light">Logistics partner</span>
             <span className="font-medium text-midnight">
               {o.logistics?.name || "—"}
             </span>
           </div>
-          {o.shipment?.tracking_number && (
-            <div className="flex justify-between">
-              <span className="text-slate-light">Tracking #</span>
-              <span className="font-mono font-medium text-royal">
-                {o.shipment.tracking_number}
-              </span>
-            </div>
-          )}
           {o.shipment?.picked_up_at && (
             <div className="flex justify-between">
               <span className="text-slate-light">Picked up</span>
@@ -403,15 +484,24 @@ export default async function OrderDetailPage({
               <span className="font-medium text-midnight">{formatDate(o.shipment.delivered_at)}</span>
             </div>
           )}
-          {o.delivery_address && (
-            <div className="flex justify-between gap-4">
-              <span className="text-slate-light flex-shrink-0">Address</span>
-              <span className="font-medium text-midnight text-right">
-                {formatAddress(o.delivery_address)}
-              </span>
-            </div>
-          )}
         </div>
+
+        {/* Address — own block so it gets room to breathe on mobile. */}
+        {o.delivery_address && (
+          <div className="mt-4 rounded-xl border border-mist bg-cloud/40 p-3.5 flex items-start gap-3">
+            <span className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-violet/10 text-violet">
+              <MapPin className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] uppercase tracking-wider font-bold text-slate-light">
+                {o.delivery_address.label || "Delivery address"}
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-midnight leading-relaxed">
+                {formatAddress(o.delivery_address)}
+              </p>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Action buttons (interactive — extracted to a client component so
