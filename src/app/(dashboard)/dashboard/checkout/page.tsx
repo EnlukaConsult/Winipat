@@ -215,8 +215,15 @@ export default function CheckoutPage() {
         return;
       }
 
-      // No Paystack configured — fallback to success screen
-      setStep("success");
+      // Payment provider returned no auth URL — almost always a missing
+      // PAYSTACK_SECRET_KEY or an upstream Paystack error. The order exists
+      // in pending_payment but no money has moved. NEVER fall through to a
+      // success screen here — a buyer in QA (2026-05-27) hit this path and
+      // thought they had paid when they hadn't.
+      alert(
+        payData.error ||
+          "Payment service is unavailable. Your order has not been charged. Please try again or contact support if this persists."
+      );
     } catch {
       alert("Payment failed. Please try again.");
     } finally {
