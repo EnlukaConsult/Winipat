@@ -14,6 +14,7 @@ interface DashboardShellProps {
 }
 
 const titleMap: Record<string, string> = {
+  "/dashboard":             "Home",
   "/dashboard/browse":      "Browse Products",
   "/dashboard/cart":        "Shopping Cart",
   "/dashboard/orders":      "My Orders",

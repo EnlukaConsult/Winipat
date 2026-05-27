@@ -29,6 +29,7 @@ import {
   LifeBuoy,
   ShieldCheck,
   Upload,
+  Home,
 } from "lucide-react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -50,6 +51,7 @@ const buyerNav: NavSection[] = [
   {
     section: null,
     items: [
+      { label: "Home",     href: "/dashboard",          icon: Home },
       { label: "Browse",   href: "/dashboard/browse",   icon: Search },
       { label: "Cart",     href: "/dashboard/cart",     icon: ShoppingCart },
       { label: "Orders",   href: "/dashboard/orders",   icon: Package },
@@ -132,6 +134,29 @@ function flattenSections(sections: NavSection[]): NavItem[] {
   return sections.flatMap((s) => s.items);
 }
 
+// Is this nav item the "active" one for the current path?
+//
+// The naive `pathname === href || pathname.startsWith(href + "/")` works
+// for most items but breaks for the buyer Home link (`/dashboard`),
+// because every buyer sub-route starts with `/dashboard/`. We treat
+// short "root" hrefs as exact-match only when there's a more specific
+// child route present in the nav list.
+function isItemActive(
+  pathname: string,
+  href: string,
+  allHrefs: string[]
+): boolean {
+  if (pathname === href) return true;
+  const hasMoreSpecificMatch = allHrefs.some(
+    (h) =>
+      h !== href &&
+      h.startsWith(href + "/") &&
+      (pathname === h || pathname.startsWith(h + "/"))
+  );
+  if (hasMoreSpecificMatch) return false;
+  return pathname.startsWith(href + "/");
+}
+
 interface SidebarProps {
   role: string;
   userName: string;
@@ -150,8 +175,9 @@ export function Sidebar({ role, userName }: SidebarProps) {
   // previously lost access to ~half their sidebar on mobile.
   const primaryMobile = items.slice(0, 4);
   const overflow = items.slice(4);
-  const overflowActive = overflow.some(
-    (i) => pathname === i.href || pathname.startsWith(i.href + "/")
+  const allHrefs = items.map((i) => i.href);
+  const overflowActive = overflow.some((i) =>
+    isItemActive(pathname, i.href, allHrefs)
   );
 
   async function handleLogout() {
@@ -170,8 +196,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
       >
         <div className="flex items-stretch justify-around">
           {primaryMobile.map((item) => {
-            const isActive =
-              pathname === item.href || pathname.startsWith(item.href + "/");
+            const isActive = isItemActive(pathname, item.href, allHrefs);
             return (
               <Link
                 key={item.href}
@@ -235,9 +260,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
             </div>
             <ul className="py-2">
               {overflow.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  pathname.startsWith(item.href + "/");
+                const isActive = isItemActive(pathname, item.href, allHrefs);
                 return (
                   <li key={item.href}>
                     <Link
@@ -319,9 +342,7 @@ export function Sidebar({ role, userName }: SidebarProps) {
               )}
               <div className="space-y-1">
                 {section.items.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    pathname.startsWith(item.href + "/");
+                  const isActive = isItemActive(pathname, item.href, allHrefs);
                   return (
                     <Link
                       key={item.href}
