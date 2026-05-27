@@ -105,23 +105,61 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="w-20 h-20 rounded-full bg-violet/10 flex items-center justify-center mb-6">
-          <ShoppingCart className="h-10 w-10 text-violet/40" />
+      <div className="max-w-lg mx-auto py-12 sm:py-16">
+        <div className="rounded-2xl border border-violet/20 bg-gradient-to-br from-violet/[0.04] via-white to-teal/[0.04] p-8 sm:p-10 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet/15 to-teal/15 flex items-center justify-center mx-auto mb-5">
+            <ShoppingCart className="h-7 w-7 text-violet" aria-hidden="true" />
+          </div>
+          <h2 className="text-xl font-bold text-midnight font-[family-name:var(--font-sora)]">
+            Your cart is empty
+          </h2>
+          <p className="text-sm text-slate-light mt-2 max-w-sm mx-auto">
+            Browse verified sellers, add items, and your payment stays in
+            escrow until you confirm delivery.
+          </p>
+          <div className="mt-6 flex flex-col sm:flex-row gap-2.5 justify-center">
+            <Button variant="primary" onClick={() => router.push("/dashboard/browse")}>
+              Browse products
+            </Button>
+            <Button variant="outline" onClick={() => router.push("/dashboard")}>
+              Back to dashboard
+            </Button>
+          </div>
         </div>
-        <h2 className="text-xl font-semibold text-midnight font-[family-name:var(--font-sora)] mb-2">
-          Your cart is empty
-        </h2>
-        <p className="text-slate-light mb-6">Add products to your cart to get started</p>
-        <Button variant="primary" onClick={() => router.push("/dashboard/browse")}>
-          Browse Products
-        </Button>
+
+        {/* Mini trust strip below the empty card */}
+        <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-slate-light">
+          <span className="inline-flex items-center gap-1">
+            <Lock size={11} className="text-violet" aria-hidden="true" />
+            Escrow protected
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1">
+            <ShieldCheck size={11} className="text-emerald" aria-hidden="true" />
+            KYC-verified sellers
+          </span>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-5xl mx-auto">
+      {/* ===== Top trust callout — first thing buyers see before checkout ===== */}
+      <div className="rounded-2xl bg-gradient-to-r from-violet/8 via-teal/5 to-emerald/8 border border-violet/15 px-4 py-3 mb-5 flex items-center gap-3 flex-wrap">
+        <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-white shadow-sm shrink-0">
+          <Lock className="h-4 w-4 text-violet" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-midnight leading-tight">
+            Payment held in escrow until you confirm delivery
+          </p>
+          <p className="text-xs text-slate-light mt-0.5 leading-snug">
+            48-hour buyer-protection window after delivery · Free to abandon cart at any point
+          </p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ===== CART ITEMS ===== */}
         <div className="lg:col-span-2 space-y-4">
@@ -250,9 +288,16 @@ export default function CartPage() {
             </div>
           </Card>
 
-          {/* Logistics partner */}
+          {/* Logistics partner — estimate only. Real partners + fees
+              live in logistics_partners.delivery_fee_kobo and are picked
+              on the checkout page. */}
           <Card padding="sm">
-            <p className="text-sm font-semibold text-midnight mb-3">Logistics Partner</p>
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <p className="text-sm font-semibold text-midnight">Estimated delivery</p>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-lighter shrink-0">
+                Pick at checkout
+              </span>
+            </div>
             <div className="space-y-2">
               {LOGISTICS_OPTIONS.filter((l) => l.type === deliveryMode).map((l) => (
                 <button
@@ -270,6 +315,9 @@ export default function CartPage() {
                 </button>
               ))}
             </div>
+            <p className="mt-2.5 text-[11px] text-slate-light leading-snug">
+              Final fee + partner confirmed on the checkout page.
+            </p>
           </Card>
 
           {/* Summary */}
