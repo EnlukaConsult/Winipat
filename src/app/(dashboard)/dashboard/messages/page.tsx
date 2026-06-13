@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDate, formatNaira } from "@/lib/utils";
+import { maskPii, containsPii } from "@/lib/mask-pii";
 import {
   MessageCircle,
   Send,
@@ -391,7 +392,9 @@ export default function MessagesPage() {
                       )}
                     </div>
                     <p className="mt-0.5 text-xs text-slate-light truncate">
-                      {conv.last_message?.content || "No messages yet"}
+                      {conv.last_message?.content
+                        ? maskPii(conv.last_message.content)
+                        : "No messages yet"}
                     </p>
                   </div>
                 </button>
@@ -509,7 +512,7 @@ export default function MessagesPage() {
                             : "bg-cloud border border-mist text-slate rounded-bl-sm"
                         }`}
                       >
-                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                        <p className="text-sm leading-relaxed">{maskPii(msg.content)}</p>
                         <p
                           className={`mt-1 text-[10px] ${
                             isOwn ? "text-white/60" : "text-slate-lighter"
@@ -530,6 +533,15 @@ export default function MessagesPage() {
 
             {/* Input */}
             <div className="border-t border-mist p-3">
+              {containsPii(newMessage) && (
+                <div className="mb-2 flex items-start gap-2 rounded-[--radius-md] bg-gold/10 border border-gold/30 px-3 py-2">
+                  <Lock className="h-3.5 w-3.5 text-gold-dark shrink-0 mt-0.5" aria-hidden="true" />
+                  <p className="text-[11px] leading-snug text-slate">
+                    Phone numbers, emails and links are automatically hidden to
+                    keep you protected by Winipat escrow. Keep deals on-platform.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Input
                   placeholder="Type a message…"
