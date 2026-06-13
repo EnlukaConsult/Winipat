@@ -28,6 +28,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
+  // Paystack requires an email. Phone-OTP signups have no auth email
+  // (user.email is null), so fall back to the profile email — which the
+  // signup trigger always populates (a real address or a placeholder the
+  // user can later replace). Without this, phone-signup buyers can't pay.
+  let payerEmail = user.email ?? null;
+  if (!payerEmail) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", user.id)
+      .single();
+    payerEmail = profile?.email ?? null;
+  }
+  if (!payerEmail) {
+    return NextResponse.json(
+      { error: "No email on file. Add an email to your profile to pay." },
+      { status: 400 }
+    );
+  }
+
   const reference = `WNP-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
   const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${orderId}?payment=callback`;
 
@@ -59,7 +79,7 @@ export async function POST(request: Request) {
 
   // Initialize Paystack transaction
   const result = await initializeTransaction({
-    email: user.email!,
+    email: payerEmail,
     amount: order.total, // Already in kobo
     reference,
     metadata: { order_id: orderId, order_number: order.order_number },
