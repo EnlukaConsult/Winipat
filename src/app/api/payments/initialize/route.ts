@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { initializeTransaction } from "@/lib/paystack";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
@@ -51,8 +52,15 @@ export async function POST(request: Request) {
   const reference = `WNP-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
   const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${orderId}?payment=callback`;
 
-  // Create payment transaction record
-  await supabase.from("payment_transactions").insert({
+  // Write the payment_transactions + escrow_ledger rows with the SERVICE-ROLE
+  // client. These tables have no buyer-insert RLS policy, so doing this with
+  // the buyer's session silently failed — leaving the webhook with no
+  // payment_transactions row to mark paid on charge.success. Service-role
+  // bypasses RLS (same as the webhook).
+  const admin = createAdminClient();
+
+  // Payment transaction record — the webhook updates this by `reference`.
+  const { error: txError } = await admin.from("payment_transactions").insert({
     order_id: orderId,
     reference,
     amount: order.total,
@@ -60,8 +68,14 @@ export async function POST(request: Request) {
     status: "pending",
     provider: "paystack",
   });
+  if (txError) {
+    return NextResponse.json(
+      { error: "Could not record the payment. Please try again." },
+      { status: 500 }
+    );
+  }
 
-  // Create escrow ledger entry.
+  // Escrow ledger entry.
   //
   // amount = order.total (NOT subtotal). Schema comment on
   // escrow_ledger.amount says "always equals order total" — the whole
@@ -71,11 +85,23 @@ export async function POST(request: Request) {
   // courier via Paystack split / admin payout). Inserting subtotal
   // here meant the seller's eventual payout was computed against the
   // wrong base, undercounting any platform-wide reconciliation.
-  await supabase.from("escrow_ledger").insert({
-    order_id: orderId,
-    amount: order.total,
-    status: "initiated",
-  });
+  //
+  // escrow_ledger.order_id is UNIQUE, so a payment retry on the same order
+  // must not 500 — upsert + ignoreDuplicates keeps the existing row.
+  const { error: escrowError } = await admin.from("escrow_ledger").upsert(
+    {
+      order_id: orderId,
+      amount: order.total,
+      status: "initiated",
+    },
+    { onConflict: "order_id", ignoreDuplicates: true }
+  );
+  if (escrowError) {
+    return NextResponse.json(
+      { error: "Could not set up escrow. Please try again." },
+      { status: 500 }
+    );
+  }
 
   // Initialize Paystack transaction
   const result = await initializeTransaction({
