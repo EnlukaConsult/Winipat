@@ -20,15 +20,22 @@ type Shipment = {
   tracking_number: string;
   status: string;
   created_at: string;
+  pickup_proof_url: string | null;
   order: {
     order_number: string;
     seller: { business_name: string };
   } | null;
 };
 
+type Contact = { name: string; phone: string | null };
+
 export default function PickupsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [contacts, setContacts] = useState<Record<string, Contact | "loading">>(
+    {}
+  );
   const supabase = createClient();
 
   useEffect(() => {
@@ -36,7 +43,7 @@ export default function PickupsPage() {
       const { data } = await supabase
         .from("shipments")
         .select(
-          "id, tracking_number, status, created_at, order:orders(order_number, seller:sellers(business_name))"
+          "id, tracking_number, status, created_at, pickup_proof_url, order:orders(order_number, seller:sellers(business_name))"
         )
         .in("status", ["assigned", "picked_up"])
         .order("created_at", { ascending: false });
@@ -55,6 +62,48 @@ export default function PickupsPage() {
     setShipments((prev) =>
       prev.map((s) => (s.id === id ? { ...s, status: "picked_up" } : s))
     );
+  }
+
+  async function loadContact(shipmentId: string) {
+    setContacts((prev) => ({ ...prev, [shipmentId]: "loading" }));
+    const res = await fetch(
+      `/api/logistics/contact?shipmentId=${shipmentId}&party=seller`
+    );
+    if (!res.ok) {
+      setContacts((prev) => ({
+        ...prev,
+        [shipmentId]: { name: "Unavailable", phone: null },
+      }));
+      return;
+    }
+    const body = (await res.json()) as Contact;
+    setContacts((prev) => ({ ...prev, [shipmentId]: body }));
+  }
+
+  async function uploadProof(shipmentId: string, file: File) {
+    setUploadingId(shipmentId);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${shipmentId}/pickup-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("delivery-proofs")
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (!upErr) {
+      const { data: urlData } = supabase.storage
+        .from("delivery-proofs")
+        .getPublicUrl(path);
+      await supabase
+        .from("shipments")
+        .update({ pickup_proof_url: urlData.publicUrl })
+        .eq("id", shipmentId);
+      setShipments((prev) =>
+        prev.map((s) =>
+          s.id === shipmentId
+            ? { ...s, pickup_proof_url: urlData.publicUrl }
+            : s
+        )
+      );
+    }
+    setUploadingId(null);
   }
 
   if (loading) {
@@ -121,32 +170,84 @@ export default function PickupsPage() {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              {shipment.status === "assigned" && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {}}
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex gap-2">
+                {shipment.status === "assigned" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => loadContact(shipment.id)}
+                      loading={contacts[shipment.id] === "loading"}
+                    >
+                      <Phone className="h-4 w-4 mr-1" />
+                      Contact
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => confirmPickup(shipment.id)}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Confirm Pickup
+                    </Button>
+                  </>
+                )}
+                {shipment.status === "picked_up" && (
+                  <label
+                    className={`inline-flex items-center justify-center rounded-[--radius-md] bg-gold px-3 py-1.5 text-sm font-semibold text-midnight cursor-pointer hover:bg-gold-dark transition-colors ${
+                      uploadingId === shipment.id
+                        ? "opacity-60 pointer-events-none"
+                        : ""
+                    }`}
                   >
-                    <Phone className="h-4 w-4 mr-1" />
-                    Contact
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => confirmPickup(shipment.id)}
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Confirm Pickup
-                  </Button>
-                </>
+                    <Camera className="h-4 w-4 mr-1" />
+                    {uploadingId === shipment.id
+                      ? "Uploading…"
+                      : shipment.pickup_proof_url
+                      ? "Replace Proof"
+                      : "Upload Proof"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadProof(shipment.id, f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              {/* Revealed seller contact */}
+              {contacts[shipment.id] && contacts[shipment.id] !== "loading" && (
+                <p className="text-xs text-slate-light">
+                  {(contacts[shipment.id] as Contact).name}:{" "}
+                  {(contacts[shipment.id] as Contact).phone ? (
+                    <a
+                      href={`tel:${(contacts[shipment.id] as Contact).phone}`}
+                      className="font-semibold text-violet hover:underline"
+                    >
+                      {(contacts[shipment.id] as Contact).phone}
+                    </a>
+                  ) : (
+                    "no phone on file"
+                  )}
+                </p>
               )}
-              {shipment.status === "picked_up" && (
-                <Button variant="gold" size="sm" onClick={() => {}}>
-                  <Camera className="h-4 w-4 mr-1" />
-                  Upload Proof
-                </Button>
+
+              {shipment.pickup_proof_url && (
+                <a
+                  href={shipment.pickup_proof_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-emerald-dark hover:underline flex items-center gap-1"
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  View pickup proof
+                </a>
               )}
             </div>
           </div>

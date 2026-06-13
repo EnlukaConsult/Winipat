@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Camera,
   Clock,
+  Phone,
 } from "lucide-react";
 
 type Delivery = {
@@ -22,16 +23,23 @@ type Delivery = {
   picked_up_at: string | null;
   delivered_at: string | null;
   created_at: string;
+  delivery_proof_url: string | null;
   order: {
     order_number: string;
     delivery_mode: string;
   } | null;
 };
 
+type Contact = { name: string; phone: string | null };
+
 export default function DeliveriesPage() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"in_transit" | "delivered">("in_transit");
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [contacts, setContacts] = useState<Record<string, Contact | "loading">>(
+    {}
+  );
   const supabase = createClient();
 
   useEffect(() => {
@@ -39,7 +47,7 @@ export default function DeliveriesPage() {
       const { data } = await supabase
         .from("shipments")
         .select(
-          "id, tracking_number, status, picked_up_at, delivered_at, created_at, order:orders(order_number, delivery_mode)"
+          "id, tracking_number, status, picked_up_at, delivered_at, created_at, delivery_proof_url, order:orders(order_number, delivery_mode)"
         )
         .in("status", ["in_transit", "delivered"])
         .order("created_at", { ascending: false });
@@ -58,6 +66,48 @@ export default function DeliveriesPage() {
     setDeliveries((prev) =>
       prev.map((d) => (d.id === id ? { ...d, status: "delivered", delivered_at: new Date().toISOString() } : d))
     );
+  }
+
+  async function loadContact(shipmentId: string) {
+    setContacts((prev) => ({ ...prev, [shipmentId]: "loading" }));
+    const res = await fetch(
+      `/api/logistics/contact?shipmentId=${shipmentId}&party=buyer`
+    );
+    if (!res.ok) {
+      setContacts((prev) => ({
+        ...prev,
+        [shipmentId]: { name: "Unavailable", phone: null },
+      }));
+      return;
+    }
+    const body = (await res.json()) as Contact;
+    setContacts((prev) => ({ ...prev, [shipmentId]: body }));
+  }
+
+  async function uploadProof(shipmentId: string, file: File) {
+    setUploadingId(shipmentId);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${shipmentId}/delivery-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("delivery-proofs")
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (!upErr) {
+      const { data: urlData } = supabase.storage
+        .from("delivery-proofs")
+        .getPublicUrl(path);
+      await supabase
+        .from("shipments")
+        .update({ delivery_proof_url: urlData.publicUrl })
+        .eq("id", shipmentId);
+      setDeliveries((prev) =>
+        prev.map((d) =>
+          d.id === shipmentId
+            ? { ...d, delivery_proof_url: urlData.publicUrl }
+            : d
+        )
+      );
+    }
+    setUploadingId(null);
   }
 
   const filtered = deliveries.filter((d) => d.status === tab);
@@ -135,28 +185,88 @@ export default function DeliveriesPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  {delivery.status === "in_transit" && (
-                    <>
-                      <Button variant="outline" size="sm" onClick={() => {}}>
-                        <Camera className="h-4 w-4 mr-1" />
-                        Upload Proof
-                      </Button>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => confirmDelivery(delivery.id)}
-                      >
-                        <CheckCircle2 className="h-4 w-4 mr-1" />
-                        Confirm Delivery
-                      </Button>
-                    </>
-                  )}
-                  {delivery.status === "delivered" && delivery.delivered_at && (
-                    <span className="text-sm text-emerald flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4" />
-                      {formatDate(delivery.delivered_at)}
-                    </span>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex gap-2">
+                    {delivery.status === "in_transit" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loadContact(delivery.id)}
+                          loading={contacts[delivery.id] === "loading"}
+                        >
+                          <Phone className="h-4 w-4 mr-1" />
+                          Contact
+                        </Button>
+                        <label
+                          className={`inline-flex items-center justify-center rounded-[--radius-md] border border-mist-dark px-3 py-1.5 text-sm font-semibold text-slate cursor-pointer hover:bg-mist transition-colors ${
+                            uploadingId === delivery.id
+                              ? "opacity-60 pointer-events-none"
+                              : ""
+                          }`}
+                        >
+                          <Camera className="h-4 w-4 mr-1" />
+                          {uploadingId === delivery.id
+                            ? "Uploading…"
+                            : delivery.delivery_proof_url
+                            ? "Replace Proof"
+                            : "Upload Proof"}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="sr-only"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) uploadProof(delivery.id, f);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => confirmDelivery(delivery.id)}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                          Confirm Delivery
+                        </Button>
+                      </>
+                    )}
+                    {delivery.status === "delivered" && delivery.delivered_at && (
+                      <span className="text-sm text-emerald flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {formatDate(delivery.delivered_at)}
+                      </span>
+                    )}
+                  </div>
+
+                  {contacts[delivery.id] &&
+                    contacts[delivery.id] !== "loading" && (
+                      <p className="text-xs text-slate-light">
+                        {(contacts[delivery.id] as Contact).name}:{" "}
+                        {(contacts[delivery.id] as Contact).phone ? (
+                          <a
+                            href={`tel:${(contacts[delivery.id] as Contact).phone}`}
+                            className="font-semibold text-violet hover:underline"
+                          >
+                            {(contacts[delivery.id] as Contact).phone}
+                          </a>
+                        ) : (
+                          "no phone on file"
+                        )}
+                      </p>
+                    )}
+
+                  {delivery.delivery_proof_url && (
+                    <a
+                      href={delivery.delivery_proof_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-emerald-dark hover:underline flex items-center gap-1"
+                    >
+                      <CheckCircle2 className="h-3 w-3" />
+                      View delivery proof
+                    </a>
                   )}
                 </div>
               </div>
