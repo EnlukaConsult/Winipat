@@ -54,6 +54,17 @@ export default function WelcomePage() {
           data.session.user.email?.split("@")[0] ??
           ""
       );
+      // Honor the role/seller-type the user already chose at /register.
+      // Email/phone signups carry these in user_metadata; if a seller ever
+      // gets bounced here (e.g. phone missing on the profile), we must NOT
+      // silently default them back to buyer. OAuth signups have no role in
+      // metadata and fall through to the buyer default, which is correct.
+      if (meta.role === "seller" || meta.role === "buyer") {
+        setRole(meta.role as Role);
+      }
+      if (meta.seller_type === "individual" || meta.seller_type === "business") {
+        setSellerType(meta.seller_type as SellerType);
+      }
       setChecking(false);
     });
   }, [router]);
