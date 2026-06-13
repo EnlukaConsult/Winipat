@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/admin-guard";
+import { getMyPermissions } from "@/lib/permissions";
 
 // PUT /api/admin/groups/[id]/permissions  { keys: string[] }
 // Replaces the group's permission set with the given keys.
@@ -50,6 +51,22 @@ export async function PUT(
   const { data: validRows } = await admin.from("permissions").select("key");
   const valid = new Set((validRows ?? []).map((r) => r.key));
   const cleaned = Array.from(new Set(keys)).filter((k) => valid.has(k));
+
+  // Anti-escalation: you can only assign permissions you hold yourself, so a
+  // delegated group manager can't mint themselves payouts.approve, groups.manage,
+  // etc. Super-admins hold everything, so they're unrestricted.
+  const callerPerms = new Set(await getMyPermissions());
+  const escalating = cleaned.filter((k) => !callerPerms.has(k));
+  if (escalating.length > 0) {
+    return NextResponse.json(
+      {
+        error: `You can only grant permissions you hold yourself. Missing: ${escalating.join(
+          ", "
+        )}`,
+      },
+      { status: 403 }
+    );
+  }
 
   // Replace: delete existing, insert the new set.
   const del = await admin.from("group_permissions").delete().eq("group_id", id);

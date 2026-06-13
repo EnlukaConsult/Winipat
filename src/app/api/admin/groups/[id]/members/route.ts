@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePermission } from "@/lib/admin-guard";
+import { getMyPermissions } from "@/lib/permissions";
 
 // POST   /api/admin/groups/[id]/members   { userId }
 // DELETE /api/admin/groups/[id]/members?userId=...
@@ -44,6 +45,28 @@ export async function POST(
           : "User not found.",
       },
       { status: 404 }
+    );
+  }
+
+  // Anti-escalation: you can't add someone to a group that grants permissions
+  // you don't hold yourself (e.g. a delegated manager adding an accomplice —
+  // or themselves — to super-admin). Super-admins hold everything, so they're
+  // unrestricted.
+  const callerPerms = new Set(await getMyPermissions());
+  const { data: groupPerms } = await admin
+    .from("group_permissions")
+    .select("permission_key")
+    .eq("group_id", groupId);
+  const exceeds = (groupPerms ?? [])
+    .map((r) => r.permission_key)
+    .filter((k) => !callerPerms.has(k));
+  if (exceeds.length > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "You can't add members to a group that grants permissions you don't hold yourself.",
+      },
+      { status: 403 }
     );
   }
 

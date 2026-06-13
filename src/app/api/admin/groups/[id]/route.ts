@@ -91,6 +91,25 @@ export async function PATCH(
   }
 
   const admin = createAdminClient();
+
+  // System groups (super-admin + persona defaults) have stable names/roles and
+  // can't be renamed — matching the DELETE guard, so nobody can relabel
+  // "Super Admin" to disguise who holds full access.
+  const { data: existing } = await admin
+    .from("security_groups")
+    .select("is_system")
+    .eq("id", id)
+    .single();
+  if (!existing) {
+    return NextResponse.json({ error: "Group not found." }, { status: 404 });
+  }
+  if (existing.is_system) {
+    return NextResponse.json(
+      { error: "System groups can't be edited." },
+      { status: 400 }
+    );
+  }
+
   const { error } = await admin
     .from("security_groups")
     .update(update)

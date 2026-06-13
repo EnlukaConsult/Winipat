@@ -128,6 +128,32 @@ export async function DELETE(request: Request) {
     );
   }
 
+  // Safety: don't strip the last user who can manage security groups. The
+  // role='admin' count above isn't enough, because groups.manage / team.manage
+  // live only in the super-admin group — demoting the last super-admin while
+  // other limited admins exist would lock everyone out of group/team mgmt.
+  const { data: gmGroups } = await admin
+    .from("group_permissions")
+    .select("group_id")
+    .eq("permission_key", "groups.manage");
+  const gmGroupIds = (gmGroups ?? []).map((g) => g.group_id);
+  if (gmGroupIds.length > 0) {
+    const { data: otherManagers } = await admin
+      .from("user_groups")
+      .select("user_id")
+      .in("group_id", gmGroupIds)
+      .neq("user_id", id);
+    if (!otherManagers || otherManagers.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot demote the last user who can manage security groups. Grant another user the Super Admin group first.",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   const { error } = await admin
     .from("profiles")
     .update({ role: "buyer" })
