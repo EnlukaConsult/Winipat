@@ -1,23 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { requirePermission } from "@/lib/admin-guard";
 
 // GET - list products pending review
 export async function GET() {
+  const guard = await requirePermission("products.moderate");
+  if (guard instanceof NextResponse) return guard;
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Check admin role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-  }
-
   const { data: products } = await supabase
     .from("products")
     .select("id, name, slug, price, stock_quantity, status, description, created_at, categories(name), sellers(business_name), product_media(file_url, media_type)")
@@ -29,20 +19,10 @@ export async function GET() {
 
 // PATCH - approve/reject product
 export async function PATCH(req: Request) {
+  const guard = await requirePermission("products.moderate");
+  if (guard instanceof NextResponse) return guard;
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  // Check admin role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-  }
 
   const { productId, action, notes } = await req.json();
 
@@ -77,7 +57,7 @@ export async function PATCH(req: Request) {
 
     // Log admin action
     await supabase.from("admin_actions").insert({
-      admin_id: user.id,
+      admin_id: guard.user.id,
       action_type: `product_${action}`,
       target_type: "product",
       target_id: productId,

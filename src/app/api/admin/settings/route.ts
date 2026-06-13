@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 
 // GET  /api/admin/settings           -> { key: value, ... }
 // PATCH /api/admin/settings { key, value }
@@ -8,7 +8,7 @@ import { requireAdmin } from "@/lib/admin-guard";
 // Backs the /admin/settings page. Keys come from platform_settings seeded by
 // migration 004. Values are stored as TEXT; the consumer parses.
 export async function GET() {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("settings.manage");
   if (guard instanceof NextResponse) return guard;
 
   const admin = createAdminClient();
@@ -22,7 +22,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("settings.manage");
   if (guard instanceof NextResponse) return guard;
 
   const { key, value } = (await request.json()) as { key: string; value: string };

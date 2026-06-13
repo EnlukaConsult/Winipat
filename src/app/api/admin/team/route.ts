@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 
 // GET  /api/admin/team        -> { admins: Profile[] }
 // POST /api/admin/team        { email }  -> promote existing user to admin
@@ -10,7 +10,7 @@ import { requireAdmin } from "@/lib/admin-guard";
 // isn't in profiles we return 404 with guidance to share the signup link.
 // V1: no Supabase email invite — keeps the moving parts down.
 export async function GET() {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("team.manage");
   if (guard instanceof NextResponse) return guard;
 
   const admin = createAdminClient();
@@ -25,7 +25,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("team.manage");
   if (guard instanceof NextResponse) return guard;
 
   const { email } = (await request.json()) as { email: string };
@@ -67,6 +67,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
+  // Grant full access by adding them to super-admin, preserving the historical
+  // "admin = full access" behaviour. To create a limited staff member instead,
+  // leave them as a buyer/seller and add them to specific groups under
+  // /admin/groups. (The role change above also auto-adds the default-admin
+  // group via the assign_default_group trigger.)
+  const { data: superGroup } = await admin
+    .from("security_groups")
+    .select("id")
+    .eq("slug", "super-admin")
+    .single();
+  if (superGroup) {
+    await admin.from("user_groups").upsert(
+      { user_id: existing.id, group_id: superGroup.id, assigned_by: guard.user.id },
+      { onConflict: "user_id,group_id", ignoreDuplicates: true }
+    );
+  }
+
   await admin.from("notifications").insert({
     user_id: existing.id,
     title: "You're now an admin",
@@ -82,7 +99,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("team.manage");
   if (guard instanceof NextResponse) return guard;
 
   const url = new URL(request.url);
@@ -117,6 +134,23 @@ export async function DELETE(request: Request) {
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Strip every non-persona group (super-admin + any staff groups) so the
+  // demoted user actually loses admin permissions. The assign_default_group
+  // trigger only swaps the persona-default group on role change; it leaves
+  // these alone, which would otherwise keep their privileges intact.
+  const { data: nonPersonaGroups } = await admin
+    .from("security_groups")
+    .select("id")
+    .is("primary_persona", null);
+  const groupIds = (nonPersonaGroups ?? []).map((g) => g.id);
+  if (groupIds.length > 0) {
+    await admin
+      .from("user_groups")
+      .delete()
+      .eq("user_id", id)
+      .in("group_id", groupIds);
+  }
 
   return NextResponse.json({ ok: true });
 }

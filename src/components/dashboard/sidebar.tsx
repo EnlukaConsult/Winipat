@@ -39,6 +39,8 @@ type NavItem = {
   label: string;
   href: string;
   icon: React.ElementType;
+  // When set, the item only shows if the user holds this permission key.
+  requires?: string;
 };
 
 // Sections are an optional grouping layer. Roles with 6+ items get
@@ -99,14 +101,15 @@ const adminNav: NavSection[] = [
     section: null,
     items: [
       { label: "Overview",    href: "/admin",             icon: LayoutDashboard },
-      { label: "Sellers",     href: "/admin/sellers",     icon: Users },
-      { label: "Disputes",    href: "/admin/disputes",    icon: LifeBuoy },
-      { label: "Settlements", href: "/admin/settlements", icon: Banknote },
-      { label: "Payouts",     href: "/admin/payouts",     icon: DollarSign },
-      { label: "Enquiries",   href: "/admin/enquiries",   icon: Mail },
-      { label: "Analytics",   href: "/admin/analytics",   icon: BarChart3 },
-      { label: "Team",        href: "/admin/team",        icon: User },
-      { label: "Settings",    href: "/admin/settings",    icon: Sliders },
+      { label: "Sellers",     href: "/admin/sellers",     icon: Users,      requires: "sellers.view" },
+      { label: "Disputes",    href: "/admin/disputes",    icon: LifeBuoy,   requires: "disputes.view" },
+      { label: "Settlements", href: "/admin/settlements", icon: Banknote,   requires: "settlements.view" },
+      { label: "Payouts",     href: "/admin/payouts",     icon: DollarSign, requires: "payouts.view" },
+      { label: "Enquiries",   href: "/admin/enquiries",   icon: Mail,       requires: "enquiries.manage" },
+      { label: "Analytics",   href: "/admin/analytics",   icon: BarChart3,  requires: "analytics.view" },
+      { label: "Team",        href: "/admin/team",        icon: User,       requires: "team.manage" },
+      { label: "Groups",      href: "/admin/groups",      icon: ShieldCheck, requires: "groups.manage" },
+      { label: "Settings",    href: "/admin/settings",    icon: Sliders,    requires: "settings.manage" },
     ],
   },
 ];
@@ -160,14 +163,21 @@ function isItemActive(
 interface SidebarProps {
   role: string;
   userName: string;
+  permissions?: string[];
 }
 
-export function Sidebar({ role, userName }: SidebarProps) {
+export function Sidebar({ role, userName, permissions }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
-  const sections = navMap[role] || buyerNav;
+  const permSet = new Set(permissions ?? []);
+  // Drop permission-gated items the user can't access before any rendering
+  // (mobile/desktop both derive from `sections`).
+  const sections = (navMap[role] || buyerNav).map((s) => ({
+    ...s,
+    items: s.items.filter((i) => !i.requires || permSet.has(i.requires)),
+  }));
   const items = flattenSections(sections);
 
   // Mobile nav strategy: show first 4 items inline, hide the rest behind

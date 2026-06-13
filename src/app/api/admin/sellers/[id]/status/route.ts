@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAdmin } from "@/lib/admin-guard";
+import { requirePermission } from "@/lib/admin-guard";
 import { sendEmail, emails } from "@/lib/email";
 
 // POST /api/admin/sellers/[id]/status
@@ -11,7 +11,7 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const guard = await requireAdmin();
+  const guard = await requirePermission("sellers.approve");
   if (guard instanceof NextResponse) return guard;
 
   const { id: sellerId } = await params;

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "./dashboard-shell";
+import { getMyPermissions } from "@/lib/permissions";
 
 export default async function DashboardLayout({
   children,
@@ -35,12 +36,16 @@ export default async function DashboardLayout({
   const avatarUrl = profile?.avatar_url || null;
   const email = user.email ?? "";
 
+  // Permissions drive which gated nav items (e.g. Security Groups) are shown.
+  const permissions = await getMyPermissions();
+
   return (
     <DashboardShell
       role={role}
       userName={userName}
       email={email}
       avatarUrl={avatarUrl}
+      permissions={permissions}
     >
       {children}
     </DashboardShell>

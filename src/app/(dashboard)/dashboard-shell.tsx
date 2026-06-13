@@ -10,6 +10,7 @@ interface DashboardShellProps {
   userName: string;
   email?: string;
   avatarUrl: string | null;
+  permissions?: string[];
   children: React.ReactNode;
 }
 
@@ -37,6 +38,7 @@ const titleMap: Record<string, string> = {
   "/admin/analytics":       "Analytics",
   "/admin/settings":        "Platform Settings",
   "/admin/team":            "Admin Team",
+  "/admin/groups":          "Security Groups",
   "/logistics/pickups":     "Pickup Assignments",
   "/logistics/deliveries":  "Deliveries",
 };
@@ -47,6 +49,7 @@ function titleFor(pathname: string): string {
   if (pathname.startsWith("/dashboard/product/")) return "Product Detail";
   if (pathname.startsWith("/admin/sellers/"))     return "Seller Detail";
   if (pathname.startsWith("/admin/disputes/"))    return "Dispute Detail";
+  if (pathname.startsWith("/admin/groups/"))      return "Security Group";
   return "Dashboard";
 }
 
@@ -55,6 +58,7 @@ export function DashboardShell({
   userName,
   email,
   avatarUrl,
+  permissions,
   children,
 }: DashboardShellProps) {
   const pathname = usePathname();
@@ -62,7 +66,7 @@ export function DashboardShell({
 
   return (
     <div className="flex min-h-dvh bg-cloud">
-      <Sidebar role={role} userName={userName} />
+      <Sidebar role={role} userName={userName} permissions={permissions} />
       <div className="flex-1 flex flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0 min-w-0">
         <DashboardHeader
           title={title}
