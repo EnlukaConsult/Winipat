@@ -87,27 +87,36 @@ export default function DeliveriesPage() {
   async function uploadProof(shipmentId: string, file: File) {
     setUploadingId(shipmentId);
     const ext = file.name.split(".").pop() || "jpg";
+    // Store the storage PATH (not a public URL): the delivery-proofs bucket
+    // is private, so proofs are viewed via short-lived signed URLs.
     const path = `${shipmentId}/delivery-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage
       .from("delivery-proofs")
       .upload(path, file, { contentType: file.type, upsert: true });
-    if (!upErr) {
-      const { data: urlData } = supabase.storage
-        .from("delivery-proofs")
-        .getPublicUrl(path);
-      await supabase
-        .from("shipments")
-        .update({ delivery_proof_url: urlData.publicUrl })
-        .eq("id", shipmentId);
-      setDeliveries((prev) =>
-        prev.map((d) =>
-          d.id === shipmentId
-            ? { ...d, delivery_proof_url: urlData.publicUrl }
-            : d
-        )
-      );
+    if (upErr) {
+      alert(`Couldn't upload proof: ${upErr.message}`);
+      setUploadingId(null);
+      return;
     }
+    await supabase
+      .from("shipments")
+      .update({ delivery_proof_url: path })
+      .eq("id", shipmentId);
+    setDeliveries((prev) =>
+      prev.map((d) =>
+        d.id === shipmentId ? { ...d, delivery_proof_url: path } : d
+      )
+    );
     setUploadingId(null);
+  }
+
+  async function viewProof(path: string) {
+    const { data } = await supabase.storage
+      .from("delivery-proofs")
+      .createSignedUrl(path, 3600);
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    }
   }
 
   const filtered = deliveries.filter((d) => d.status === tab);
@@ -258,15 +267,13 @@ export default function DeliveriesPage() {
                     )}
 
                   {delivery.delivery_proof_url && (
-                    <a
-                      href={delivery.delivery_proof_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => viewProof(delivery.delivery_proof_url!)}
                       className="text-xs text-emerald-dark hover:underline flex items-center gap-1"
                     >
                       <CheckCircle2 className="h-3 w-3" />
                       View delivery proof
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
