@@ -4,6 +4,8 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { SellerFab } from "@/components/seller/seller-fab";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { Lock } from "lucide-react";
 
 interface DashboardShellProps {
   role: string;
@@ -53,6 +55,30 @@ function titleFor(pathname: string): string {
   return "Dashboard";
 }
 
+// Per-section permission required to view an admin area. The data itself is
+// already protected by RLS (migration 017) and the API guards; this map only
+// drives a friendly "access restricted" screen so a staffer who lacks a
+// permission gets a clear message instead of an empty page. Longest matching
+// prefix wins.
+const ADMIN_SECTION_PERMISSION: Array<{ prefix: string; perm: string }> = [
+  { prefix: "/admin/sellers",     perm: "sellers.view" },
+  { prefix: "/admin/disputes",    perm: "disputes.view" },
+  { prefix: "/admin/settlements", perm: "settlements.view" },
+  { prefix: "/admin/payouts",     perm: "payouts.view" },
+  { prefix: "/admin/enquiries",   perm: "enquiries.manage" },
+  { prefix: "/admin/analytics",   perm: "analytics.view" },
+  { prefix: "/admin/team",        perm: "team.manage" },
+  { prefix: "/admin/groups",      perm: "groups.manage" },
+  { prefix: "/admin/settings",    perm: "settings.manage" },
+];
+
+function requiredAdminPermission(pathname: string): string | null {
+  const match = ADMIN_SECTION_PERMISSION.find(
+    (s) => pathname === s.prefix || pathname.startsWith(s.prefix + "/")
+  );
+  return match?.perm ?? null;
+}
+
 export function DashboardShell({
   role,
   userName,
@@ -63,6 +89,13 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const pathname = usePathname();
   const title = titleFor(pathname);
+
+  // Per-section access gate (UX layer; RLS + API are the real enforcement).
+  const requiredPerm = requiredAdminPermission(pathname);
+  const sectionRestricted =
+    requiredPerm !== null &&
+    permissions !== undefined &&
+    !permissions.includes(requiredPerm);
 
   return (
     <div className="flex min-h-dvh bg-cloud">
@@ -76,7 +109,28 @@ export function DashboardShell({
           email={email}
         />
         <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8">
-          {children}
+          {sectionRestricted ? (
+            <div className="mx-auto max-w-md mt-12 text-center rounded-[--radius-lg] border border-mist bg-white p-8 shadow-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/15 text-gold-dark">
+                <Lock size={22} aria-hidden="true" />
+              </div>
+              <h2 className="font-[family-name:var(--font-sora)] text-lg font-bold text-midnight">
+                Access restricted
+              </h2>
+              <p className="mt-1 text-sm text-slate-light">
+                You don&apos;t have permission to view this section. Ask an admin
+                to add you to a security group that grants it.
+              </p>
+              <Link
+                href="/admin"
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-violet hover:underline"
+              >
+                Back to overview
+              </Link>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
 
