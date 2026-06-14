@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/trust-scores",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/track-shipments",
+      "schedule": "*/30 * * * *"
     }
   ]
 }
