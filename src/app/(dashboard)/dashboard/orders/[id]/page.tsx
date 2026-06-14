@@ -165,8 +165,10 @@ export default async function OrderDetailPage({
     }
   }
 
-  const isDisputable = ["delivered", "in_transit", "picked_up"].includes(o.status);
-  const canConfirmDelivery = o.status === "delivered";
+  const isDisputable = ["awaiting_pickup", "picked_up", "in_transit", "delivered"].includes(o.status);
+  // Manual-logistics V1: buyer can confirm receipt once the seller marks the
+  // order ready (awaiting_pickup) through delivery. Escrow holds until then.
+  const canConfirmDelivery = ["awaiting_pickup", "picked_up", "in_transit", "delivered"].includes(o.status);
   const isTerminal = ["completed", "refunded", "cancelled", "disputed"].includes(o.status);
   const isException = EXCEPTION_STATES.has(o.status);
   const totalItems = o.items.reduce((sum, item) => sum + item.quantity, 0);

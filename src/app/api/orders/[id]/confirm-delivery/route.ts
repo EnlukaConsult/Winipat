@@ -15,13 +15,17 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify order belongs to buyer and is in deliverable state
+  // Verify order belongs to buyer and is in a confirmable state.
+  // Manual-logistics V1: once the seller has marked the order ready
+  // (awaiting_pickup) the buyer can confirm receipt — escrow protects them
+  // until they do. Richer in_transit/delivered tracking applies once a real
+  // courier integration updates these statuses.
   const { data: order } = await supabase
     .from("orders")
     .select("*")
     .eq("id", orderId)
     .eq("buyer_id", user.id)
-    .in("status", ["delivered", "in_transit"])
+    .in("status", ["awaiting_pickup", "picked_up", "in_transit", "delivered"])
     .single();
 
   if (!order) {
