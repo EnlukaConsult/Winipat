@@ -67,6 +67,13 @@ async function handleChargeSuccess(data: {
     .update({ status: "payment_confirmed" })
     .eq("id", orderId);
 
+  // Decrement product stock + increment units_sold for this order's items.
+  // Done here (payment-confirmed, service-role) so stock only moves on real
+  // paid orders. Idempotency note: charge.success is effectively once per
+  // order; if Paystack re-sends, this would double-apply — acceptable for V1,
+  // revisit with a processed-events guard if duplicates are seen.
+  await supabaseAdmin.rpc("apply_order_stock", { p_order_id: orderId });
+
   // Create order status history entry (audit trail)
   await supabaseAdmin.from("order_status_history").insert({
     order_id: orderId,

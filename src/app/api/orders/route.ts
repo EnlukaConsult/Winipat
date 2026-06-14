@@ -34,6 +34,27 @@ export async function POST(request: Request) {
     );
   }
 
+  // Stock guard: reject if any requested quantity is invalid or exceeds the
+  // available stock (prevents overselling — Bug 5).
+  for (const item of items as { productId: string; quantity: number }[]) {
+    const product = products.find((p) => p.id === item.productId);
+    if (!product) continue;
+    if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+      return NextResponse.json(
+        { error: "Invalid quantity." },
+        { status: 400 }
+      );
+    }
+    if (item.quantity > product.stock_quantity) {
+      return NextResponse.json(
+        {
+          error: `Only ${product.stock_quantity} of "${product.name}" left in stock.`,
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   // All items must be from the same seller (V1 constraint)
   const sellerIds = [...new Set(products.map((p) => p.seller_id))];
   if (sellerIds.length > 1) {

@@ -222,8 +222,10 @@ export default function SellerOnboardingPage() {
           .from("kyc-documents")
           .upload(path, file, { upsert: true });
         if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
-        const { data } = supabase.storage.from("kyc-documents").getPublicUrl(path);
-        return data.publicUrl;
+        // kyc-documents is a PRIVATE bucket — store the object PATH (not a
+        // public URL, which 400s). Admins view via a signed URL (admin
+        // sellers page -> viewDoc). file_url thus holds the storage path.
+        return path;
       };
 
       // 1. Upsert the seller record (status -> submitted, agreement timestamps set)

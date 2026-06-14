@@ -11,7 +11,6 @@ import { getProductImage } from "@/lib/product-images";
 import {
   Search,
   Package,
-  Star,
   ShieldCheck,
   ShoppingCart,
   TrendingUp,
@@ -28,6 +27,7 @@ type Product = {
   price: number;
   description: string;
   stock_quantity: number;
+  units_sold: number;
   created_at: string;
   categories: { name: string; slug: string } | null;
   sellers: { business_name: string; status: string } | null;
@@ -101,7 +101,7 @@ export default function BrowsePage() {
     let query = supabase
       .from("products")
       .select(
-        "id, name, slug, price, description, stock_quantity, created_at, categories(name, slug), sellers(business_name, status), product_media(file_url)"
+        "id, name, slug, price, description, stock_quantity, units_sold, created_at, categories(name, slug), sellers(business_name, status), product_media(file_url)"
       )
       .eq("status", "active");
 
@@ -201,15 +201,6 @@ export default function BrowsePage() {
     }
     return true;
   });
-
-  // Deterministic pseudo-stats so cards look populated until live
-  // metrics exist (sold count, review count, etc.) — keyed by product
-  // id so values stay stable across renders.
-  function pseudoStat(id: string, mod: number, offset = 0): number {
-    let h = 0;
-    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-    return (h % mod) + offset;
-  }
 
   return (
     <div className="space-y-5">
@@ -356,12 +347,9 @@ export default function BrowsePage() {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {visibleProducts.map((product, i) => {
-            // Deterministic stand-in stats until we have live metrics
-            const sold        = pseudoStat(product.id, 950, 50);
-            const reviewCount = pseudoStat(product.id, 300, 8);
-            const rating      = (3.8 + (pseudoStat(product.id, 12) / 10)).toFixed(1);
+            // Real metrics only (Bug 4) — no fabricated rating/review counts.
+            const sold        = product.units_sold ?? 0;
             const isVerified  = product.sellers?.status === "approved";
-            const isTopRated  = parseFloat(rating) >= 4.5 && reviewCount >= 100;
             const isHot       = i < 3; // First 3 in current sort = "trending"
 
             return (
@@ -386,11 +374,6 @@ export default function BrowsePage() {
                       <Badge variant="error" className="text-[10px] px-1.5 py-0.5 shadow-sm flex items-center gap-0.5">
                         <Flame size={9} aria-hidden="true" />
                         Trending
-                      </Badge>
-                    )}
-                    {isTopRated && (
-                      <Badge variant="success" className="text-[10px] px-1.5 py-0.5 shadow-sm">
-                        Top rated
                       </Badge>
                     )}
                   </div>
@@ -454,15 +437,12 @@ export default function BrowsePage() {
                     </span>
                   </div>
 
-                  {/* Rating + sold count row */}
-                  <div className="flex items-center gap-2 text-[11px] text-slate-light">
-                    <span className="flex items-center gap-0.5">
-                      <Star size={11} className="fill-gold text-gold" aria-hidden="true" />
-                      <span className="font-medium text-midnight">{rating}</span>
-                    </span>
-                    <span>·</span>
-                    <span>{sold.toLocaleString()} sold</span>
-                  </div>
+                  {/* Sold count — real, shown only when there are sales */}
+                  {sold > 0 && (
+                    <div className="flex items-center gap-2 text-[11px] text-slate-light">
+                      <span>{sold.toLocaleString()} sold</span>
+                    </div>
+                  )}
 
                   {/* Seller line */}
                   <div className="flex items-center justify-between gap-1 text-[11px] text-slate-light mt-1">

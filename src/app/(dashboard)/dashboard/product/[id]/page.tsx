@@ -35,6 +35,7 @@ type Product = {
   price: number;
   description: string;
   stock_quantity: number;
+  units_sold: number;
   created_at: string;
   categories: { name: string; slug: string } | null;
   sellers: {
@@ -124,7 +125,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       const { data } = await supabase
         .from("products")
         .select(
-          "id, name, slug, price, description, stock_quantity, created_at, categories(name, slug), sellers(id, business_name, status, description, pickup_address), product_media(file_url, media_type)"
+          "id, name, slug, price, description, stock_quantity, units_sold, created_at, categories(name, slug), sellers(id, business_name, status, description, pickup_address), product_media(file_url, media_type)"
         )
         .eq("id", id)
         .single();
@@ -333,13 +334,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       />
     ));
 
-  // Deterministic pseudo-sold-count until real sales counts land
-  const soldCount = useMemo(() => {
-    if (!product) return 0;
-    let h = 0;
-    for (let i = 0; i < product.id.length; i++) h = (h * 31 + product.id.charCodeAt(i)) >>> 0;
-    return (h % 4800) + 200;
-  }, [product]);
+  // Real units sold (Bug 4) — backed by products.units_sold.
+  const soldCount = product?.units_sold ?? 0;
 
   if (loading) {
     return (
@@ -379,11 +375,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const images = product.product_media?.filter((m) => m.media_type === "image") || [];
   const mainImage = images[activeImage]?.file_url || "/images/products/handbags-collection.jpg";
   const productPrice = product.price / 100;
-  const rrp = Math.round(productPrice * 1.45); // Suggested RRP — 45% above platform price
-  const pctOff = Math.round(((rrp - productPrice) / rrp) * 100);
   const totalPrice = productPrice * quantity;
-  const ratingValue = trustScore?.average_rating ?? 4.6;
+  // Real rating (Bug 4) — default to 0 (no invented 4.6); only show stars when
+  // there are actual reviews. No synthetic RRP/discount (Bug 6).
   const reviewTotal = trustScore?.total_reviews ?? reviewCounts.total;
+  const ratingValue = trustScore?.average_rating ?? 0;
+  const hasRating = reviewTotal > 0 && ratingValue > 0;
   const isTopRated = ratingValue >= 4.5 && reviewTotal >= 20;
 
   return (
@@ -553,13 +550,21 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               {product.name}
             </h1>
             <div className="flex items-center gap-3 mt-2 text-xs text-slate-light flex-wrap">
-              <span className="flex items-center gap-1">
-                <span className="flex items-center">{renderStars(ratingValue, 12)}</span>
-                <span className="font-semibold text-midnight ml-1">{ratingValue.toFixed(1)}</span>
-                <span>({reviewTotal} reviews)</span>
-              </span>
-              <span aria-hidden="true">·</span>
-              <span className="font-semibold text-midnight">{soldCount.toLocaleString()}+ sold</span>
+              {hasRating ? (
+                <span className="flex items-center gap-1">
+                  <span className="flex items-center">{renderStars(ratingValue, 12)}</span>
+                  <span className="font-semibold text-midnight ml-1">{ratingValue.toFixed(1)}</span>
+                  <span>({reviewTotal} reviews)</span>
+                </span>
+              ) : (
+                <span>No reviews yet</span>
+              )}
+              {soldCount > 0 && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-semibold text-midnight">{soldCount.toLocaleString()} sold</span>
+                </>
+              )}
               {isTopRated && (
                 <span aria-hidden="true">·</span>
               )}
@@ -578,14 +583,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <span className="text-3xl font-bold text-violet font-[family-name:var(--font-sora)]">
                 {formatNaira(productPrice)}
               </span>
-              {pctOff > 0 && (
-                <>
-                  <span className="text-sm text-slate-light line-through">
-                    RRP {formatNaira(rrp)}
-                  </span>
-                  <Badge variant="error" className="text-xs">{pctOff}% off</Badge>
-                </>
-              )}
             </div>
             <p className="mt-2 text-xs text-slate flex items-center gap-1.5">
               <Lock size={11} className="text-violet" aria-hidden="true" />
@@ -760,11 +757,15 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               All reviews are from verified buyers of this seller
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="flex items-center">{renderStars(ratingValue, 16)}</span>
-            <span className="text-sm font-bold text-midnight">{ratingValue.toFixed(1)}</span>
-            <span className="text-xs text-slate-light">({reviewTotal})</span>
-          </div>
+          {hasRating ? (
+            <div className="flex items-center gap-3">
+              <span className="flex items-center">{renderStars(ratingValue, 16)}</span>
+              <span className="text-sm font-bold text-midnight">{ratingValue.toFixed(1)}</span>
+              <span className="text-xs text-slate-light">({reviewTotal})</span>
+            </div>
+          ) : (
+            <span className="text-xs text-slate-light">No reviews yet</span>
+          )}
         </div>
 
         {/* "Write a review" callout — shown to eligible buyers as a prominent

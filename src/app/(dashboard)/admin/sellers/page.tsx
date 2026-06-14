@@ -51,6 +51,12 @@ type Seller = {
     total_reviews: number;
     dispute_rate: number;
   } | null;
+  bank: {
+    bank_name: string;
+    account_number: string;
+    account_name: string;
+    is_verified: boolean;
+  } | null;
 };
 
 const STATUS_STYLES: Record<SellerStatus, { label: string; variant: "success" | "warning" | "error" | "default" }> = {
@@ -80,23 +86,44 @@ export default function AdminSellersPage() {
          pickup_city, pickup_state,
          profile:profiles!id(full_name, email, phone),
          kyc_docs:seller_kyc_documents(id, document_type, file_url, status),
-         trust:trust_scores(average_rating, total_reviews, dispute_rate)`
+         trust:trust_scores(average_rating, total_reviews, dispute_rate),
+         bank:bank_accounts(bank_name, account_number, account_name, is_verified)`
       )
       .order("created_at", { ascending: false });
 
     const rows = (data || []).map((r: Record<string, unknown>) => {
       const profile = r.profile as Seller["profile"] | Seller["profile"][] | null;
       const trust = r.trust as Seller["trust"] | Seller["trust"][] | null;
+      const bank = r.bank as Seller["bank"] | Seller["bank"][] | null;
       return {
         ...r,
         profile: Array.isArray(profile) ? profile[0] ?? null : profile,
         trust:   Array.isArray(trust)   ? trust[0]   ?? null : trust,
+        bank:    Array.isArray(bank)    ? bank[0]    ?? null : bank,
       } as Seller;
     });
 
     setSellers(rows);
     setLoading(false);
   }, []);
+
+  // KYC files live in a PRIVATE bucket, so a stored public URL is a dead link.
+  // Derive the object path (works for both legacy public-URL rows and newer
+  // path-only rows) and mint a short-lived signed URL to view it.
+  async function viewDoc(fileUrl: string) {
+    const supabase = createClient();
+    const marker = "/kyc-documents/";
+    const idx = fileUrl.indexOf(marker);
+    const path = idx >= 0 ? fileUrl.slice(idx + marker.length) : fileUrl;
+    const { data, error } = await supabase.storage
+      .from("kyc-documents")
+      .createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      alert(`Couldn't open document: ${error?.message ?? "unknown error"}`);
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
 
   useEffect(() => {
     load();
@@ -265,12 +292,11 @@ export default function AdminSellersPage() {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {s.kyc_docs.map((d) => (
-                            <a
+                            <button
                               key={d.id}
-                              href={d.file_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-between rounded-[--radius-md] border border-mist bg-cloud px-3 py-2 text-xs hover:border-violet/40"
+                              type="button"
+                              onClick={() => viewDoc(d.file_url)}
+                              className="flex items-center justify-between rounded-[--radius-md] border border-mist bg-cloud px-3 py-2 text-xs hover:border-violet/40 text-left"
                             >
                               <span className="capitalize">{d.document_type.replace(/_/g, " ")}</span>
                               <Badge
@@ -285,8 +311,42 @@ export default function AdminSellersPage() {
                               >
                                 {d.status}
                               </Badge>
-                            </a>
+                            </button>
                           ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bank details (for payout verification) */}
+                    <div>
+                      <CardTitle className="text-xs uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                        <Building2 size={12} />
+                        Bank details
+                      </CardTitle>
+                      {!s.bank ? (
+                        <p className="text-xs text-slate-lighter">
+                          No bank account added.
+                        </p>
+                      ) : (
+                        <div className="rounded-[--radius-md] border border-mist bg-cloud px-3 py-2.5 text-xs space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-light">Bank</span>
+                            <span className="font-medium text-midnight">{s.bank.bank_name}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-light">Account number</span>
+                            <span className="font-medium text-midnight">{s.bank.account_number}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-light">Account name</span>
+                            <span className="font-medium text-midnight">{s.bank.account_name}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-light">Verified</span>
+                            <Badge variant={s.bank.is_verified ? "success" : "warning"} className="text-[9px]">
+                              {s.bank.is_verified ? "Yes" : "No"}
+                            </Badge>
+                          </div>
                         </div>
                       )}
                     </div>
