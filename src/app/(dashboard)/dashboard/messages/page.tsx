@@ -256,7 +256,11 @@ export default function MessagesPage() {
             filter: `conversation_id=eq.${convId}`,
           },
           (payload) => {
-            setMessages((prev) => [...prev, payload.new as Message]);
+            const incoming = payload.new as Message;
+            // Dedupe — the sender also appends optimistically below.
+            setMessages((prev) =>
+              prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]
+            );
           }
         )
         .subscribe();
@@ -282,11 +286,28 @@ export default function MessagesPage() {
     const content = newMessage.trim();
     setNewMessage("");
 
-    await supabase.from("messages").insert({
-      conversation_id: selectedConv.id,
-      sender_id: currentUserId,
-      content,
-    });
+    // Insert and read the stored row back (content is masked by the DB
+    // trigger). Append it immediately so the sender always sees their message,
+    // even if realtime isn't delivering. The realtime handler dedupes by id.
+    const { data: inserted, error } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: selectedConv.id,
+        sender_id: currentUserId,
+        content,
+      })
+      .select("id, content, created_at, sender_id, conversation_id")
+      .single();
+
+    if (error) {
+      // Restore the draft so the user doesn't lose it.
+      setNewMessage(content);
+    } else if (inserted) {
+      const msg = inserted as Message;
+      setMessages((prev) =>
+        prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]
+      );
+    }
 
     setSending(false);
   }

@@ -73,6 +73,7 @@ const sellerNav: NavSection[] = [
       { label: "Add Product", href: "/seller/products/new",   icon: Plus },
       { label: "Bulk Upload", href: "/seller/products/bulk",  icon: Upload },
       { label: "Orders",      href: "/seller/orders",         icon: Package },
+      { label: "Messages",    href: "/dashboard/messages",    icon: MessageSquare },
     ],
   },
   {

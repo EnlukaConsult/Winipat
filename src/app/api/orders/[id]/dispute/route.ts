@@ -19,13 +19,15 @@ export async function POST(
 
   const { reason, description } = await request.json();
 
-  // Verify order belongs to buyer and is in disputable state
+  // Verify order belongs to buyer and is in a disputable state. Aligned with
+  // the order-detail UI: from awaiting_pickup (e.g. "never received") through
+  // completed.
   const { data: order } = await supabase
     .from("orders")
     .select("*")
     .eq("id", orderId)
     .eq("buyer_id", user.id)
-    .in("status", ["delivered", "completed"])
+    .in("status", ["awaiting_pickup", "picked_up", "in_transit", "delivered", "completed"])
     .single();
 
   if (!order) {

@@ -165,7 +165,9 @@ export default async function OrderDetailPage({
     }
   }
 
-  const isDisputable = ["awaiting_pickup", "picked_up", "in_transit", "delivered"].includes(o.status);
+  // Dispute stays available after the buyer confirms (completed) too — e.g.
+  // item turned out wrong after they accepted delivery.
+  const isDisputable = ["awaiting_pickup", "picked_up", "in_transit", "delivered", "completed"].includes(o.status);
   // Manual-logistics V1: buyer can confirm receipt once the seller marks the
   // order ready (awaiting_pickup) through delivery. Escrow holds until then.
   const canConfirmDelivery = ["awaiting_pickup", "picked_up", "in_transit", "delivered"].includes(o.status);
