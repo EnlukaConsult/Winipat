@@ -44,102 +44,104 @@ export async function POST(request: Request) {
 async function handleChargeSuccess(data: {
   reference: string;
   amount: number;
-  metadata?: { order_id?: string };
+  metadata?: { order_id?: string; order_ids?: string[] };
 }) {
   const reference = data.reference;
-  const amountInKobo = data.amount;
-  const orderId = data.metadata?.order_id;
 
-  if (!orderId) return;
+  // A checkout may pay for several orders (one per seller) in one transaction.
+  // metadata.order_ids holds them all; fall back to order_id for older payments.
+  const orderIds: string[] = Array.isArray(data.metadata?.order_ids)
+    ? (data.metadata!.order_ids as string[])
+    : data.metadata?.order_id
+    ? [data.metadata.order_id]
+    : [];
+  if (orderIds.length === 0) return;
 
-  // Update payment transaction
+  // One payment_transactions row per payment (keyed by reference).
   await supabaseAdmin
     .from("payment_transactions")
-    .update({
-      status: "success",
-      provider_reference: reference,
-    })
+    .update({ status: "success", provider_reference: reference })
     .eq("reference", reference);
 
-  // Update order status -> payment_confirmed (matches Postgres order_status enum)
-  await supabaseAdmin
-    .from("orders")
-    .update({ status: "payment_confirmed" })
-    .eq("id", orderId);
+  let buyerEmailed = false;
 
-  // Decrement product stock + increment units_sold for this order's items.
-  // Done here (payment-confirmed, service-role) so stock only moves on real
-  // paid orders. Idempotency note: charge.success is effectively once per
-  // order; if Paystack re-sends, this would double-apply — acceptable for V1,
-  // revisit with a processed-events guard if duplicates are seen.
-  await supabaseAdmin.rpc("apply_order_stock", { p_order_id: orderId });
+  for (const orderId of orderIds) {
+    // Confirm order + move escrow to held + decrement stock / count sales.
+    await supabaseAdmin
+      .from("orders")
+      .update({ status: "payment_confirmed" })
+      .eq("id", orderId);
 
-  // Create order status history entry (audit trail)
-  await supabaseAdmin.from("order_status_history").insert({
-    order_id: orderId,
-    status: "payment_confirmed",
-    notes: `Payment confirmed via Paystack. Reference: ${reference}`,
-  });
+    // Idempotency note: charge.success is effectively once per payment; a
+    // Paystack re-send would double-apply stock — acceptable for V1, revisit
+    // with a processed-events guard if duplicates are seen.
+    await supabaseAdmin.rpc("apply_order_stock", { p_order_id: orderId });
 
-  // Update escrow ledger to held
-  await supabaseAdmin
-    .from("escrow_ledger")
-    .update({ status: "held" })
-    .eq("order_id", orderId);
+    await supabaseAdmin.from("order_status_history").insert({
+      order_id: orderId,
+      status: "payment_confirmed",
+      notes: `Payment confirmed via Paystack. Reference: ${reference}`,
+    });
 
-  // Pull rich order + party details for the email
-  const { data: order } = await supabaseAdmin
-    .from("orders")
-    .select(
-      `seller_id, buyer_id, order_number, total,
-       buyer:profiles!buyer_id(full_name, email),
-       seller:sellers!seller_id(business_name, profile:profiles!id(full_name, email))`
-    )
-    .eq("id", orderId)
-    .single();
+    await supabaseAdmin
+      .from("escrow_ledger")
+      .update({ status: "held" })
+      .eq("order_id", orderId);
 
-  if (!order) return;
+    // Party details for notifications/emails.
+    const { data: order } = await supabaseAdmin
+      .from("orders")
+      .select(
+        `seller_id, buyer_id, order_number, total,
+         buyer:profiles!buyer_id(full_name, email),
+         seller:sellers!seller_id(business_name, profile:profiles!id(full_name, email))`
+      )
+      .eq("id", orderId)
+      .single();
 
-  const buyer = Array.isArray(order.buyer) ? order.buyer[0] : order.buyer;
-  const sellerRow = Array.isArray(order.seller) ? order.seller[0] : order.seller;
-  const sellerProfile = Array.isArray(sellerRow?.profile) ? sellerRow.profile[0] : sellerRow?.profile;
+    if (!order) continue;
 
-  // In-app notification for seller (kept alongside email — bell pings too)
-  await supabaseAdmin.from("notifications").insert({
-    user_id: order.seller_id,
-    title: "New Order Received",
-    body: `Order ${order.order_number} has been paid. Please prepare the item.`,
-    type: "order",
-    data: { order_id: orderId },
-  });
+    const buyer = Array.isArray(order.buyer) ? order.buyer[0] : order.buyer;
+    const sellerRow = Array.isArray(order.seller) ? order.seller[0] : order.seller;
+    const sellerProfile = Array.isArray(sellerRow?.profile)
+      ? sellerRow.profile[0]
+      : sellerRow?.profile;
+    const totalNaira = (order.total ?? 0) / 100;
 
-  // Email both parties in parallel — fire-and-forget; payment is already
-  // recorded so failed emails should never roll the transaction back.
-  const totalNaira = (order.total ?? 0) / 100;
-  await Promise.all([
-    buyer?.email
-      ? sendEmail({
-          to: buyer.email,
-          ...emails.orderPlaced({
-            toName: buyer.full_name || "there",
-            orderNumber: order.order_number,
-            sellerName: sellerRow?.business_name || "the seller",
-            totalNaira,
-          }),
-        })
-      : Promise.resolve(),
-    sellerProfile?.email
-      ? sendEmail({
-          to: sellerProfile.email,
-          ...emails.newOrderForSeller({
-            toName: sellerProfile.full_name || "there",
-            orderNumber: order.order_number,
-            buyerName: buyer?.full_name || "A buyer",
-            totalNaira,
-          }),
-        })
-      : Promise.resolve(),
-  ]);
+    // Seller gets a notification + email per order.
+    await supabaseAdmin.from("notifications").insert({
+      user_id: order.seller_id,
+      title: "New Order Received",
+      body: `Order ${order.order_number} has been paid. Please prepare the item.`,
+      type: "order",
+      data: { order_id: orderId },
+    });
+    if (sellerProfile?.email) {
+      await sendEmail({
+        to: sellerProfile.email,
+        ...emails.newOrderForSeller({
+          toName: sellerProfile.full_name || "there",
+          orderNumber: order.order_number,
+          buyerName: buyer?.full_name || "A buyer",
+          totalNaira,
+        }),
+      });
+    }
+
+    // Buyer gets one confirmation email for the whole checkout.
+    if (!buyerEmailed && buyer?.email) {
+      buyerEmailed = true;
+      await sendEmail({
+        to: buyer.email,
+        ...emails.orderPlaced({
+          toName: buyer.full_name || "there",
+          orderNumber: order.order_number,
+          sellerName: sellerRow?.business_name || "the seller",
+          totalNaira,
+        }),
+      });
+    }
+  }
 }
 
 async function handleTransferSuccess(data: { reference: string }) {

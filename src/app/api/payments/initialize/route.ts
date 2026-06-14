@@ -14,20 +14,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { orderId } = await request.json();
+  // Multi-vendor checkout (Bug 2): a cart may produce several orders (one per
+  // seller). They're paid together in ONE Paystack transaction. Accept an
+  // orderIds array, or a single orderId for backward compatibility.
+  const reqBody = await request.json();
+  const orderIds: string[] = Array.isArray(reqBody.orderIds)
+    ? reqBody.orderIds
+    : reqBody.orderId
+    ? [reqBody.orderId]
+    : [];
+  if (orderIds.length === 0) {
+    return NextResponse.json({ error: "No order specified" }, { status: 400 });
+  }
 
-  // Fetch order
-  const { data: order, error: orderError } = await supabase
+  // Fetch all orders in this checkout — must belong to the buyer and be unpaid.
+  const { data: orders, error: orderError } = await supabase
     .from("orders")
-    .select("*")
-    .eq("id", orderId)
+    .select("id, total, order_number")
+    .in("id", orderIds)
     .eq("buyer_id", user.id)
-    .eq("status", "pending_payment")
-    .single();
+    .eq("status", "pending_payment");
 
-  if (orderError || !order) {
+  if (orderError || !orders || orders.length === 0) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
+
+  const grandTotal = orders.reduce((sum, o) => sum + (o.total ?? 0), 0);
+  const confirmedIds = orders.map((o) => o.id);
 
   // Paystack requires an email. Phone-OTP signups have no auth email
   // (user.email is null), so fall back to the profile email — which the
@@ -50,7 +63,11 @@ export async function POST(request: Request) {
   }
 
   const reference = `WNP-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
-  const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${orderId}?payment=callback`;
+  // Single order -> its detail page; multiple -> the orders list.
+  const callbackUrl =
+    orders.length === 1
+      ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders/${confirmedIds[0]}?payment=callback`
+      : `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/orders?payment=callback`;
 
   // Write the payment_transactions + escrow_ledger rows with the SERVICE-ROLE
   // client. These tables have no buyer-insert RLS policy, so doing this with
@@ -59,14 +76,17 @@ export async function POST(request: Request) {
   // bypasses RLS (same as the webhook).
   const admin = createAdminClient();
 
-  // Payment transaction record — the webhook updates this by `reference`.
+  // ONE payment_transactions row for the whole payment (reference is UNIQUE).
+  // order_id is the first order; the full set lives in metadata.order_ids and
+  // is what the webhook loops over to confirm every order.
   const { error: txError } = await admin.from("payment_transactions").insert({
-    order_id: orderId,
+    order_id: confirmedIds[0],
     reference,
-    amount: order.total,
+    amount: grandTotal,
     currency: "NGN",
     status: "pending",
     provider: "paystack",
+    metadata: { order_ids: confirmedIds },
   });
   if (txError) {
     return NextResponse.json(
@@ -86,14 +106,14 @@ export async function POST(request: Request) {
   // here meant the seller's eventual payout was computed against the
   // wrong base, undercounting any platform-wide reconciliation.
   //
-  // escrow_ledger.order_id is UNIQUE, so a payment retry on the same order
-  // must not 500 — upsert + ignoreDuplicates keeps the existing row.
+  // One escrow_ledger row per order (each escrow = that order's total).
+  // order_id is UNIQUE, so upsert+ignoreDuplicates makes a payment retry safe.
   const { error: escrowError } = await admin.from("escrow_ledger").upsert(
-    {
-      order_id: orderId,
-      amount: order.total,
+    orders.map((o) => ({
+      order_id: o.id,
+      amount: o.total,
       status: "initiated",
-    },
+    })),
     { onConflict: "order_id", ignoreDuplicates: true }
   );
   if (escrowError) {
@@ -103,12 +123,17 @@ export async function POST(request: Request) {
     );
   }
 
-  // Initialize Paystack transaction
+  // Initialize ONE Paystack transaction for the combined total. metadata
+  // carries every order id so the webhook can confirm them all.
   const result = await initializeTransaction({
     email: payerEmail,
-    amount: order.total, // Already in kobo
+    amount: grandTotal, // kobo
     reference,
-    metadata: { order_id: orderId, order_number: order.order_number },
+    metadata: {
+      order_ids: confirmedIds,
+      order_id: confirmedIds[0],
+      order_number: orders[0].order_number,
+    },
     callbackUrl,
   });
 

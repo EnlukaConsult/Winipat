@@ -197,7 +197,9 @@ export default function CheckoutPage() {
 
       const orderData = await orderRes.json();
 
-      if (!orderData.orderId) {
+      // Multi-vendor checkout: /api/orders returns one order per seller.
+      const orderIds: string[] = orderData.orderIds ?? (orderData.orderId ? [orderData.orderId] : []);
+      if (orderIds.length === 0) {
         alert(orderData.error || "Could not create order. Please try again.");
         return;
       }
@@ -205,7 +207,7 @@ export default function CheckoutPage() {
       const payRes = await fetch("/api/payments/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: orderData.orderId }),
+        body: JSON.stringify({ orderIds }),
       });
 
       const payData = await payRes.json();
