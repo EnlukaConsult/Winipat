@@ -220,7 +220,7 @@ export default async function OrderDetailPage({
                   Total
                 </span>
                 <span className="font-[family-name:var(--font-sora)] text-lg font-bold">
-                  {formatNaira(o.total)}
+                  {formatNaira(o.total / 100)}
                 </span>
               </li>
               <li>
@@ -322,11 +322,11 @@ export default async function OrderDetailPage({
                     </p>
                   )}
                   <p className="mt-0.5 text-sm text-slate-light">
-                    Qty {item.quantity} &middot; {formatNaira(item.product_price)} each
+                    Qty {item.quantity} &middot; {formatNaira(item.product_price / 100)} each
                   </p>
                 </div>
                 <p className="font-bold text-midnight flex-shrink-0">
-                  {formatNaira(item.quantity * item.product_price)}
+                  {formatNaira((item.quantity * item.product_price) / 100)}
                 </p>
               </div>
             );
@@ -336,23 +336,23 @@ export default async function OrderDetailPage({
           <div className="border-t border-mist pt-4 space-y-1.5 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-light">Subtotal</span>
-              <span className="text-midnight">{formatNaira(o.subtotal)}</span>
+              <span className="text-midnight">{formatNaira(o.subtotal / 100)}</span>
             </div>
             {o.logistics_fee > 0 && (
               <div className="flex justify-between">
                 <span className="text-slate-light">Logistics fee</span>
-                <span className="text-midnight">{formatNaira(o.logistics_fee)}</span>
+                <span className="text-midnight">{formatNaira(o.logistics_fee / 100)}</span>
               </div>
             )}
             {o.platform_fee > 0 && (
               <div className="flex justify-between">
                 <span className="text-slate-light">Service fee</span>
-                <span className="text-midnight">{formatNaira(o.platform_fee)}</span>
+                <span className="text-midnight">{formatNaira(o.platform_fee / 100)}</span>
               </div>
             )}
             <div className="flex justify-between pt-2 border-t border-mist">
               <span className="font-semibold text-midnight">Order Total</span>
-              <span className="text-xl font-bold text-royal">{formatNaira(o.total)}</span>
+              <span className="text-xl font-bold text-royal">{formatNaira(o.total / 100)}</span>
             </div>
           </div>
         </div>
@@ -413,7 +413,7 @@ export default async function OrderDetailPage({
           <div className="flex justify-between">
             <span className="text-slate-light">Amount held</span>
             <span className="font-medium text-midnight">
-              {formatNaira(o.escrow?.amount ?? o.total)}
+              {formatNaira((o.escrow?.amount ?? o.total) / 100)}
             </span>
           </div>
           {o.escrow?.released_at && (

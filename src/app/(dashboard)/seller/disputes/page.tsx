@@ -317,7 +317,7 @@ function DisputeCard({ dispute, currentUserId, onRefresh }: DisputeCardProps) {
             )}
           </div>
           <p className="text-sm text-slate-light mt-0.5">
-            Order value: <span className="font-medium text-midnight">{formatNaira(dispute.order.total)}</span>
+            Order value: <span className="font-medium text-midnight">{formatNaira(dispute.order.total / 100)}</span>
             {" · "}
             <span className="inline-flex items-center gap-1">
               <Clock size={12} /> Opened {formatDate(dispute.created_at)}

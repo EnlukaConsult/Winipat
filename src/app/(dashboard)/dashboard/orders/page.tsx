@@ -192,7 +192,7 @@ export default function OrdersPage() {
                       {formatDate(order.created_at)}
                     </span>
                     <span className="font-bold text-royal">
-                      {formatNaira(order.total)}
+                      {formatNaira(order.total / 100)}
                     </span>
                   </div>
                 </div>

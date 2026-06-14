@@ -234,7 +234,7 @@ function OrderCard({ order, onAction, onPhoto, actionLoading }: OrderCardProps) 
           </p>
         </div>
         <p className="font-[family-name:var(--font-sora)] font-bold text-midnight shrink-0">
-          {formatNaira(order.total_amount)}
+          {formatNaira(order.total_amount / 100)}
         </p>
       </div>
 
@@ -246,7 +246,7 @@ function OrderCard({ order, onAction, onPhoto, actionLoading }: OrderCardProps) 
               {item.product_name}{" "}
               <span className="text-slate-light">× {item.quantity}</span>
             </span>
-            <span className="text-slate font-medium">{formatNaira(item.product_price * item.quantity)}</span>
+            <span className="text-slate font-medium">{formatNaira((item.product_price * item.quantity) / 100)}</span>
           </div>
         ))}
       </div>
