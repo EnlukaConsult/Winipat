@@ -433,7 +433,7 @@ export default function SellerOrdersPage() {
         <PhotoUploadModal
           orderId={photoOrderId}
           onClose={() => setPhotoOrderId(null)}
-          onDone={() => {}}
+          onDone={() => fetchOrders()}
         />
       )}
 
