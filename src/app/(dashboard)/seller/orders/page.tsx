@@ -26,8 +26,10 @@ import {
 const TAB_STATUSES: Record<string, OrderStatus[]> = {
   Pending:   ["payment_confirmed"],
   Preparing: ["seller_preparing"],
-  Ready:     ["awaiting_pickup", "picked_up", "in_transit"],
-  Completed: ["delivered", "completed"],
+  Ready:     ["awaiting_pickup"],
+  // Seller's part is done once the package is picked up (proof uploaded);
+  // it then progresses through delivery to completed.
+  Completed: ["picked_up", "in_transit", "delivered", "completed"],
 };
 
 const TABS = Object.keys(TAB_STATUSES);
@@ -121,15 +123,23 @@ function PhotoUploadModal({ orderId, onClose, onDone }: PhotoUploadModalProps) {
 
       const { data: urlData } = supabase.storage.from("order-photos").getPublicUrl(path);
 
+      const now = new Date().toISOString();
       const { error: updateError } = await supabase
         .from("orders")
-        .update({
-          package_photo_url: urlData.publicUrl,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ package_photo_url: urlData.publicUrl, updated_at: now })
         .eq("id", orderId);
-
       if (updateError) throw updateError;
+
+      // Uploading the pickup proof advances an awaiting-pickup order to
+      // picked_up: it leaves the seller's "Ready" queue (now shows under
+      // "Completed") and the buyer sees the delivery progress. Guarded by the
+      // current status so re-uploading a later-stage order can't regress it.
+      await supabase
+        .from("orders")
+        .update({ status: "picked_up", updated_at: now })
+        .eq("id", orderId)
+        .eq("status", "awaiting_pickup");
+
       onDone(orderId);
       onClose();
     } catch (err) {
@@ -294,9 +304,9 @@ function OrderCard({ order, onAction, onPhoto, actionLoading }: OrderCardProps) 
           </>
         )}
         {isReady && (
-          <Button variant="outline" size="sm" onClick={() => onPhoto(order.id)}>
+          <Button variant="primary" size="sm" onClick={() => onPhoto(order.id)}>
             <Upload size={14} className="mr-1.5" />
-            Update Package Photo
+            Confirm Pickup (upload photo)
           </Button>
         )}
       </div>
