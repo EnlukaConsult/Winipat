@@ -51,6 +51,7 @@ type LogisticsPartner = {
   name: string;
   description: string | null;
   delivery_fee_kobo: number;
+  api_provider: string | null;
 };
 
 // Fallback fee if a partner row is missing the column for some reason
@@ -106,7 +107,7 @@ export default function CheckoutPage() {
           .order("is_default", { ascending: false }),
         supabase
           .from("logistics_partners")
-          .select("id, name, description, delivery_fee_kobo")
+          .select("id, name, description, delivery_fee_kobo, api_provider")
           .eq("is_active", true)
           .order("delivery_fee_kobo", { ascending: true }),
       ]);
@@ -142,12 +143,13 @@ export default function CheckoutPage() {
     0
   );
 
-  const flatFeeKobo = (() => {
-    const partner = partners.find((p) => p.id === selectedPartnerId);
-    return partner?.delivery_fee_kobo ?? DEFAULT_LOGISTICS_FEE_KOBO;
-  })();
-  // Prefer the live Kwik quote when we have one; otherwise the flat fee.
-  const logisticsFeeKobo = quotedFeeKobo ?? flatFeeKobo;
+  const selectedPartner = partners.find((p) => p.id === selectedPartnerId) || null;
+  const flatFeeKobo = selectedPartner?.delivery_fee_kobo ?? DEFAULT_LOGISTICS_FEE_KOBO;
+  // The live quote is a Kwik (distance-based) price, so it only applies when the
+  // Kwik courier is chosen. Other partners keep their flat fee.
+  const isKwikSelected = selectedPartner?.api_provider === "kwik";
+  const logisticsFeeKobo =
+    isKwikSelected && quotedFeeKobo != null ? quotedFeeKobo : flatFeeKobo;
   const logisticsFee = logisticsFeeKobo / 100;
   const total = subtotal + logisticsFee;
 
@@ -184,8 +186,11 @@ export default function CheckoutPage() {
     }
   }, [selectedAddressId, selectedPartnerId, items]);
 
+  // Fetch the live rate as soon as the buyer reaches courier selection, and
+  // re-fetch when the address changes (fetchQuote depends on selectedAddressId),
+  // so the Kwik price reflects the chosen city right where it's picked.
   useEffect(() => {
-    if (step === "payment") fetchQuote();
+    if (step === "logistics" || step === "payment") fetchQuote();
   }, [step, fetchQuote]);
 
   async function saveNewAddress() {
@@ -504,7 +509,13 @@ export default function CheckoutPage() {
               ) : (
                 <div className="space-y-2 mb-4">
                   {partners.map((p) => {
-                    const fee = (p.delivery_fee_kobo ?? DEFAULT_LOGISTICS_FEE_KOBO) / 100;
+                    const isKwik = p.api_provider === "kwik";
+                    // Kwik shows a live, distance-based rate for the selected
+                    // address; everyone else shows their flat fee.
+                    const hasLive = isKwik && quotedFeeKobo != null;
+                    const feeKobo = hasLive
+                      ? (quotedFeeKobo as number)
+                      : (p.delivery_fee_kobo ?? DEFAULT_LOGISTICS_FEE_KOBO);
                     return (
                       <button
                         key={p.id}
@@ -523,9 +534,22 @@ export default function CheckoutPage() {
                               <p className="mt-0.5 text-xs text-slate-light">{p.description}</p>
                             )}
                           </div>
-                          <p className="text-sm font-bold text-violet shrink-0">
-                            {formatNaira(fee)}
-                          </p>
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm font-bold text-violet">
+                              {isKwik && quoting && quotedFeeKobo == null
+                                ? "…"
+                                : formatNaira(feeKobo / 100)}
+                            </p>
+                            {isKwik && (
+                              <p className="text-[10px] uppercase tracking-wide text-slate-light">
+                                {quoting && quotedFeeKobo == null
+                                  ? "calculating"
+                                  : hasLive
+                                    ? "live rate"
+                                    : "from"}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </button>
                     );
