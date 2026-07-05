@@ -9,10 +9,15 @@
 // See docs/kwik-integration-plan.md. Import-safe without credentials — a call
 // only throws if invoked while KWIK_* is unset.
 
-const BASE = process.env.KWIK_BASE_URL ?? "";
-const DOMAIN = process.env.KWIK_DOMAIN ?? "";
-const EMAIL = process.env.KWIK_EMAIL ?? "";
-const PASSWORD = process.env.KWIK_PASSWORD ?? "";
+// Defensive: take only the first line and trim. Guards against a whole .env
+// block being pasted into a single dashboard field (a real prod incident — the
+// stray newlines made fetch() reject the URL and every quote fell back to flat).
+const clean = (v: string | undefined) => (v ?? "").split(/[\r\n]/)[0].trim();
+
+const BASE = clean(process.env.KWIK_BASE_URL).replace(/\/+$/, "");
+const DOMAIN = clean(process.env.KWIK_DOMAIN);
+const EMAIL = clean(process.env.KWIK_EMAIL);
+const PASSWORD = clean(process.env.KWIK_PASSWORD);
 
 // Nigeria (WAT, UTC+1). Kwik's `timezone` is JS getTimezoneOffset()-style
 // (minutes, negative of the UTC offset) — WAT is -60.
