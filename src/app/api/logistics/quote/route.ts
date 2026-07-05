@@ -1,28 +1,46 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
-import { isGigConfigured, getPrice } from "@/lib/gig";
+import { isKwikConfigured, calculatePricing, type KwikStop } from "@/lib/kwik";
+import { geocodeAddress } from "@/lib/geocode";
 
-// POST /api/logistics/quote  { deliveryAddressId, logisticsPartnerId, items? }
+// POST /api/logistics/quote  { deliveryAddressId, logisticsPartnerId, items }
 //
-// Returns a delivery fee for checkout. TODAY it returns the manual flat fee
-// (current behaviour, unchanged), so this route is safe to ship now. Once GIG
-// is live (creds + confirmed /price schema), the GIG branch returns a live
-// quote and we point checkout at this route instead of the hard-coded fee.
+// Returns the delivery fee for checkout. Uses live Kwik pricing when possible
+// (geocode seller pickup + buyer address -> Kwik /send_payment_for_task),
+// summed across sellers for a mixed cart. Falls back to the manual flat fee on
+// any failure (Kwik not configured, address can't be geocoded, Kwik error) so
+// checkout never breaks. Geocoded coordinates are cached on addresses/sellers.
 //
-// Returns: { source: "gig" | "manual", amount_kobo, currency, quote_ref?, note? }
+// Returns: { source: "kwik" | "manual", amount_kobo, currency, note? }
 
-const DEFAULT_FEE_KOBO = 250000; // ₦2,500 — matches checkout's fallback
+const DEFAULT_FEE_KOBO = 250000; // ₦2,500
+
+// Try full address, then city+state, then state, until one geocodes.
+async function geocodeParts(p: {
+  line?: string | null;
+  city?: string | null;
+  state?: string | null;
+}): Promise<{ lat: number; lng: number } | null> {
+  const candidates: string[] = [];
+  if (p.line && p.city && p.state) candidates.push(`${p.line}, ${p.city}, ${p.state}, Nigeria`);
+  if (p.city && p.state) candidates.push(`${p.city}, ${p.state}, Nigeria`);
+  if (p.state) candidates.push(`${p.state}, Nigeria`);
+  for (const c of candidates) {
+    const r = await geocodeAddress(c);
+    if (r) return r;
+  }
+  return null;
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { deliveryAddressId, logisticsPartnerId } = (await request
+  const { deliveryAddressId, logisticsPartnerId, items } = (await request
     .json()
     .catch(() => ({}))) as {
     deliveryAddressId?: string;
@@ -30,11 +48,12 @@ export async function POST(request: Request) {
     items?: { productId: string; quantity: number }[];
   };
 
-  // Manual flat-fee quote (current behaviour + safe fallback).
+  const admin = createAdminClient();
+
   async function manualQuote(note?: string) {
     let feeKobo = DEFAULT_FEE_KOBO;
     if (logisticsPartnerId) {
-      const { data: p } = await supabase
+      const { data: p } = await admin
         .from("logistics_partners")
         .select("delivery_fee_kobo")
         .eq("id", logisticsPartnerId)
@@ -49,50 +68,111 @@ export async function POST(request: Request) {
     });
   }
 
-  if (!isGigConfigured()) return manualQuote();
+  if (!isKwikConfigured() || !deliveryAddressId || !items?.length) {
+    return manualQuote();
+  }
 
-  // --- GIG live-quote branch (scaffold) ---
-  // Resolve the receiver station from the buyer's delivery-address state.
-  let receiverStationId: string | null = null;
-  if (deliveryAddressId) {
-    const { data: addr } = await supabase
-      .from("addresses")
-      .select("state")
-      .eq("id", deliveryAddressId)
+  // --- Buyer delivery coordinates (cached on the address) ---
+  const { data: addr } = await admin
+    .from("addresses")
+    .select("id, street, city, state, latitude, longitude")
+    .eq("id", deliveryAddressId)
+    .maybeSingle();
+  if (!addr) return manualQuote("no delivery address");
+
+  let dLat = addr.latitude as number | null;
+  let dLng = addr.longitude as number | null;
+  if (dLat == null || dLng == null) {
+    const c = await geocodeParts({ line: addr.street, city: addr.city, state: addr.state });
+    if (!c) return manualQuote("buyer address not geocoded");
+    dLat = c.lat;
+    dLng = c.lng;
+    await admin.from("addresses").update({ latitude: dLat, longitude: dLng }).eq("id", addr.id);
+  }
+
+  const { data: buyer } = await admin
+    .from("profiles")
+    .select("full_name, phone")
+    .eq("id", user.id)
+    .single();
+
+  // --- Sellers in this cart ---
+  const productIds = items.map((i) => i.productId);
+  const { data: products } = await admin
+    .from("products")
+    .select("seller_id")
+    .in("id", productIds);
+  const sellerIds = [...new Set((products ?? []).map((p) => p.seller_id))];
+  if (sellerIds.length === 0) return manualQuote();
+
+  const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+  const delivery: KwikStop = {
+    address: [addr.street, addr.city, addr.state].filter(Boolean).join(", "),
+    name: buyer?.full_name ?? "Buyer",
+    latitude: dLat,
+    longitude: dLng,
+    time: now,
+    phone: buyer?.phone ?? "+2340000000000",
+  };
+
+  // One Kwik task per seller (each ships separately) -> sum the prices.
+  let totalNaira = 0;
+  for (const sellerId of sellerIds) {
+    const { data: seller } = await admin
+      .from("sellers")
+      .select("business_name, pickup_address, pickup_city, pickup_state, pickup_latitude, pickup_longitude")
+      .eq("id", sellerId)
       .maybeSingle();
-    if (addr?.state) {
-      const { data: st } = await supabase
-        .from("gig_stations")
-        .select("gig_station_id")
-        .eq("state_name", addr.state)
-        .limit(1)
-        .maybeSingle();
-      receiverStationId = (st?.gig_station_id as string) ?? null;
+    if (!seller) return manualQuote("seller missing");
+
+    let sLat = seller.pickup_latitude as number | null;
+    let sLng = seller.pickup_longitude as number | null;
+    if (sLat == null || sLng == null) {
+      const c = await geocodeParts({
+        line: seller.pickup_address,
+        city: seller.pickup_city,
+        state: seller.pickup_state,
+      });
+      if (!c) return manualQuote("seller pickup not geocoded");
+      sLat = c.lat;
+      sLng = c.lng;
+      await admin
+        .from("sellers")
+        .update({ pickup_latitude: sLat, pickup_longitude: sLng })
+        .eq("id", sellerId);
+    }
+
+    const { data: sellerProfile } = await admin
+      .from("profiles")
+      .select("phone")
+      .eq("id", sellerId)
+      .single();
+
+    const pickup: KwikStop = {
+      address:
+        seller.pickup_address ||
+        [seller.pickup_city, seller.pickup_state].filter(Boolean).join(", "),
+      name: seller.business_name ?? "Seller",
+      latitude: sLat,
+      longitude: sLng,
+      time: now,
+      phone: sellerProfile?.phone ?? "+2340000000000",
+      email: "",
+    };
+
+    try {
+      const res = await calculatePricing(pickup, delivery);
+      const cost = parseFloat(res.data?.per_task_cost ?? "");
+      if (!isFinite(cost) || cost <= 0) return manualQuote("kwik: no price returned");
+      totalNaira += cost;
+    } catch (e) {
+      return manualQuote(`kwik: ${(e as Error).message}`);
     }
   }
 
-  // TODO(confirm): resolve the SENDER station from the seller's pickup address
-  // (sellers.pickup_state -> gig_stations). Needs the order's seller, derived
-  // from `items` -> products.seller_id -> sellers.pickup_state.
-  const senderStationId: string | null = null;
-
-  if (!receiverStationId || !senderStationId) {
-    return manualQuote("gig: station unresolved, used manual fee");
-  }
-
-  // TODO(confirm): GIG /price request schema and how to read the fee + a quote
-  // reference from the response. Until confirmed, return the manual fee so
-  // checkout never breaks.
-  try {
-    const res = await getPrice({
-      SenderStationId: senderStationId,
-      ReceiverStationId: receiverStationId,
-      // SenderLocation, ReceiverLocation, CustomerCode, CustomerType,
-      // PickUpOptions, ShipmentItems[] -> TODO(confirm)
-    });
-    void res; // TODO(confirm): const amount_kobo = ...; const quote_ref = ...;
-    return manualQuote("gig: quote fetched, parsing pending schema confirmation");
-  } catch (e) {
-    return manualQuote(`gig: quote failed (${(e as Error).message}), used manual fee`);
-  }
+  return NextResponse.json({
+    source: "kwik",
+    amount_kobo: Math.round(totalNaira * 100),
+    currency: "NGN",
+  });
 }

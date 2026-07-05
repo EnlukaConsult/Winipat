@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,9 @@ export default function CheckoutPage() {
 
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
+  // Live Kwik delivery quote (kobo). Null -> fall back to the flat partner fee.
+  const [quotedFeeKobo, setQuotedFeeKobo] = useState<number | null>(null);
+  const [quoting, setQuoting] = useState(false);
 
   // Inline "new address" form
   const [showNewAddress, setShowNewAddress] = useState(false);
@@ -139,14 +142,48 @@ export default function CheckoutPage() {
     0
   );
 
-  const logisticsFeeKobo = (() => {
+  const flatFeeKobo = (() => {
     const partner = partners.find((p) => p.id === selectedPartnerId);
     return partner?.delivery_fee_kobo ?? DEFAULT_LOGISTICS_FEE_KOBO;
   })();
+  // Prefer the live Kwik quote when we have one; otherwise the flat fee.
+  const logisticsFeeKobo = quotedFeeKobo ?? flatFeeKobo;
   const logisticsFee = logisticsFeeKobo / 100;
   const total = subtotal + logisticsFee;
 
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || null;
+
+  // Fetch a live delivery quote (geocode + Kwik) once we know the address +
+  // cart. Falls back silently to the flat fee if Kwik isn't available.
+  const fetchQuote = useCallback(async () => {
+    if (!selectedAddressId || items.length === 0) return;
+    setQuoting(true);
+    try {
+      const res = await fetch("/api/logistics/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deliveryAddressId: selectedAddressId,
+          logisticsPartnerId: selectedPartnerId,
+          items: items.map((i) => ({ productId: i.products?.id, quantity: i.quantity })),
+        }),
+      });
+      const body = await res.json();
+      setQuotedFeeKobo(
+        res.ok && body.source === "kwik" && typeof body.amount_kobo === "number"
+          ? body.amount_kobo
+          : null
+      );
+    } catch {
+      setQuotedFeeKobo(null);
+    } finally {
+      setQuoting(false);
+    }
+  }, [selectedAddressId, selectedPartnerId, items]);
+
+  useEffect(() => {
+    if (step === "payment") fetchQuote();
+  }, [step, fetchQuote]);
 
   async function saveNewAddress() {
     if (!newAddress.street || !newAddress.city || !newAddress.state) return;
@@ -623,7 +660,14 @@ export default function CheckoutPage() {
                 <span>{formatNaira(subtotal)}</span>
               </div>
               <div className="flex justify-between text-slate-light">
-                <span>Logistics</span>
+                <span>
+                  Logistics
+                  {quoting
+                    ? " · calculating…"
+                    : quotedFeeKobo != null
+                    ? " · live rate"
+                    : ""}
+                </span>
                 <span>{formatNaira(logisticsFee)}</span>
               </div>
               <div className="border-t border-mist pt-2 flex justify-between font-bold text-midnight">
