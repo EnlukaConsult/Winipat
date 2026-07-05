@@ -57,6 +57,15 @@ type Seller = {
     account_name: string;
     is_verified: boolean;
   } | null;
+  kyc_checks: {
+    check_type: string;
+    status: string;
+    verified_name: string | null;
+    name_match: boolean | null;
+    match_score: number | null;
+    message: string | null;
+    created_at: string;
+  }[];
 };
 
 const STATUS_STYLES: Record<SellerStatus, { label: string; variant: "success" | "warning" | "error" | "default" }> = {
@@ -87,7 +96,8 @@ export default function AdminSellersPage() {
          profile:profiles!id(full_name, email, phone),
          kyc_docs:seller_kyc_documents(id, document_type, file_url, status),
          trust:trust_scores(average_rating, total_reviews, dispute_rate),
-         bank:bank_accounts(bank_name, account_number, account_name, is_verified)`
+         bank:bank_accounts(bank_name, account_number, account_name, is_verified),
+         kyc_checks:seller_kyc_checks(check_type, status, verified_name, name_match, match_score, message, created_at)`
       )
       .order("created_at", { ascending: false });
 
@@ -100,6 +110,7 @@ export default function AdminSellersPage() {
         profile: Array.isArray(profile) ? profile[0] ?? null : profile,
         trust:   Array.isArray(trust)   ? trust[0]   ?? null : trust,
         bank:    Array.isArray(bank)    ? bank[0]    ?? null : bank,
+        kyc_checks: (r.kyc_checks as Seller["kyc_checks"]) ?? [],
       } as Seller;
     });
 
@@ -349,6 +360,72 @@ export default function AdminSellersPage() {
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    {/* Automated KYC checks (Pandascrow) — latest per type */}
+                    <div>
+                      <CardTitle className="text-xs uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                        <Shield size={12} />
+                        Identity checks
+                      </CardTitle>
+                      {(() => {
+                        const latest = new Map<string, Seller["kyc_checks"][number]>();
+                        for (const c of s.kyc_checks ?? []) {
+                          const prev = latest.get(c.check_type);
+                          if (!prev || c.created_at > prev.created_at) latest.set(c.check_type, c);
+                        }
+                        const checks = [...latest.values()];
+                        if (checks.length === 0) {
+                          return (
+                            <p className="text-xs text-slate-lighter">
+                              No automated checks run yet.
+                            </p>
+                          );
+                        }
+                        const LABEL: Record<string, string> = {
+                          nin: "NIN",
+                          nuban: "Bank account",
+                          bvn: "BVN",
+                          cac: "CAC",
+                        };
+                        const VARIANT: Record<string, "success" | "warning" | "error" | "default"> = {
+                          pass: "success",
+                          fail: "error",
+                          error: "warning",
+                          pending: "default",
+                        };
+                        return (
+                          <div className="rounded-[--radius-md] border border-mist bg-cloud px-3 py-2.5 text-xs space-y-2">
+                            {checks.map((c) => (
+                              <div key={c.check_type} className="space-y-0.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-light">
+                                    {LABEL[c.check_type] ?? c.check_type}
+                                  </span>
+                                  <Badge variant={VARIANT[c.status] ?? "default"} className="text-[9px]">
+                                    {c.status === "pass"
+                                      ? "Verified"
+                                      : c.status === "fail"
+                                        ? "No match"
+                                        : c.status === "error"
+                                          ? "Check failed"
+                                          : "Pending"}
+                                  </Badge>
+                                </div>
+                                {c.verified_name && (
+                                  <p className="text-slate-lighter">
+                                    Returned: <span className="text-midnight">{c.verified_name}</span>
+                                    {c.match_score != null && ` (${Math.round(c.match_score * 100)}% match)`}
+                                  </p>
+                                )}
+                                {c.status === "error" && c.message && (
+                                  <p className="text-warn">{c.message}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Trust */}

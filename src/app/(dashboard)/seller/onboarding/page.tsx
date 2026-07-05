@@ -68,6 +68,9 @@ interface FormData {
   pickupCity: string;
   pickupState: string;
   // Step 3 — KYC Documents
+  // NIN for automated identity verification (Pandascrow). Used to verify at
+  // submission and NOT stored raw — only the match result + last 4 are kept.
+  nin: string;
   govtIdFile: File | null;
   // Utility bill (electricity, waste, water) — recent issue with the
   // seller's pickup address printed on it. Replaced an earlier
@@ -157,6 +160,7 @@ export default function SellerOnboardingPage() {
     pickupAddress: "",
     pickupCity: "",
     pickupState: "",
+    nin: "",
     govtIdFile: null,
     utilityBillFile: null,
     bankName: "",
@@ -290,6 +294,18 @@ export default function SellerOnboardingPage() {
           is_verified: false,    // Paystack name-match validation happens server-side later
         });
       if (bankError) throw new Error(`Saving bank account: ${bankError.message}`);
+
+      // 4. Run automated KYC checks (Pandascrow NIN + NUBAN). Non-fatal and
+      //    no-ops until Pandascrow is configured — the admin still reviews.
+      try {
+        await fetch("/api/seller/kyc/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nin: form.nin.trim() || undefined }),
+        });
+      } catch {
+        // ignore — checks can be re-run from the admin side
+      }
 
       router.push("/seller");
     } catch (err) {
@@ -472,6 +488,17 @@ export default function SellerOnboardingPage() {
                 Accepted formats: JPEG, PNG, PDF. Max file size: 5 MB per document.
               </p>
             </div>
+            <Input
+              label="National Identity Number (NIN)"
+              placeholder="11-digit NIN"
+              value={form.nin}
+              onChange={(e) => set("nin", e.target.value.replace(/\D/g, "").slice(0, 11))}
+              maxLength={11}
+              inputMode="numeric"
+            />
+            <p className="-mt-3 text-xs text-slate-light">
+              We verify your NIN instantly against the national database to speed up approval. Your NIN is not stored.
+            </p>
             <FileUploadArea
               label="Government-Issued ID"
               hint="NIN slip, passport, voter's card, or driver's licence"
@@ -525,6 +552,10 @@ export default function SellerOnboardingPage() {
               <ReviewRow
                 label="Pickup Address"
                 value={[form.pickupAddress, form.pickupCity, form.pickupState].filter(Boolean).join(", ")}
+              />
+              <ReviewRow
+                label="NIN"
+                value={form.nin ? `•••• •••• ${form.nin.slice(-3)}` : "Not provided"}
               />
               <ReviewRow
                 label="Government ID"
