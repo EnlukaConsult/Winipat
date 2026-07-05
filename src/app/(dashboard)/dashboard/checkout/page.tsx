@@ -169,6 +169,9 @@ export default function CheckoutPage() {
         }),
       });
       const body = await res.json();
+      // Visible in browser DevTools console — shows why a flat rate was used
+      // (e.g. { source: "manual", note: "seller pickup not geocoded (…)" }).
+      console.log("[quote]", body);
       setQuotedFeeKobo(
         res.ok && body.source === "kwik" && typeof body.amount_kobo === "number"
           ? body.amount_kobo

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import { isKwikConfigured, calculatePricing, type KwikStop } from "@/lib/kwik";
-import { geocodeAddress } from "@/lib/geocode";
+import { geocodeStructured } from "@/lib/geocode";
 
 // POST /api/logistics/quote  { deliveryAddressId, logisticsPartnerId, items }
 //
@@ -15,23 +15,6 @@ import { geocodeAddress } from "@/lib/geocode";
 // Returns: { source: "kwik" | "manual", amount_kobo, currency, note? }
 
 const DEFAULT_FEE_KOBO = 250000; // ₦2,500
-
-// Try full address, then city+state, then state, until one geocodes.
-async function geocodeParts(p: {
-  line?: string | null;
-  city?: string | null;
-  state?: string | null;
-}): Promise<{ lat: number; lng: number } | null> {
-  const candidates: string[] = [];
-  if (p.line && p.city && p.state) candidates.push(`${p.line}, ${p.city}, ${p.state}, Nigeria`);
-  if (p.city && p.state) candidates.push(`${p.city}, ${p.state}, Nigeria`);
-  if (p.state) candidates.push(`${p.state}, Nigeria`);
-  for (const c of candidates) {
-    const r = await geocodeAddress(c);
-    if (r) return r;
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -51,6 +34,7 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
 
   async function manualQuote(note?: string) {
+    if (note) console.log(`[quote] flat fallback: ${note}`);
     let feeKobo = DEFAULT_FEE_KOBO;
     if (logisticsPartnerId) {
       const { data: p } = await admin
@@ -68,9 +52,9 @@ export async function POST(request: Request) {
     });
   }
 
-  if (!isKwikConfigured() || !deliveryAddressId || !items?.length) {
-    return manualQuote();
-  }
+  if (!isKwikConfigured()) return manualQuote("kwik_not_configured");
+  if (!deliveryAddressId) return manualQuote("no deliveryAddressId in request");
+  if (!items?.length) return manualQuote("no items in request");
 
   // --- Buyer delivery coordinates (cached on the address) ---
   const { data: addr } = await admin
@@ -83,7 +67,7 @@ export async function POST(request: Request) {
   let dLat = addr.latitude as number | null;
   let dLng = addr.longitude as number | null;
   if (dLat == null || dLng == null) {
-    const c = await geocodeParts({ line: addr.street, city: addr.city, state: addr.state });
+    const c = await geocodeStructured({ line: addr.street, city: addr.city, state: addr.state });
     if (!c) return manualQuote("buyer address not geocoded");
     dLat = c.lat;
     dLng = c.lng;
@@ -128,12 +112,12 @@ export async function POST(request: Request) {
     let sLat = seller.pickup_latitude as number | null;
     let sLng = seller.pickup_longitude as number | null;
     if (sLat == null || sLng == null) {
-      const c = await geocodeParts({
+      const c = await geocodeStructured({
         line: seller.pickup_address,
         city: seller.pickup_city,
         state: seller.pickup_state,
       });
-      if (!c) return manualQuote("seller pickup not geocoded");
+      if (!c) return manualQuote(`seller pickup not geocoded (${seller.business_name})`);
       sLat = c.lat;
       sLng = c.lng;
       await admin

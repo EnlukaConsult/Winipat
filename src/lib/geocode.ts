@@ -73,11 +73,17 @@ export async function geocodeStructured(p: {
   city?: string | null;
   state?: string | null;
 }): Promise<Coords | null> {
+  const line = p.line?.trim() || null;
+  const withNg = (s: string) => (/nigeria/i.test(s) ? s : `${s}, Nigeria`);
   const candidates: string[] = [];
-  if (p.line && p.city && p.state) candidates.push(`${p.line}, ${p.city}, ${p.state}, Nigeria`);
+  if (line && p.city && p.state) candidates.push(`${line}, ${p.city}, ${p.state}, Nigeria`);
+  // The raw line often already contains area/city and geocodes even when the
+  // city/state columns are empty — try it on its own.
+  if (line) candidates.push(withNg(line));
   if (p.city && p.state) candidates.push(`${p.city}, ${p.state}, Nigeria`);
   if (p.state) candidates.push(`${p.state}, Nigeria`);
-  for (const c of candidates) {
+  // Dedupe while preserving order.
+  for (const c of [...new Set(candidates)]) {
     const r = await geocodeAddress(c);
     if (r) return r;
   }
