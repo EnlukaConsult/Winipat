@@ -65,3 +65,21 @@ export async function geocodeAddress(address: string): Promise<Coords | null> {
   }
   return geocodeNominatim(address);
 }
+
+// Progressive geocode: try full address, then city+state, then state, until
+// one resolves (improves hit rate on patchy NG street data).
+export async function geocodeStructured(p: {
+  line?: string | null;
+  city?: string | null;
+  state?: string | null;
+}): Promise<Coords | null> {
+  const candidates: string[] = [];
+  if (p.line && p.city && p.state) candidates.push(`${p.line}, ${p.city}, ${p.state}, Nigeria`);
+  if (p.city && p.state) candidates.push(`${p.city}, ${p.state}, Nigeria`);
+  if (p.state) candidates.push(`${p.state}, Nigeria`);
+  for (const c of candidates) {
+    const r = await geocodeAddress(c);
+    if (r) return r;
+  }
+  return null;
+}

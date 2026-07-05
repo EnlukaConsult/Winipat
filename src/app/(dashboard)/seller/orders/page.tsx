@@ -416,6 +416,16 @@ export default function SellerOrdersPage() {
       });
 
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
+
+      // On "ready", dispatch a Kwik rider (best-effort; failure is silent and
+      // the manual pickup-photo flow still works).
+      if (action === "ready") {
+        fetch("/api/logistics/dispatch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: id }),
+        }).catch(() => {});
+      }
     }
     setActionLoading(null);
   }

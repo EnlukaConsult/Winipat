@@ -185,11 +185,25 @@ export async function calculatePricing(
 // ---------------------------------------------------------------------------
 // Create a pickup+delivery task -> data.pickups[].job_id / job_token.
 // ---------------------------------------------------------------------------
+// Kwik expects task times in LOCAL (WAT, UTC+1) and in the future — a stale/UTC
+// time returns "Order has been expired".
+function watTime(minutesAhead: number): string {
+  return new Date(Date.now() + 60 * 60000 + minutesAhead * 60000)
+    .toISOString()
+    .replace("T", " ")
+    .slice(0, 19);
+}
+
+// Create a pickup+delivery task. CONFIRMED live: `amount` must be a STRING
+// (the delivery cost from calculatePricing), times must be future WAT, and
+// payment_method 0 (account default) works server-side — 8/32 (online) fail.
+// Returns data.unique_order_id (tracking key) + per-leg job_id/job_token.
 export async function createTask(
   pickup: KwikStop,
   delivery: KwikStop,
+  amount: string,
   opts: KwikJobOpts = {}
-): Promise<KwikEnvelope<unknown>> {
+): Promise<KwikEnvelope<{ unique_order_id?: string; deliveries?: { job_id?: number; job_token?: string }[] }>> {
   const s = await ensureSession();
   const template = opts.template ?? "pricing-template";
   return kwikPost("/v2/create_task_via_vendor", {
@@ -204,26 +218,43 @@ export async function createTask(
     custom_field_template: template,
     pickup_custom_field_template: template,
     vehicle_id: opts.vehicleId ?? 1,
-    payment_method: opts.paymentMethod ?? 32,
+    payment_method: opts.paymentMethod ?? 0,
     is_loader_required: 0,
     is_cod_job: 0,
-    pickups: [pickup],
-    deliveries: [{ ...delivery, has_return_task: false }],
+    total_no_of_tasks: 1,
+    amount,
+    pickups: [{ ...pickup, time: watTime(45) }],
+    deliveries: [{ ...delivery, has_return_task: false, time: watTime(90) }],
   });
 }
 
 // ---------------------------------------------------------------------------
-// Tracking. TODO(confirm): which id from createTask feeds unique_order_id
-// (job_id vs job_token) and where customer_id comes from.
+// Tracking — by the task's unique_order_id (no customer_id needed, unlike
+// getJobStatus). Returns { total_amount, orders: [{ job_type, job_status,... }] }
+// where job_type 0 = pickup, 1 = delivery.
 // ---------------------------------------------------------------------------
-export async function getJobStatus(
-  uniqueOrderId: string,
-  customerId: string | number
-): Promise<KwikEnvelope<unknown>> {
-  return kwikGet("/getJobStatus", {
-    unique_order_id: uniqueOrderId,
-    customer_id: customerId,
-  });
+export type KwikTaskOrder = { job_type?: number; job_status?: number };
+export async function getTaskByRelationshipId(
+  uniqueOrderId: string
+): Promise<KwikEnvelope<{ orders?: KwikTaskOrder[] }>> {
+  return kwikGet("/view_task_by_relationship_id", { unique_order_id: uniqueOrderId });
+}
+
+// Map Kwik job_status -> our shipment/order progression.
+// Tookan/Kwik codes (TODO(confirm) exact set): 0 assigned, 1 started/accepted,
+// 2 in-progress/arrived, 3 successful, 4 failed, 6 deleted, 7 declined,
+// 8 cancelled, 9 accepted, 10 started. We read the DELIVERY leg primarily.
+export function mapKwikStatus(
+  pickupStatus: number | undefined,
+  deliveryStatus: number | undefined
+): "assigned" | "picked_up" | "in_transit" | "delivered" | null {
+  if (deliveryStatus === 3) return "delivered";
+  if (deliveryStatus === 1 || deliveryStatus === 2 || deliveryStatus === 9 || deliveryStatus === 10)
+    return "in_transit";
+  if (pickupStatus === 3) return "picked_up"; // picked up, en route
+  if (pickupStatus === 1 || pickupStatus === 2 || pickupStatus === 9 || pickupStatus === 10)
+    return "picked_up";
+  return "assigned";
 }
 
 export async function cancelTask(jobId: string | number): Promise<KwikEnvelope<unknown>> {
