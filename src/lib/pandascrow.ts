@@ -122,12 +122,24 @@ async function kycGet(
 }
 
 function extractMessage(body: Record<string, unknown>): string {
+  const data = (body.data ?? {}) as Record<string, unknown>;
   return (
     (body.message as string) ||
+    (data.message as string) || // NUBAN nests the reason under data.message
     (body.error as string) ||
     (body.msg as string) ||
     JSON.stringify(body).slice(0, 200)
   );
+}
+
+// Per Pandascrow's response-code table, annotate the billed-lookup failure
+// modes so the admin sees an actionable reason, not a generic "check failed".
+function friendlyMessage(status: number, raw: Record<string, unknown>): string {
+  const base = extractMessage(raw);
+  if (status === 402) return `Pandascrow balance low — top up to run KYC checks. (${base})`;
+  if (status === 424) return `Verification source temporarily unavailable — retry later. (${base})`;
+  if (status === 429) return `Rate limited by Pandascrow — retry shortly. (${base})`;
+  return base;
 }
 
 // Pull a human name out of a KYC payload. Pandascrow nests the record under
@@ -162,7 +174,7 @@ export type KycResult = {
 // ---------------------------------------------------------------------------
 export async function lookupNin(nin: string): Promise<KycResult> {
   const { ok, status, raw } = await kycGet("/kyc/ng/lookup/nin", { nin });
-  return { ok, status, verifiedName: extractName(raw), message: extractMessage(raw), raw };
+  return { ok, status, verifiedName: extractName(raw), message: friendlyMessage(status, raw), raw };
 }
 
 // ---------------------------------------------------------------------------
@@ -176,7 +188,7 @@ export async function lookupNuban(
     account_number: accountNumber,
     bank_code: bankCode,
   });
-  return { ok, status, verifiedName: extractName(raw), message: extractMessage(raw), raw };
+  return { ok, status, verifiedName: extractName(raw), message: friendlyMessage(status, raw), raw };
 }
 
 // ---------------------------------------------------------------------------
