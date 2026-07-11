@@ -41,3 +41,21 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# capacitor / native build artifacts (keep the native projects, ignore builds)
+/android/.gradle
+/android/build
+/android/app/build
+/android/app/src/main/assets/public
+/android/capacitor-cordova-android-plugins
+/android/local.properties
+/android/.idea
+/android/app/release
+/ios/App/Pods
+/ios/App/build
+/ios/App/output
+/ios/App/App/public
+/ios/DerivedData
+/ios/capacitor-cordova-ios-plugins
+DerivedData
+*.xcuserstate
