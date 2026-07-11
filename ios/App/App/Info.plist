@@ -47,5 +47,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Winipat uses the camera to scan product barcodes and QR codes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Winipat saves order and delivery photos to your library.</string>
 </dict>
 </plist>

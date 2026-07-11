@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "./dashboard-shell";
 import { getMyPermissions } from "@/lib/permissions";
+import { PushInit } from "@/components/push-init";
 
 export default async function DashboardLayout({
   children,
@@ -47,6 +48,7 @@ export default async function DashboardLayout({
       avatarUrl={avatarUrl}
       permissions={permissions}
     >
+      <PushInit />
       {children}
     </DashboardShell>
   );
