@@ -287,7 +287,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ===== WHY TRUST WINIPAT ===== */}
+        {/* ===== WHY TRUST WINNIEPAT ===== */}
         <section id="features" className="py-20 sm:py-28 bg-white">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl mb-10">

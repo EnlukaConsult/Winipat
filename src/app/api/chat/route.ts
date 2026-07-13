@@ -50,7 +50,7 @@ function extractSearchTerms(message: string): string[] {
     "evening", "like", "something", "anything", "thing", "stuff", "item", "product",
     "much", "many", "more", "most", "other", "another", "same", "different",
     "price", "cost", "cheap", "expensive", "affordable", "budget",
-    "do", "you", "have", "sell", "available", "stock", "winipat",
+    "do", "you", "have", "sell", "available", "stock", "winipat", "winniepat",
   ]);
 
   const words = message

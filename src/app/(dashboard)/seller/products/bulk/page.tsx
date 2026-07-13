@@ -101,7 +101,7 @@ export default function BulkProductsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "winipat-products-template.csv";
+    a.download = "winniepat-products-template.csv";
     a.click();
     URL.revokeObjectURL(url);
   }, []);
