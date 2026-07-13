@@ -4,8 +4,8 @@ import { Navbar } from "@/components/marketing/navbar";
 
 export const metadata: Metadata = {
   title: {
-    default: "Winipat - Secure Account",
-    template: "%s | Winipat",
+    default: "Winniepat - Secure Account",
+    template: "%s | Winniepat",
   },
 };
 
@@ -51,7 +51,7 @@ export default function AuthLayout({
 
       <footer className="relative z-[1] py-6 px-6 text-center">
         <p className="text-xs text-white/40">
-          &copy; {new Date().getFullYear()} Winipat. All rights reserved. &middot;{" "}
+          &copy; {new Date().getFullYear()} Winniepat. All rights reserved. &middot;{" "}
           <Link
             href="/legal/privacy"
             className="hover:text-white/70 transition-colors"

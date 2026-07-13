@@ -85,7 +85,7 @@ function LoginForm() {
 
       <AuthCard
         heading="Welcome back"
-        subheading="Sign in to your Winipat account to continue"
+        subheading="Sign in to your Winniepat account to continue"
       >
         {formError && (
           <div className="mb-5 rounded-md bg-error/8 border border-error/20 px-4 py-3">
@@ -159,7 +159,7 @@ function LoginForm() {
         </div>
 
         <p className="mt-6 text-center text-sm text-slate-light">
-          New to Winipat?{" "}
+          New to Winniepat?{" "}
           <Link
             href="/register"
             className="font-semibold text-violet hover:text-violet-dark transition-colors"

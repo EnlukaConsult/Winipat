@@ -5,7 +5,7 @@ import { MarketingPageShell } from "@/components/marketing/page-shell";
 export const metadata: Metadata = {
   title: "Track Your Order",
   description:
-    "Look up any Winipat order with the order number and email — no sign-in required.",
+    "Look up any Winniepat order with the order number and email — no sign-in required.",
 };
 
 export default function TrackOrderPage() {

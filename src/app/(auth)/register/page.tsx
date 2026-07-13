@@ -468,7 +468,7 @@ function RegisterForm() {
               )}
             </span>
             <span className="text-xs text-slate leading-relaxed">
-              I agree to Winipat&apos;s{" "}
+              I agree to Winniepat&apos;s{" "}
               <Link href="/legal/terms" target="_blank" className="text-violet font-semibold hover:underline">
                 Terms &amp; Conditions
               </Link>{" "}
@@ -480,7 +480,7 @@ function RegisterForm() {
               <span className="block mt-1.5 text-slate-light">
                 {role === "seller" ? (
                   <>
-                    I understand Winipat <strong className="text-midnight">holds buyer funds in escrow</strong> until delivery is confirmed, and that I&apos;m bound by the{" "}
+                    I understand Winniepat <strong className="text-midnight">holds buyer funds in escrow</strong> until delivery is confirmed, and that I&apos;m bound by the{" "}
                     <Link href="/legal/seller-agreement" target="_blank" className="text-violet font-semibold hover:underline">
                       Seller Agreement
                     </Link>

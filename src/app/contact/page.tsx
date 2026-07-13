@@ -7,7 +7,7 @@ import { Mail, MessageCircle, Clock, ShieldCheck } from "lucide-react";
 export const metadata: Metadata = {
   title: "Contact Support",
   description:
-    "Get in touch with the Winipat support team — order issues, KYC questions, partnerships, and feedback.",
+    "Get in touch with the Winniepat support team — order issues, KYC questions, partnerships, and feedback.",
 };
 
 export default function ContactPage() {
@@ -16,7 +16,7 @@ export default function ContactPage() {
       {/* Header */}
       <header className="bg-white border-b border-mist">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" aria-label="Winipat home">
+          <Link href="/" aria-label="Winniepat home">
             <Logo size="md" theme="light" />
           </Link>
           <div className="flex items-center gap-3">
@@ -42,7 +42,7 @@ export default function ContactPage() {
                 Contact Support
               </h1>
               <p className="mt-2 text-sm text-slate-light leading-relaxed">
-                We&apos;re here to help. Drop us a message and the Winipat team
+                We&apos;re here to help. Drop us a message and the Winniepat team
                 will get back to you — usually within one business day.
               </p>
             </div>
@@ -124,7 +124,7 @@ export default function ContactPage() {
 
       <footer className="bg-white border-t border-mist mt-12">
         <div className="max-w-5xl mx-auto px-4 py-6 text-center text-xs text-slate-lighter">
-          &copy; {new Date().getFullYear()} Winipat ·{" "}
+          &copy; {new Date().getFullYear()} Winniepat ·{" "}
           <a
             href="mailto:support@winipat.com"
             className="hover:text-violet"

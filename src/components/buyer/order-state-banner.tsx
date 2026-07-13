@@ -73,7 +73,7 @@ const STATE_CONFIG: Record<
     icon: ShieldAlert,
     title: "Dispute open — under review",
     body:
-      "Your case is with the Winipat resolution team. We're reviewing the evidence from both sides and typically reach a decision within 2–3 business days. You'll get an email and an in-app notification the moment we do.",
+      "Your case is with the Winniepat resolution team. We're reviewing the evidence from both sides and typically reach a decision within 2–3 business days. You'll get an email and an in-app notification the moment we do.",
     borderClass: "border-warning/30",
     bgClass: "bg-warning/8",
     iconBgClass: "bg-warning/15",
@@ -101,7 +101,7 @@ const STATE_CONFIG: Record<
     icon: RefreshCcw,
     title: "Refund completed",
     body:
-      "The refund has been processed back to your original payment method. If it hasn't landed in your account after 7 business days, contact Winipat support with the order number.",
+      "The refund has been processed back to your original payment method. If it hasn't landed in your account after 7 business days, contact Winniepat support with the order number.",
     borderClass: "border-emerald/30",
     bgClass: "bg-emerald/8",
     iconBgClass: "bg-emerald/15",

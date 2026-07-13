@@ -19,23 +19,23 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Winipat - Trust-First Commerce for Nigeria",
-    template: "%s | Winipat",
+    default: "Winniepat - Trust-First Commerce for Nigeria",
+    template: "%s | Winniepat",
   },
   description:
-    "Trust what you buy. Track how it moves. Pay with confidence. Winipat connects buyers, verified sellers, and logistics partners through escrow-backed payments.",
+    "Trust what you buy. Track how it moves. Pay with confidence. Winniepat connects buyers, verified sellers, and logistics partners through escrow-backed payments.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Winipat",
+    title: "Winniepat",
   },
   openGraph: {
-    title: "Winipat - Trust-First Commerce for Nigeria",
+    title: "Winniepat - Trust-First Commerce for Nigeria",
     description:
       "Trust what you buy. Track how it moves. Pay with confidence.",
     url: "https://winipat.com",
-    siteName: "Winipat",
+    siteName: "Winniepat",
     type: "website",
     locale: "en_NG",
     images: [
@@ -43,13 +43,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Winipat — Trust-first commerce for Nigeria",
+        alt: "Winniepat — Trust-first commerce for Nigeria",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Winipat - Trust-First Commerce",
+    title: "Winniepat - Trust-First Commerce",
     description:
       "Trust what you buy. Track how it moves. Pay with confidence.",
     images: ["/og-image.png"],

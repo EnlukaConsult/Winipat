@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import { MarketingPageShell } from "@/components/marketing/page-shell";
 
 export const metadata: Metadata = {
-  title: "About Winipat",
+  title: "About Winniepat",
   description:
-    "Why we built Winipat — an escrow-backed marketplace for Nigerian buyers and sellers tired of scams, ghost orders, and disputes that go nowhere.",
+    "Why we built Winniepat — an escrow-backed marketplace for Nigerian buyers and sellers tired of scams, ghost orders, and disputes that go nowhere.",
 };
 
 export default function AboutPage() {
   return (
     <MarketingPageShell
       title="Built because trust shouldn't be the buyer's problem."
-      intro="Winipat is a Lagos-built commerce platform that holds buyer money in escrow until the seller has actually delivered. Verified sellers only, evidence-based disputes, and your choice of delivery partner."
+      intro="Winniepat is a Lagos-built commerce platform that holds buyer money in escrow until the seller has actually delivered. Verified sellers only, evidence-based disputes, and your choice of delivery partner."
     >
       <h2>The problem we kept running into</h2>
       <p>
@@ -21,14 +21,14 @@ export default function AboutPage() {
         and no resolution.
       </p>
       <p>
-        Winipat exists because we got tired of that. Money should sit somewhere safe
+        Winniepat exists because we got tired of that. Money should sit somewhere safe
         until both sides have done their part. Sellers should be verified before they
         can list. And every package should be traceable from pickup to doorstep.
       </p>
 
-      <h2>How escrow actually works on Winipat</h2>
+      <h2>How escrow actually works on Winniepat</h2>
       <ol>
-        <li>Buyer pays via Paystack. Funds land in Winipat's escrow account, not the seller's.</li>
+        <li>Buyer pays via Paystack. Funds land in Winniepat's escrow account, not the seller's.</li>
         <li>Seller is notified, accepts, prepares the order, uploads a package photo.</li>
         <li>Logistics partner (you pick: GIG, Sendbox, Kwik) picks up.</li>
         <li>Buyer confirms delivery. A 48-hour protection window starts.</li>
@@ -38,7 +38,7 @@ export default function AboutPage() {
 
       <h2>Who&apos;s actually behind this</h2>
       <p>
-        Winipat is operated by a small team in Lagos. We answer support emails ourselves.
+        Winniepat is operated by a small team in Lagos. We answer support emails ourselves.
         We review every seller application by hand for the first six months — no
         automated KYC rubber-stamping. If you want to know who reviewed your account,
         ask in your reply and we&apos;ll tell you.

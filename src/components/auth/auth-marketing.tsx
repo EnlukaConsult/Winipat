@@ -23,7 +23,7 @@ export function AuthMarketing() {
         className="font-[family-name:var(--font-sora)] mt-7 mb-5 leading-[0.98] tracking-[-0.055em] max-w-[640px]"
         style={{ fontSize: "clamp(36px, 5vw, 64px)" }}
       >
-        Sign in or create a secure Winipat account.
+        Sign in or create a secure Winniepat account.
       </h1>
 
       <p

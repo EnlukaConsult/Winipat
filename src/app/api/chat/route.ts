@@ -6,23 +6,23 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const SYSTEM_PROMPT = `You are Winipat Assistant — a friendly, helpful AI shopping assistant for Winipat, Nigeria's trust-first commerce platform.
+const SYSTEM_PROMPT = `You are Winniepat Assistant — a friendly, helpful AI shopping assistant for Winniepat, Nigeria's trust-first commerce platform.
 
-About Winipat:
-- Winipat connects buyers with verified sellers through escrow-backed payments
+About Winniepat:
+- Winniepat connects buyers with verified sellers through escrow-backed payments
 - All sellers are KYC-verified (government ID, bank account, phone)
 - Payments are held in escrow until the buyer confirms delivery
 - Buyers choose their own logistics partner (GIG, DHL, etc.)
 - After delivery confirmation, there's a 2-day hold period before seller gets paid
-- Winipat charges 12% commission on sales
+- Winniepat charges 12% commission on sales
 - Buyers can open disputes with photo/video evidence
 - Only completed-order buyers can leave reviews
 
 Categories: Fashion & Accessories, Shoes, Jewelry, Watches & Accessories, Health & Beauty, Electronics, Home & Living
 
 CRITICAL RULES (YOU MUST FOLLOW THESE):
-1. You have access to Winipat's real product catalogue via PRODUCT SEARCH RESULTS injected below.
-2. ABSOLUTELY NEVER suggest, mention, or recommend any other website, platform, marketplace, or store. Not Amazon, Jumia, Konga, AliExpress, eBay, or ANY other platform. Winipat is the ONLY place to shop.
+1. You have access to Winniepat's real product catalogue via PRODUCT SEARCH RESULTS injected below.
+2. ABSOLUTELY NEVER suggest, mention, or recommend any other website, platform, marketplace, or store. Not Amazon, Jumia, Konga, AliExpress, eBay, or ANY other platform. Winniepat is the ONLY place to shop.
 3. If the exact product isn't available, ALWAYS recommend similar/related products from the search results. For example, if someone asks for "Toyota car" and we don't sell cars, suggest something creative like "We don't have cars yet, but check out these great products we do have!" then list alternatives.
 4. If no products match at all, say something like "We're still growing our catalogue in that area! In the meantime, here are some popular items you might love:" then list suggestions. NEVER say "try another platform" or "search elsewhere."
 5. When products ARE found, list them with name and price in ₦. Pick the 3-5 most relevant ones.
@@ -30,7 +30,7 @@ CRITICAL RULES (YOU MUST FOLLOW THESE):
 7. Keep responses concise — 3-5 sentences plus product list.
 8. Always encourage browsing the category page for more options.
 9. Prices in search results are in kobo — divide by 100 for Naira display.
-10. You are a Winipat-ONLY assistant. You exist to help people shop on Winipat, nowhere else.`;
+10. You are a Winniepat-ONLY assistant. You exist to help people shop on Winniepat, nowhere else.`;
 
 type Message = { role: "user" | "assistant" | "system"; content: string };
 
@@ -226,7 +226,7 @@ export async function POST(req: Request) {
   }
 
   const data = await response.json();
-  const reply = data.content?.[0]?.text || "I'm here to help! What would you like to know about Winipat?";
+  const reply = data.content?.[0]?.text || "I'm here to help! What would you like to know about Winniepat?";
 
   return NextResponse.json({ reply });
 }
@@ -238,33 +238,33 @@ async function getSmartReply(input: string, productContext: string): Promise<str
     const lines = productContext.split("\n").filter((l) => l.startsWith("- "));
     if (lines.length > 0) {
       const productList = lines.slice(0, 5).join("\n");
-      return `Here's what I found on Winipat:\n\n${productList}\n\nYou can view and purchase any of these from our Browse page. All purchases are escrow-protected!`;
+      return `Here's what I found on Winniepat:\n\n${productList}\n\nYou can view and purchase any of these from our Browse page. All purchases are escrow-protected!`;
     }
   }
 
   if (input.includes("escrow") || input.includes("payment") || input.includes("pay") || input.includes("safe")) {
-    return "Great question! On Winipat, your payment is held securely in escrow when you place an order. The seller only receives payment after you confirm delivery and a 2-day hold period passes. If anything goes wrong, you can open a dispute and your funds remain protected. No wahala!";
+    return "Great question! On Winniepat, your payment is held securely in escrow when you place an order. The seller only receives payment after you confirm delivery and a 2-day hold period passes. If anything goes wrong, you can open a dispute and your funds remain protected. No wahala!";
   }
   if (input.includes("sell") || input.includes("seller") || input.includes("vendor")) {
-    return "To sell on Winipat, you need to complete our verification process: submit your government ID, verify your bank account, and confirm your phone number. Once approved, you can list products with photos and videos. You'll receive payments through our daily settlement system, minus a 12% commission. Click 'Apply to Sell' to get started!";
+    return "To sell on Winniepat, you need to complete our verification process: submit your government ID, verify your bank account, and confirm your phone number. Once approved, you can list products with photos and videos. You'll receive payments through our daily settlement system, minus a 12% commission. Click 'Apply to Sell' to get started!";
   }
   if (input.includes("delivery") || input.includes("logistics") || input.includes("shipping") || input.includes("track")) {
-    return "With Winipat, YOU choose your preferred logistics partner at checkout — whether it's GIG, DHL, or others. You can track your delivery status in-app from pickup to your door. Every handoff includes photo proof, so you always know where your package is.";
+    return "With Winniepat, YOU choose your preferred logistics partner at checkout — whether it's GIG, DHL, or others. You can track your delivery status in-app from pickup to your door. Every handoff includes photo proof, so you always know where your package is.";
   }
   if (input.includes("dispute") || input.includes("refund") || input.includes("wrong") || input.includes("problem")) {
     return "If something goes wrong with your order, you can open a dispute within the allowed period. Upload photo or video evidence, and our team will review it fairly. While the dispute is open, your funds remain safely held in escrow.";
   }
   if (input.includes("hello") || input.includes("hi") || input.includes("hey") || input.includes("good")) {
-    return "Hello! Welcome to Winipat! I'm here to help you find products, answer questions about our platform, or help you with orders. What are you looking for today?";
+    return "Hello! Welcome to Winniepat! I'm here to help you find products, answer questions about our platform, or help you with orders. What are you looking for today?";
   }
 
   // Default: search for products
   if (productContext) {
     const lines = productContext.split("\n").filter((l) => l.startsWith("- "));
     if (lines.length > 0) {
-      return `Here are some products you might like on Winipat:\n\n${lines.slice(0, 5).join("\n")}\n\nBrowse our full catalogue for more options. All purchases are escrow-protected!`;
+      return `Here are some products you might like on Winniepat:\n\n${lines.slice(0, 5).join("\n")}\n\nBrowse our full catalogue for more options. All purchases are escrow-protected!`;
     }
   }
 
-  return "I can help you find products on Winipat! Try asking me about specific items like 'fans', 'sneakers', 'handbags', 'phones', or any product category. I'll search our catalogue and show you what's available with prices.";
+  return "I can help you find products on Winniepat! Try asking me about specific items like 'fans', 'sneakers', 'handbags', 'phones', or any product category. I'll search our catalogue and show you what's available with prices.";
 }

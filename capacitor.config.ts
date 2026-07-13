@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
-// Winipat is a server-rendered Next.js app (middleware, server components,
+// Winniepat is a server-rendered Next.js app (middleware, server components,
 // API routes) so it cannot be statically exported into the app bundle.
 // Instead the native shell loads the live site and layers native APIs on top.
 //
@@ -11,8 +11,8 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const SERVER_URL = process.env.CAP_SERVER_URL || "https://winipat.com";
 
 const config: CapacitorConfig = {
-  appId: "com.winipat.app",
-  appName: "Winipat",
+  appId: "com.winniepat.app",
+  appName: "Winniepat",
   // Fallback web root (used only if the remote server is unreachable). The app
   // normally loads SERVER_URL, so this is just an offline splash.
   webDir: "mobile/www",

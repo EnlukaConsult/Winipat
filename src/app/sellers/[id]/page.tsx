@@ -93,7 +93,7 @@ export default async function PublicSellerPage({
       <header className="bg-white border-b border-mist">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="text-sm font-bold text-violet font-[family-name:var(--font-sora)]">
-            Winipat
+            Winniepat
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-xs text-slate hover:text-violet">
@@ -126,7 +126,7 @@ export default async function PublicSellerPage({
                   {seller.pickup_city || "—"}, {seller.pickup_state || "—"}
                 </p>
                 <p className="text-xs text-white/50 mt-1">
-                  On Winipat since {formatDate(seller.created_at)}
+                  On Winniepat since {formatDate(seller.created_at)}
                 </p>
               </div>
             </div>
@@ -293,7 +293,7 @@ export default async function PublicSellerPage({
 
       <footer className="bg-white border-t border-mist mt-12">
         <div className="max-w-5xl mx-auto px-4 py-6 text-center text-xs text-slate-lighter">
-          &copy; {new Date().getFullYear()} Winipat — trust-first commerce for Nigeria
+          &copy; {new Date().getFullYear()} Winniepat — trust-first commerce for Nigeria
         </div>
       </footer>
     </div>

@@ -3,7 +3,7 @@ import { LegalDocument, Section, Para, Bullets } from "@/components/legal/legal-
 
 export const metadata: Metadata = {
   title: "Dispute Policy",
-  description: "How disputes work on Winipat — opening, evidence, timelines, and outcomes.",
+  description: "How disputes work on Winniepat — opening, evidence, timelines, and outcomes.",
 };
 
 export default function DisputePolicyPage() {
@@ -11,7 +11,7 @@ export default function DisputePolicyPage() {
     <LegalDocument
       title="Dispute Policy"
       effectiveDate="24 May 2026"
-      intro="Winipat&apos;s escrow model is built so that disputes can be resolved fairly. This policy explains when and how to open a dispute, what evidence is needed, what timelines apply, and what outcomes are possible."
+      intro="Winniepat&apos;s escrow model is built so that disputes can be resolved fairly. This policy explains when and how to open a dispute, what evidence is needed, what timelines apply, and what outcomes are possible."
     >
       <Section number={1} title="When You Can Open a Dispute">
         <Para>
@@ -29,7 +29,7 @@ export default function DisputePolicyPage() {
 
       <Section number={2} title="How to Open a Dispute">
         <Bullets>
-          <li>Sign in to Winipat → Dashboard → Orders</li>
+          <li>Sign in to Winniepat → Dashboard → Orders</li>
           <li>Click on the relevant order → click <strong className="text-midnight">Open Dispute</strong></li>
           <li>Pick a reason from the dropdown (item not received, wrong item, damaged, not as described, counterfeit, other)</li>
           <li>Describe what went wrong in your own words — be specific and factual</li>
@@ -60,7 +60,7 @@ export default function DisputePolicyPage() {
         <Para>
           Evidence is uploaded via the dispute UI. Each party can also send messages through the
           dispute thread. <strong className="text-midnight">For confidentiality reasons, parties do
-          not see each other&apos;s evidence directly</strong> — only the Winipat admin reviewing
+          not see each other&apos;s evidence directly</strong> — only the Winniepat admin reviewing
           the dispute does.
         </Para>
       </Section>
@@ -75,7 +75,7 @@ export default function DisputePolicyPage() {
       </Section>
 
       <Section number={5} title="Possible Outcomes">
-        <Para>The Winipat admin team will issue one of the following decisions:</Para>
+        <Para>The Winniepat admin team will issue one of the following decisions:</Para>
         <Bullets>
           <li><strong className="text-midnight">Full refund to buyer</strong> — escrow returned to buyer; seller receives nothing</li>
           <li><strong className="text-midnight">Partial refund</strong> — agreed split between buyer and seller; useful for items received but materially different from listing</li>
@@ -111,9 +111,9 @@ export default function DisputePolicyPage() {
 
       <Section number={8} title="Finality of Decisions">
         <Para>
-          All dispute decisions issued by the Winipat admin team are final. Parties may request a
+          All dispute decisions issued by the Winniepat admin team are final. Parties may request a
           single review of a decision within 7 days if new material evidence has emerged; reviews
-          are at Winipat&apos;s discretion.
+          are at Winniepat&apos;s discretion.
         </Para>
         <Para>
           Nothing in this Policy prevents either party from pursuing remedies in a court of competent

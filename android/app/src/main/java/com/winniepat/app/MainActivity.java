@@ -1,4 +1,4 @@
-package com.winipat.app;
+package com.winniepat.app;
 
 import com.getcapacitor.BridgeActivity;
 

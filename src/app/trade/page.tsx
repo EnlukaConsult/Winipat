@@ -4,7 +4,7 @@ import { MarketingPageShell } from "@/components/marketing/page-shell";
 export const metadata: Metadata = {
   title: "Trade & Business Accounts",
   description:
-    "Bulk-order pricing, dedicated account management, and invoice-based settlement for retailers, resellers, and corporate buyers on Winipat.",
+    "Bulk-order pricing, dedicated account management, and invoice-based settlement for retailers, resellers, and corporate buyers on Winniepat.",
 };
 
 export default function TradePage() {
@@ -64,7 +64,7 @@ export default function TradePage() {
         We&apos;ll reply with next steps within 2 business days.
       </p>
       <p>
-        Already a trade buyer somewhere else and curious how Winipat&apos;s pricing
+        Already a trade buyer somewhere else and curious how Winniepat&apos;s pricing
         compares? Send us a sample of your last 5 SKUs and quantities — we&apos;ll
         get a couple of our sellers to quote without commitment.
       </p>

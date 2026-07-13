@@ -364,7 +364,7 @@ export default function SellerOnboardingPage() {
           Seller Onboarding
         </h1>
         <p className="text-slate-light mt-1">
-          Complete the steps below to start selling on Winipat.
+          Complete the steps below to start selling on Winniepat.
         </p>
       </div>
 
@@ -586,7 +586,7 @@ export default function SellerOnboardingPage() {
                   onChange={(e) => set("acceptTerms", e.target.checked)}
                 />
                 <span className="text-sm text-slate">
-                  I have read and agree to Winipat&apos;s{" "}
+                  I have read and agree to Winniepat&apos;s{" "}
                   <a href="/legal/seller-terms" target="_blank" className="text-royal underline">Seller Terms of Service</a>.
                 </span>
               </label>
@@ -598,7 +598,7 @@ export default function SellerOnboardingPage() {
                   onChange={(e) => set("acceptEscrow", e.target.checked)}
                 />
                 <span className="text-sm text-slate">
-                  I understand that buyer payments are held in escrow by Winipat and released to me 48 hours after delivery confirmation, net of a 12% platform commission. See{" "}
+                  I understand that buyer payments are held in escrow by Winniepat and released to me 48 hours after delivery confirmation, net of a 12% platform commission. See{" "}
                   <a href="/legal/escrow-policy" target="_blank" className="text-royal underline">Escrow Policy</a>.
                 </span>
               </label>

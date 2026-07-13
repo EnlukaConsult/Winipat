@@ -3,7 +3,7 @@ import { LegalDocument, Section, Para, Bullets } from "@/components/legal/legal-
 
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "The rules and responsibilities for using the Winipat platform.",
+  description: "The rules and responsibilities for using the Winniepat platform.",
 };
 
 export default function TermsPage() {
@@ -11,11 +11,11 @@ export default function TermsPage() {
     <LegalDocument
       title="Terms of Service"
       effectiveDate="24 May 2026"
-      intro="These Terms of Service (&quot;Terms&quot;) govern your access to and use of Winipat — a trust-first commerce platform connecting buyers, verified sellers, and logistics partners across Nigeria. By creating an account or using the platform, you agree to these Terms."
+      intro="These Terms of Service (&quot;Terms&quot;) govern your access to and use of Winniepat — a trust-first commerce platform connecting buyers, verified sellers, and logistics partners across Nigeria. By creating an account or using the platform, you agree to these Terms."
     >
       <Section number={1} title="Acceptance of these Terms">
         <Para>
-          By registering for or using Winipat (the &quot;Platform&quot;, accessible at winipat.com),
+          By registering for or using Winniepat (the &quot;Platform&quot;, accessible at winipat.com),
           you confirm that you have read, understood, and agreed to be bound by these Terms,
           our <a href="/legal/privacy" className="text-royal underline">Privacy Policy</a>,
           and where applicable, our <a href="/legal/seller-agreement" className="text-royal underline">Seller Agreement</a>
@@ -26,7 +26,7 @@ export default function TermsPage() {
       <Section number={2} title="Eligibility">
         <Para>
           You must be at least 18 years old, have legal capacity to enter into binding contracts under
-          Nigerian law, and provide accurate information when creating your account. Winipat reserves
+          Nigerian law, and provide accurate information when creating your account. Winniepat reserves
           the right to refuse service, suspend, or terminate accounts that do not meet these criteria.
         </Para>
       </Section>
@@ -66,7 +66,7 @@ export default function TermsPage() {
       <Section number={6} title="Payments & Escrow">
         <Para>
           All payments are processed through licensed Nigerian payment providers (Paystack). When you
-          pay for an order, your funds are held in escrow by Winipat. Funds are released to the seller
+          pay for an order, your funds are held in escrow by Winniepat. Funds are released to the seller
           only after:
         </Para>
         <Bullets>
@@ -75,16 +75,16 @@ export default function TermsPage() {
           <li>A dispute is resolved in the seller&apos;s favour.</li>
         </Bullets>
         <Para>
-          Winipat deducts a 12% platform commission from each completed order before remitting the
+          Winniepat deducts a 12% platform commission from each completed order before remitting the
           net amount to the seller.
         </Para>
       </Section>
 
       <Section number={7} title="Logistics & Delivery">
         <Para>
-          Winipat partners with independent logistics providers. You select your preferred logistics
+          Winniepat partners with independent logistics providers. You select your preferred logistics
           partner at checkout. Delivery times, pricing, and service levels are set by the logistics
-          partner. Winipat is not liable for delays, damages, or losses caused by logistics partners,
+          partner. Winniepat is not liable for delays, damages, or losses caused by logistics partners,
           though we will facilitate dispute resolution.
         </Para>
       </Section>
@@ -94,13 +94,13 @@ export default function TermsPage() {
           The full dispute process is described in our{" "}
           <a href="/legal/dispute-policy" className="text-royal underline">Dispute Policy</a>.
           In summary: buyers may open a dispute within 48 hours of delivery. Sellers must respond with
-          evidence within SLA. Winipat will review evidence and may issue full refunds, partial
+          evidence within SLA. Winniepat will review evidence and may issue full refunds, partial
           refunds, or release funds to the seller. Decisions are final.
         </Para>
       </Section>
 
       <Section number={9} title="Prohibited Products & Conduct">
-        <Para>The following are not permitted on Winipat:</Para>
+        <Para>The following are not permitted on Winniepat:</Para>
         <Bullets>
           <li>Counterfeit goods or items infringing intellectual property rights</li>
           <li>Illegal substances, weapons, or items restricted under Nigerian law</li>
@@ -117,21 +117,21 @@ export default function TermsPage() {
 
       <Section number={10} title="Intellectual Property">
         <Para>
-          The Winipat name, logo, design, software, and content are owned by Winipat and its licensors.
+          The Winniepat name, logo, design, software, and content are owned by Winniepat and its licensors.
           You may not copy, modify, or create derivative works without permission. Sellers retain
-          ownership of product photos and descriptions they upload but grant Winipat a non-exclusive
+          ownership of product photos and descriptions they upload but grant Winniepat a non-exclusive
           licence to display them on the Platform.
         </Para>
       </Section>
 
       <Section number={11} title="Limitation of Liability">
         <Para>
-          To the maximum extent permitted by law, Winipat is not liable for indirect, consequential, or
+          To the maximum extent permitted by law, Winniepat is not liable for indirect, consequential, or
           punitive damages arising from your use of the Platform. Our total liability for any claim is
           limited to the amount of platform fees you have paid in the 6 months preceding the claim.
         </Para>
         <Para>
-          Winipat does not warrant uninterrupted or error-free service. The Platform is provided
+          Winniepat does not warrant uninterrupted or error-free service. The Platform is provided
           &quot;as is&quot;.
         </Para>
       </Section>
@@ -142,7 +142,7 @@ export default function TermsPage() {
           <a href="mailto:support@winipat.com" className="text-royal underline">support@winipat.com</a>.
         </Para>
         <Para>
-          Winipat may <strong>suspend or terminate</strong> your account, without prior notice, for any of
+          Winniepat may <strong>suspend or terminate</strong> your account, without prior notice, for any of
           the following:
         </Para>
         <Bullets>
@@ -188,18 +188,18 @@ export default function TermsPage() {
 
       <Section number={14} title="Chargebacks & Payment Disputes">
         <Para>
-          Card chargebacks initiated through your bank or card issuer (rather than via Winipat&apos;s
+          Card chargebacks initiated through your bank or card issuer (rather than via Winniepat&apos;s
           dispute system) are treated as follows:
         </Para>
         <Bullets>
           <li>If the chargeback is filed <strong>before</strong> delivery confirmation, escrow funds are frozen and held pending resolution.</li>
-          <li>If the chargeback is filed <strong>after</strong> escrow has released to the seller, Winipat will recover the funds from the seller&apos;s upcoming payouts or wallet balance.</li>
-          <li>Where buyer evidence supports the chargeback, the buyer keeps the refund. Where seller evidence is stronger, Winipat will contest the chargeback with Paystack on the seller&apos;s behalf.</li>
+          <li>If the chargeback is filed <strong>after</strong> escrow has released to the seller, Winniepat will recover the funds from the seller&apos;s upcoming payouts or wallet balance.</li>
+          <li>Where buyer evidence supports the chargeback, the buyer keeps the refund. Where seller evidence is stronger, Winniepat will contest the chargeback with Paystack on the seller&apos;s behalf.</li>
           <li>Repeated chargebacks (3 or more in 90 days) attributed to user fault will result in account suspension.</li>
           <li>Friendly fraud (filing chargebacks on items genuinely delivered) is reported to Paystack and the Nigerian Inter-Bank Settlement System.</li>
         </Bullets>
         <Para>
-          Always use Winipat&apos;s dispute system <strong>first</strong> — it&apos;s faster (2–3 business days vs the 30–60 day chargeback window) and won&apos;t affect your card profile.
+          Always use Winniepat&apos;s dispute system <strong>first</strong> — it&apos;s faster (2–3 business days vs the 30–60 day chargeback window) and won&apos;t affect your card profile.
         </Para>
       </Section>
 

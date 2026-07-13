@@ -7,7 +7,7 @@ import { Resend } from "resend";
 // (signup, payouts, etc. should still succeed even if the notification
 // email can't be delivered).
 
-const FROM_DEFAULT  = process.env.RESEND_FROM_EMAIL  || "Winipat <support@winipat.com>";
+const FROM_DEFAULT  = process.env.RESEND_FROM_EMAIL  || "Winniepat <support@winipat.com>";
 const REPLY_TO      = process.env.RESEND_REPLY_TO    || "support@winipat.com";
 const SUPPORT_INBOX = process.env.WINIPAT_SUPPORT_EMAIL || "support@winipat.com";
 
@@ -71,7 +71,7 @@ function shell(title: string, bodyHtml: string): string {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #E2E8F0;">
             <tr>
               <td style="padding:24px 28px;background:linear-gradient(135deg,#7C3AED,#3C4FE0);color:#fff;">
-                <p style="margin:0;font-weight:700;font-size:18px;letter-spacing:0.2px;">Winipat</p>
+                <p style="margin:0;font-weight:700;font-size:18px;letter-spacing:0.2px;">Winniepat</p>
                 <p style="margin:4px 0 0 0;font-size:12px;opacity:0.85;">Trust-first commerce for Nigeria</p>
               </td>
             </tr>
@@ -85,7 +85,7 @@ function shell(title: string, bodyHtml: string): string {
                 Questions? Reply to this email or visit
                 <a href="https://winipat.com/contact" style="color:#3C4FE0;text-decoration:none;">winipat.com/contact</a>
                 <br />
-                <span style="opacity:0.7;">&copy; ${new Date().getFullYear()} Winipat. All rights reserved.</span>
+                <span style="opacity:0.7;">&copy; ${new Date().getFullYear()} Winniepat. All rights reserved.</span>
               </td>
             </tr>
           </table>
@@ -112,17 +112,17 @@ function escapeHtml(s: string): string {
 export const emails = {
   /** Sent to the visitor who submitted the contact form. */
   enquiryAck: (toName: string, subject: string) => ({
-    subject: `We received your message — Winipat support`,
+    subject: `We received your message — Winniepat support`,
     text:
       `Hi ${toName},\n\n` +
-      `Thanks for reaching out to Winipat support. We've logged your message ("${subject}") ` +
+      `Thanks for reaching out to Winniepat support. We've logged your message ("${subject}") ` +
       `and a member of our team will reply within one business day.\n\n` +
       `If you need to add more context, just reply to this email.\n\n` +
-      `— Winipat Support`,
+      `— Winniepat Support`,
     html: shell(
       "We received your message",
       `<h2 style="margin:0 0 14px 0;font-size:18px;color:#0B1020;">Hi ${escapeHtml(toName)},</h2>
-       <p>Thanks for reaching out to Winipat support. We&apos;ve logged your message and a member of our team will reply within <strong>one business day</strong>.</p>
+       <p>Thanks for reaching out to Winniepat support. We&apos;ve logged your message and a member of our team will reply within <strong>one business day</strong>.</p>
        <p style="background:#F1F5F9;padding:12px 14px;border-radius:8px;font-size:13px;color:#334155;">
          <strong>Subject:</strong> ${escapeHtml(subject)}
        </p>
@@ -182,14 +182,14 @@ export const emails = {
     subject: `Re: ${params.originalSubject}`,
     text:
       `Hi ${params.toName},\n\n${params.replyBody}\n\n` +
-      `— ${params.adminName}, Winipat Support`,
+      `— ${params.adminName}, Winniepat Support`,
     html: shell(
       `Re: ${params.originalSubject}`,
       `<p>Hi ${escapeHtml(params.toName)},</p>
        <div style="white-space:pre-wrap;">${escapeHtml(params.replyBody)}</div>
        <p style="margin-top:18px;color:#334155;">
          — ${escapeHtml(params.adminName)}<br />
-         <span style="color:#94A3B8;font-size:12px;">Winipat Support</span>
+         <span style="color:#94A3B8;font-size:12px;">Winniepat Support</span>
        </p>`
     ),
   }),
@@ -207,7 +207,7 @@ export const emails = {
       `Your payout of NGN ${params.amountNaira.toLocaleString()} has been sent ` +
       `${params.orderNumber ? `for order ${params.orderNumber}` : ""}. ` +
       `Reference: ${params.reference}.\n\n` +
-      `— Winipat`,
+      `— Winniepat`,
     html: shell(
       "Payout sent",
       `<p>Hi ${escapeHtml(params.toName)},</p>
@@ -235,7 +235,7 @@ export const emails = {
       `from ${params.sellerName} has been placed and your payment is held in escrow.\n\n` +
       `${params.sellerName} has 24 hours to accept. ${params.deliveryEta ? `Estimated delivery: ${params.deliveryEta}.` : ""}\n\n` +
       `Track at: https://winipat.com/dashboard/orders\n\n` +
-      `— Winipat`,
+      `— Winniepat`,
     html: shell(
       "Order placed",
       `<p>Hi ${escapeHtml(params.toName)},</p>
@@ -264,7 +264,7 @@ export const emails = {
       `Hi ${params.toName},\n\n` +
       `${params.buyerName} just placed order ${params.orderNumber} (NGN ${params.totalNaira.toLocaleString()}).\n\n` +
       `Accept within 24 hours via your seller dashboard. Missed-accept SLA: order auto-cancels.\n\n` +
-      `https://winipat.com/seller/orders\n\n— Winipat`,
+      `https://winipat.com/seller/orders\n\n— Winniepat`,
     html: shell(
       "New paid order",
       `<p>Hi ${escapeHtml(params.toName)},</p>
@@ -293,7 +293,7 @@ export const emails = {
       `A buyer opened a dispute on order ${params.orderNumber}. Reason: "${params.reason}".\n\n` +
       `Escrow is frozen. You have 48 hours to respond with your side and any evidence ` +
       `(photos, tracking, packaging) via your seller dashboard.\n\n` +
-      `https://winipat.com/seller/disputes\n\n— Winipat`,
+      `https://winipat.com/seller/disputes\n\n— Winniepat`,
     html: shell(
       "Dispute opened",
       `<p>Hi ${escapeHtml(params.toSellerName)},</p>
@@ -330,7 +330,7 @@ export const emails = {
         `Hi ${params.toName},\n\n` +
         `The dispute on order ${params.orderNumber} has been resolved: escrow was ${verdict}.\n\n` +
         (params.notes ? `Admin notes: ${params.notes}\n\n` : "") +
-        `— Winipat`,
+        `— Winniepat`,
       html: shell(
         "Dispute resolved",
         `<p>Hi ${escapeHtml(params.toName)},</p>
@@ -349,16 +349,16 @@ export const emails = {
 
   /** Sent to seller when admin approves their KYC. */
   sellerApproved: (toName: string, businessName: string) => ({
-    subject: `Your Winipat seller account is approved`,
+    subject: `Your Winniepat seller account is approved`,
     text:
       `Hi ${toName},\n\n` +
       `Your seller account "${businessName}" has been approved. ` +
       `You can now list products and receive orders.\n\n` +
       `Sign in: https://winipat.com/login\n\n` +
-      `— Winipat`,
+      `— Winniepat`,
     html: shell(
       "You're approved",
-      `<h2 style="margin:0 0 14px 0;font-size:18px;">Welcome to Winipat, ${escapeHtml(toName)}!</h2>
+      `<h2 style="margin:0 0 14px 0;font-size:18px;">Welcome to Winniepat, ${escapeHtml(toName)}!</h2>
        <p>Your seller account <strong>${escapeHtml(businessName)}</strong> has been approved.</p>
        <p>You can now list products and start receiving orders. Buyers will see your trust badge as your sales grow.</p>
        <p style="margin-top:18px;">

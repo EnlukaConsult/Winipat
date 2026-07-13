@@ -15,7 +15,7 @@ function LogoIcon({ size = 36 }: { size?: number }) {
   return (
     <Image
       src="/images/winipat-logo.png"
-      alt="Winipat"
+      alt="Winniepat"
       width={size}
       height={size}
       priority

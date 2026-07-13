@@ -177,7 +177,7 @@ async function main() {
       category_id: catId,
       name: item.name,
       slug: slugify(item.name) + "-" + (i + 1),
-      description: `${item.name}. Available on Winipat from verified sellers. Escrow-protected purchase.`,
+      description: `${item.name}. Available on Winniepat from verified sellers. Escrow-protected purchase.`,
       price: parsePrice(item.price),
       stock_quantity: Math.floor(Math.random() * 40) + 5,
       status: "active",

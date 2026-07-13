@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Winipat</string>
-    <string name="title_activity_main">Winipat</string>
-    <string name="package_name">com.winipat.app</string>
-    <string name="custom_url_scheme">com.winipat.app</string>
+    <string name="app_name">Winniepat</string>
+    <string name="title_activity_main">Winniepat</string>
+    <string name="package_name">com.winniepat.app</string>
+    <string name="custom_url_scheme">com.winniepat.app</string>
 </resources>

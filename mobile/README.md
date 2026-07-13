@@ -1,6 +1,6 @@
-# Winipat mobile (Capacitor)
+# Winniepat mobile (Capacitor)
 
-The App Store / Play Store build. Winipat is a server-rendered Next.js app, so
+The App Store / Play Store build. Winniepat is a server-rendered Next.js app, so
 it can't be exported into the app bundle — the native shell loads the live site
 (`https://winipat.com`) in a WebView and adds native APIs (push, camera scanner,
 deep links). See `capacitor.config.ts` at the repo root.
@@ -61,7 +61,7 @@ npx cap sync
    (`npx @capacitor/assets generate`).
 2. **Push notifications** — create an Apple APNs key + a Firebase project (FCM),
    drop `google-services.json` (Android) and `GoogleService-Info.plist` (iOS),
-   and register the device token against the Winipat backend.
+   and register the device token against the Winniepat backend.
 3. **Permissions strings** — add `NSCameraUsageDescription` (iOS `Info.plist`)
    and camera permission (Android manifest) for the scanner.
 4. **Verify WebView flows on device** — Supabase auth cookies / OAuth redirect
@@ -77,4 +77,4 @@ npx cap sync
 Apple Guideline 4.2 rejects "thin web wrappers." The native features above (push,
 camera scanner, deep links, biometric) are what justify the app. Payments for
 **physical goods** may use Paystack (external) — Apple IAP is only required for
-digital content, which Winipat does not sell in-app.
+digital content, which Winniepat does not sell in-app.

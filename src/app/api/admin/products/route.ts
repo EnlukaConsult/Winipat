@@ -49,7 +49,7 @@ export async function PATCH(req: Request) {
       user_id: product.seller_id,
       title: action === "approve" ? "Product Approved!" : "Product Rejected",
       body: action === "approve"
-        ? `"${product.name}" has been approved and is now live on Winipat.`
+        ? `"${product.name}" has been approved and is now live on Winniepat.`
         : `"${product.name}" was not approved. ${notes || "Please review and resubmit."}`,
       type: "product",
       data: { product_id: productId },

@@ -37,7 +37,7 @@ export async function PATCH(
 
     const adminName =
       guard.user.email?.split("@")[0]?.replace(/\b\w/g, (c) => c.toUpperCase()) ||
-      "Winipat Support";
+      "Winniepat Support";
 
     const send = await sendEmail({
       to: enquiry.email,

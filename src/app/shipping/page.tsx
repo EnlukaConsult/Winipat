@@ -4,7 +4,7 @@ import { MarketingPageShell } from "@/components/marketing/page-shell";
 export const metadata: Metadata = {
   title: "Shipping & Delivery",
   description:
-    "How Winipat handles delivery in Nigeria — partner choice at checkout, tracking, dispatch times, and what happens when something goes wrong.",
+    "How Winniepat handles delivery in Nigeria — partner choice at checkout, tracking, dispatch times, and what happens when something goes wrong.",
 };
 
 export default function ShippingPage() {
@@ -64,7 +64,7 @@ export default function ShippingPage() {
       <h2>Delivery cost</h2>
       <p>
         Logistics fees are charged at checkout, in addition to the product price.
-        They go directly to the logistics partner — Winipat doesn&apos;t take a cut
+        They go directly to the logistics partner — Winniepat doesn&apos;t take a cut
         on delivery. Typical fees range from ₦1,500 (Lagos same-day) to ₦2,500
         (nationwide next-day).
       </p>

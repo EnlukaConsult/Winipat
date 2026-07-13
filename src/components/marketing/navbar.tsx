@@ -26,7 +26,7 @@ export function Navbar() {
     <nav className="fixed top-0 z-50 w-full bg-midnight/85 backdrop-blur-md border-b border-white/5">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-3">
-          <Link href="/" aria-label="Winipat home" className="shrink-0">
+          <Link href="/" aria-label="Winniepat home" className="shrink-0">
             <Logo size="md" theme="dark" />
           </Link>
 

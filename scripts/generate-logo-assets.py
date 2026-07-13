@@ -1,6 +1,6 @@
 """Generate all logo asset sizes from the source JPG.
 
-Source: public/New Winipat Logo.jpg
+Source: public/New Winniepat Logo.jpg
 Outputs (overwrites existing):
   public/icons/icon-192.png        — PWA icon (Android)
   public/icons/icon-512.png        — PWA icon (Android, splash)
@@ -20,7 +20,7 @@ from pathlib import Path
 from PIL import Image, ImageOps
 
 ROOT = Path(__file__).parent.parent
-SRC = ROOT / "public" / "New Winipat Logo.jpg"
+SRC = ROOT / "public" / "New Winniepat Logo.jpg"
 
 
 def fit_on_canvas(img: Image.Image, size: int, padding_pct: float = 0.0) -> Image.Image:

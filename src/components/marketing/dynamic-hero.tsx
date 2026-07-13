@@ -76,7 +76,7 @@ export function DynamicHero() {
             className="text-[#dfe7ff] leading-[1.55] mb-8 max-w-[610px]"
             style={{ fontSize: "clamp(16px, 1.35vw, 22px)" }}
           >
-            Winipat is a secure marketplace with escrow protection that keeps
+            Winniepat is a secure marketplace with escrow protection that keeps
             buyer payments safe until delivery is confirmed.
           </p>
 
@@ -89,7 +89,7 @@ export function DynamicHero() {
               </Button>
             </Link>
             <p className="mt-4 text-sm text-white/80">
-              Selling on Winipat?{" "}
+              Selling on Winniepat?{" "}
               <Link
                 href="/register?role=seller"
                 className="text-gold font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold rounded"

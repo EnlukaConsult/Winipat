@@ -9,7 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 sm:gap-10">
           {/* Brand + contact block — spans 2 cols on desktop for breathing room */}
           <div className="col-span-2">
-            <Link href="/" className="inline-block mb-4" aria-label="Winipat home">
+            <Link href="/" className="inline-block mb-4" aria-label="Winniepat home">
               <Logo size="md" theme="dark" />
             </Link>
             <p className="text-sm leading-relaxed mb-4 max-w-md">
@@ -100,7 +100,7 @@ export function Footer() {
               <span>SSL secured</span>
             </div>
             <p className="text-white/50">
-              &copy; {new Date().getFullYear()} Winipat. All rights reserved.
+              &copy; {new Date().getFullYear()} Winniepat. All rights reserved.
             </p>
           </div>
         </div>

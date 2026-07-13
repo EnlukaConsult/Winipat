@@ -15,7 +15,7 @@ type Message = {
 const QUICK_QUESTIONS = [
   "How does escrow work?",
   "Is it safe to buy here?",
-  "How do I sell on Winipat?",
+  "How do I sell on Winniepat?",
   "What products are available?",
 ];
 
@@ -27,7 +27,7 @@ export function ChatWidget() {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi there! I'm your Winipat shopping assistant. I can help you find products, understand our escrow payment system, or answer any questions about buying and selling safely on Winipat. How can I help you today?",
+        "Hi there! I'm your Winniepat shopping assistant. I can help you find products, understand our escrow payment system, or answer any questions about buying and selling safely on Winniepat. How can I help you today?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -124,7 +124,7 @@ export function ChatWidget() {
             </div>
             <div className="flex-1">
               <h3 className="text-white font-semibold text-sm font-[family-name:var(--font-sora)]">
-                Winipat Assistant
+                Winniepat Assistant
               </h3>
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald animate-pulse" />

@@ -398,7 +398,7 @@ export default async function OrderDetailPage({
             <p className="text-xs text-slate-light mt-0.5 leading-relaxed">
               {o.escrow?.status === "released"
                 ? "Your protection window has closed. If you have any concerns, contact support."
-                : "Your payment stays safe with Winipat until you confirm delivery (or 48 hours after). If anything goes wrong, you can open a dispute."}
+                : "Your payment stays safe with Winniepat until you confirm delivery (or 48 hours after). If anything goes wrong, you can open a dispute."}
             </p>
           </div>
         </div>

@@ -187,13 +187,13 @@ export default function MessagesPage() {
         other_user: other
           ? {
               id: other.id,
-              full_name: other.full_name ?? "Winipat user",
+              full_name: other.full_name ?? "Winniepat user",
               avatar_url: other.avatar_url,
               role: other.role ?? "",
             }
           : {
               id: otherId,
-              full_name: "Winipat user",
+              full_name: "Winniepat user",
               avatar_url: null,
               role: "",
             },
@@ -454,7 +454,7 @@ export default function MessagesPage() {
               </li>
               <li className="flex items-start gap-2">
                 <Lock className="h-3.5 w-3.5 text-violet shrink-0 mt-0.5" aria-hidden="true" />
-                Never share payment info here — pay through Winipat checkout so escrow protects you.
+                Never share payment info here — pay through Winniepat checkout so escrow protects you.
               </li>
             </ul>
           </div>
@@ -559,7 +559,7 @@ export default function MessagesPage() {
                   <Lock className="h-3.5 w-3.5 text-gold-dark shrink-0 mt-0.5" aria-hidden="true" />
                   <p className="text-[11px] leading-snug text-slate">
                     Phone numbers, emails and links are automatically hidden to
-                    keep you protected by Winipat escrow. Keep deals on-platform.
+                    keep you protected by Winniepat escrow. Keep deals on-platform.
                   </p>
                 </div>
               )}

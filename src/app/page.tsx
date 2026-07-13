@@ -167,7 +167,7 @@ export default async function HomePage() {
             <div className="lg:hidden relative rounded-2xl overflow-hidden">
               <Image
                 src="/images/categories-mobile.png"
-                alt="Featured categories on Winipat: Fashion, Electronics, Home & Living, Beauty"
+                alt="Featured categories on Winniepat: Fashion, Electronics, Home & Living, Beauty"
                 width={750}
                 height={1500}
                 className="w-full h-auto block"
@@ -177,7 +177,7 @@ export default async function HomePage() {
                 <Link
                   key={`m-${c.label}`}
                   href={c.href}
-                  aria-label={`Shop ${c.label} on Winipat`}
+                  aria-label={`Shop ${c.label} on Winniepat`}
                   className="absolute left-0 right-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet rounded-md"
                   style={{
                     top: `${i * 25}%`,
@@ -193,7 +193,7 @@ export default async function HomePage() {
             <div className="hidden lg:block relative rounded-2xl overflow-hidden">
               <Image
                 src="/images/categories-rows.png"
-                alt="Featured categories on Winipat: Fashion, Electronics, Home & Living, Beauty"
+                alt="Featured categories on Winniepat: Fashion, Electronics, Home & Living, Beauty"
                 width={1700}
                 height={900}
                 className="w-full h-auto block"
@@ -203,7 +203,7 @@ export default async function HomePage() {
                 <Link
                   key={`d-${c.label}`}
                   href={c.href}
-                  aria-label={`Shop ${c.label} on Winipat`}
+                  aria-label={`Shop ${c.label} on Winniepat`}
                   className="absolute left-0 right-0 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet rounded-md"
                   style={{
                     top: `${i * 25}%`,
@@ -249,7 +249,7 @@ export default async function HomePage() {
                   n: "1",
                   icon: CreditCard,
                   title: "Buyer pays securely",
-                  desc: "Funds land in Winipat escrow — not in the seller's account.",
+                  desc: "Funds land in Winniepat escrow — not in the seller's account.",
                 },
                 {
                   n: "2",
@@ -489,7 +489,7 @@ export default async function HomePage() {
                   a: "Sellers have 24h to accept an order after payment. If they don't, the order is auto-cancelled and you get a full refund. If they accept but stall on shipping past 72h, you can open a dispute and we'll mediate.",
                 },
                 {
-                  q: "What does Winipat earn from this?",
+                  q: "What does Winniepat earn from this?",
                   a: "12% commission on delivered orders. That's it. No listing fees, no buyer fees, no charges on refunded orders. Logistics fees go directly to the courier — we don't take a cut on those.",
                 },
                 {

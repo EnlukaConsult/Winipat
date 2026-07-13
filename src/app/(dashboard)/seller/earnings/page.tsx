@@ -304,7 +304,7 @@ export default function SellerEarningsPage() {
               Platform commission · 12%
             </p>
             <p className="text-xs text-slate-light mt-1 leading-relaxed">
-              Winipat deducts 12% from each delivered order; the remaining 88% is
+              Winniepat deducts 12% from each delivered order; the remaining 88% is
               yours. Payouts are released to your registered bank account 48 hours
               after delivery confirmation.
             </p>

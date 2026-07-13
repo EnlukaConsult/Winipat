@@ -4,7 +4,7 @@ import { MarketingPageShell } from "@/components/marketing/page-shell";
 export const metadata: Metadata = {
   title: "Returns & Refunds",
   description:
-    "How returns and refunds work on Winipat — escrow protection, evidence requirements, timelines, and what's eligible.",
+    "How returns and refunds work on Winniepat — escrow protection, evidence requirements, timelines, and what's eligible.",
 };
 
 export default function ReturnsPage() {

@@ -1,8 +1,8 @@
-"""Generate an Open Graph image (1200x630) for Winipat link previews.
+"""Generate an Open Graph image (1200x630) for Winniepat link previews.
 
 Outputs: public/og-image.png
 
-The OG image is what shows up when someone shares a Winipat URL on
+The OG image is what shows up when someone shares a Winniepat URL on
 WhatsApp, Twitter, LinkedIn, iMessage, etc. Standard size is 1200x630px.
 """
 from __future__ import annotations

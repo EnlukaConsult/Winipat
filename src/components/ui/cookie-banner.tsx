@@ -12,7 +12,7 @@ type Choice = "accepted" | "essential-only";
  * Cookie consent banner. Renders the first time a visitor lands on the site
  * and stores their choice in localStorage so it doesn't re-show.
  *
- * For now Winipat only uses essential cookies (auth session via Supabase),
+ * For now Winniepat only uses essential cookies (auth session via Supabase),
  * which are exempt from consent in most jurisdictions. The banner is a
  * best-practice notice + future-proofing for when analytics gets added.
  */
@@ -57,7 +57,7 @@ export function CookieBanner() {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-white">We use cookies</p>
           <p className="text-xs text-white/70 mt-1 leading-relaxed">
-            Winipat uses essential cookies to keep you signed in and your cart working.
+            Winniepat uses essential cookies to keep you signed in and your cart working.
             See our{" "}
             <Link href="/legal/privacy" className="text-gold underline hover:text-white">
               Privacy Policy

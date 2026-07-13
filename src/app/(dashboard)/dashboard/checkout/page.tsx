@@ -640,7 +640,7 @@ export default function CheckoutPage() {
               </Button>
 
               <p className="text-[10px] text-slate-lighter text-center mt-3">
-                By paying, you agree to Winipat&apos;s Terms of Service and Escrow Policy
+                By paying, you agree to Winniepat&apos;s Terms of Service and Escrow Policy
               </p>
             </Card>
           )}

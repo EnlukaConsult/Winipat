@@ -56,7 +56,7 @@ export async function GET(
     permission_keys: (perms ?? []).map((p) => p.permission_key),
     members: (members ?? []).map((m) => ({
       id: m.user_id,
-      full_name: byId.get(m.user_id)?.full_name ?? "Winipat user",
+      full_name: byId.get(m.user_id)?.full_name ?? "Winniepat user",
       role: byId.get(m.user_id)?.role ?? "",
       assigned_at: m.assigned_at,
     })),

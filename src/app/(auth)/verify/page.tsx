@@ -106,7 +106,7 @@ function VerifyContent() {
           {[
             {
               step: "1",
-              text: "Open the email from Winipat",
+              text: "Open the email from Winniepat",
               done: false,
             },
             {

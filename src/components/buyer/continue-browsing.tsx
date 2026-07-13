@@ -16,7 +16,7 @@ type ContinueBrowsingProps = {
   loading?: boolean;
 };
 
-// "Discover what's new on Winipat" — top categories ordered by live
+// "Discover what's new on Winniepat" — top categories ordered by live
 // product count, each rendered as an image-led tile. Pulled from real
 // DB state (no fake "trending" copy). Empty state appears only when the
 // platform has zero categories with products, which means there's no

@@ -3,7 +3,7 @@ import { LegalDocument, Section, Para, Bullets } from "@/components/legal/legal-
 
 export const metadata: Metadata = {
   title: "Seller Agreement",
-  description: "The terms that govern selling on Winipat.",
+  description: "The terms that govern selling on Winniepat.",
 };
 
 export default function SellerAgreementPage() {
@@ -11,7 +11,7 @@ export default function SellerAgreementPage() {
     <LegalDocument
       title="Seller Agreement"
       effectiveDate="24 May 2026"
-      intro="This Seller Agreement (the &quot;Agreement&quot;) sets out the specific rights and obligations of sellers on the Winipat platform. It supplements (and forms part of) our Terms of Service."
+      intro="This Seller Agreement (the &quot;Agreement&quot;) sets out the specific rights and obligations of sellers on the Winniepat platform. It supplements (and forms part of) our Terms of Service."
     >
       <Section number={1} title="Eligibility to Sell">
         <Bullets>
@@ -23,7 +23,7 @@ export default function SellerAgreementPage() {
       </Section>
 
       <Section number={2} title="KYC (Know Your Customer) Verification">
-        <Para>Before approving your seller account, Winipat requires:</Para>
+        <Para>Before approving your seller account, Winniepat requires:</Para>
         <Bullets>
           <li><strong className="text-midnight">Business information:</strong> business name, description, pickup address (street, city, state)</li>
           <li><strong className="text-midnight">Identity document:</strong> government-issued ID — NIN slip, international passport, driver&apos;s licence, or voter&apos;s card</li>
@@ -55,7 +55,7 @@ export default function SellerAgreementPage() {
 
         <Para><strong className="text-midnight">Escrow flow:</strong></Para>
         <Bullets>
-          <li>Buyer pays at checkout; funds are held in escrow by Winipat (not by you)</li>
+          <li>Buyer pays at checkout; funds are held in escrow by Winniepat (not by you)</li>
           <li>You accept the order within 15 minutes (configurable platform SLA)</li>
           <li>You prepare and mark the order Ready for Pickup; optional packaging photo for evidence</li>
           <li>Buyer-chosen logistics partner collects and delivers</li>
@@ -104,7 +104,7 @@ export default function SellerAgreementPage() {
 
       <Section number={7} title="Trust & Reputation">
         <Para>
-          Winipat awards trust badges based on performance:
+          Winniepat awards trust badges based on performance:
         </Para>
         <Bullets>
           <li><strong className="text-midnight">Verified</strong> — KYC complete</li>
@@ -117,13 +117,13 @@ export default function SellerAgreementPage() {
       <Section number={8} title="Communication Rules">
         <Bullets>
           <li>Use the in-app messaging system to communicate with buyers</li>
-          <li>Do not share phone numbers, emails, social media handles, or external links with buyers — Winipat&apos;s system automatically masks these to prevent off-platform transactions</li>
+          <li>Do not share phone numbers, emails, social media handles, or external links with buyers — Winniepat&apos;s system automatically masks these to prevent off-platform transactions</li>
           <li>Off-platform transaction attempts are a serious violation and may result in permanent suspension and forfeiture of pending payouts</li>
         </Bullets>
       </Section>
 
       <Section number={9} title="Account Suspension & Termination">
-        <Para>Winipat may suspend or terminate your seller account for:</Para>
+        <Para>Winniepat may suspend or terminate your seller account for:</Para>
         <Bullets>
           <li>Policy violations (prohibited products, off-platform attempts, etc.)</li>
           <li>Fraud or attempted fraud</li>
@@ -139,7 +139,7 @@ export default function SellerAgreementPage() {
 
       <Section number={10} title="Indemnity">
         <Para>
-          You agree to indemnify and hold Winipat harmless from claims, damages, and expenses
+          You agree to indemnify and hold Winniepat harmless from claims, damages, and expenses
           (including reasonable legal fees) arising from your products, your conduct on the Platform,
           or your breach of this Agreement.
         </Para>
@@ -148,14 +148,14 @@ export default function SellerAgreementPage() {
       <Section number={11} title="Taxes">
         <Para>
           You are solely responsible for accounting for and paying all taxes (VAT, income tax, etc.)
-          on your sales. Winipat may be required to provide transactional records to tax authorities
+          on your sales. Winniepat may be required to provide transactional records to tax authorities
           on request.
         </Para>
       </Section>
 
       <Section number={12} title="Changes to this Agreement">
         <Para>
-          Winipat may update this Agreement. Material changes will be notified at least 14 days in
+          Winniepat may update this Agreement. Material changes will be notified at least 14 days in
           advance. Continued use of the seller portal after the effective date constitutes acceptance.
         </Para>
       </Section>

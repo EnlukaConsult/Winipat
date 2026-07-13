@@ -3,7 +3,7 @@ import { LegalDocument, Section, Para, Bullets } from "@/components/legal/legal-
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "How Winipat collects, uses, and protects your personal data.",
+  description: "How Winniepat collects, uses, and protects your personal data.",
 };
 
 export default function PrivacyPage() {
@@ -11,11 +11,11 @@ export default function PrivacyPage() {
     <LegalDocument
       title="Privacy Policy"
       effectiveDate="24 May 2026"
-      intro="This Privacy Policy explains how Winipat collects, uses, shares, and protects your personal information when you use winipat.com. We comply with the Nigeria Data Protection Regulation (NDPR) and the Nigeria Data Protection Act 2023."
+      intro="This Privacy Policy explains how Winniepat collects, uses, shares, and protects your personal information when you use winipat.com. We comply with the Nigeria Data Protection Regulation (NDPR) and the Nigeria Data Protection Act 2023."
     >
       <Section number={1} title="Who We Are">
         <Para>
-          &quot;Winipat&quot; refers to the operator of the Winipat platform at winipat.com. For data
+          &quot;Winniepat&quot; refers to the operator of the Winniepat platform at winipat.com. For data
           protection enquiries, contact us at <a href="mailto:support@winipat.com" className="text-royal underline">support@winipat.com</a>.
         </Para>
       </Section>
@@ -121,7 +121,7 @@ export default function PrivacyPage() {
       <Section number={8} title="Security">
         <Para>
           We protect your data using TLS encryption in transit, encryption at rest, role-based access
-          control, and audit logging. Payment card data is never stored on Winipat systems — it is
+          control, and audit logging. Payment card data is never stored on Winniepat systems — it is
           handled directly by our PCI-DSS-compliant payment provider.
         </Para>
         <Para>
@@ -132,7 +132,7 @@ export default function PrivacyPage() {
 
       <Section number={9} title="Children">
         <Para>
-          Winipat is not intended for users under 18. We do not knowingly collect data from minors.
+          Winniepat is not intended for users under 18. We do not knowingly collect data from minors.
           If you believe a minor has provided us data, contact us and we will delete it.
         </Para>
       </Section>

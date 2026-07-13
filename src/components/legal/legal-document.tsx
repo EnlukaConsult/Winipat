@@ -20,7 +20,7 @@ export function LegalDocument({ title, effectiveDate, intro, children }: LegalDo
         className="inline-flex items-center gap-1.5 text-sm text-slate-light hover:text-royal transition-colors mb-6 no-underline"
       >
         <ArrowLeft size={14} />
-        Back to Winipat
+        Back to Winniepat
       </Link>
 
       <div className="rounded-[--radius-lg] bg-white border border-mist p-6 sm:p-10 shadow-sm">

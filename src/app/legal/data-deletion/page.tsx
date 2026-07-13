@@ -4,7 +4,7 @@ import { LegalDocument, Section, Para, Bullets } from "@/components/legal/legal-
 export const metadata: Metadata = {
   title: "Account & Data Deletion",
   description:
-    "How to request deletion of your Winipat account and the personal data we hold about you.",
+    "How to request deletion of your Winniepat account and the personal data we hold about you.",
 };
 
 export default function DataDeletionPage() {
@@ -12,7 +12,7 @@ export default function DataDeletionPage() {
     <LegalDocument
       title="Account & Data Deletion"
       effectiveDate="26 May 2026"
-      intro="You can request deletion of your Winipat account and the personal data associated with it at any time. This page explains how to make that request, what we delete, what we keep for legal or accounting reasons, and how long the whole process takes."
+      intro="You can request deletion of your Winniepat account and the personal data associated with it at any time. This page explains how to make that request, what we delete, what we keep for legal or accounting reasons, and how long the whole process takes."
     >
       <Section number={1} title="How to request account deletion">
         <Para>You have three options:</Para>
@@ -25,10 +25,10 @@ export default function DataDeletionPage() {
           <li>
             <strong className="text-midnight">By email:</strong>{" "}
             Write to{" "}
-            <a href="mailto:support@winipat.com?subject=Delete%20my%20Winipat%20account" className="text-royal underline">
+            <a href="mailto:support@winipat.com?subject=Delete%20my%20Winniepat%20account" className="text-royal underline">
               support@winipat.com
             </a>{" "}
-            from the email address on file with the subject &quot;Delete my Winipat account&quot;. We&apos;ll respond within one business day with a confirmation link.
+            from the email address on file with the subject &quot;Delete my Winniepat account&quot;. We&apos;ll respond within one business day with a confirmation link.
           </li>
           <li>
             <strong className="text-midnight">If you signed in with Facebook or Google:</strong>{" "}
@@ -64,7 +64,7 @@ export default function DataDeletionPage() {
             <strong className="text-midnight">Order and payment records (7 years):</strong> Required by the Federal Inland Revenue Service (FIRS) for tax purposes and the Central Bank of Nigeria&apos;s anti-money-laundering rules. Your name on these records is redacted to your user ID after deletion.
           </li>
           <li>
-            <strong className="text-midnight">Dispute resolution evidence (3 years):</strong> To allow re-opening disputes if needed and to defend Winipat against fraud claims.
+            <strong className="text-midnight">Dispute resolution evidence (3 years):</strong> To allow re-opening disputes if needed and to defend Winniepat against fraud claims.
           </li>
           <li>
             <strong className="text-midnight">Aggregate analytics:</strong> Non-personal usage statistics already stripped of any identifier.

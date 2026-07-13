@@ -4,13 +4,13 @@ import { MarketingPageShell } from "@/components/marketing/page-shell";
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
   description:
-    "Common questions about how Winipat works — escrow, KYC, payouts, disputes, seller onboarding, fees.",
+    "Common questions about how Winniepat works — escrow, KYC, payouts, disputes, seller onboarding, fees.",
 };
 
 type FAQ = { q: string; a: React.ReactNode };
 
 const FAQS: Record<string, FAQ[]> = {
-  "Buying on Winipat": [
+  "Buying on Winniepat": [
     {
       q: "Why is my money held in escrow instead of going to the seller?",
       a: (
@@ -58,7 +58,7 @@ const FAQS: Record<string, FAQ[]> = {
       a: <>No. Browsing and viewing seller pages is open to everyone. You only need to register to add items to cart or contact a seller.</>,
     },
   ],
-  "Selling on Winipat": [
+  "Selling on Winniepat": [
     {
       q: "How do I become a verified seller?",
       a: (
@@ -71,7 +71,7 @@ const FAQS: Record<string, FAQ[]> = {
       ),
     },
     {
-      q: "What does Winipat charge me?",
+      q: "What does Winniepat charge me?",
       a: (
         <>
           12% commission on delivered orders, deducted at settlement. No listing
@@ -116,7 +116,7 @@ const FAQS: Record<string, FAQ[]> = {
   "Account & Trust": [
     {
       q: "What does the Verified badge mean?",
-      a: <>The seller has completed KYC (government ID + bank verification + phone). Every active seller on Winipat is verified — there&apos;s no other tier.</>,
+      a: <>The seller has completed KYC (government ID + bank verification + phone). Every active seller on Winniepat is verified — there&apos;s no other tier.</>,
     },
     {
       q: "What about the Trusted Seller / Fast Dispatch badges?",
@@ -150,7 +150,7 @@ const FAQS: Record<string, FAQ[]> = {
       a: <>Yes. See our <a href="/trade">trade page</a> for details — bulk pricing, dedicated account manager, and invoice-based settlement available for verified businesses.</>,
     },
     {
-      q: "Can my logistics company integrate with Winipat?",
+      q: "Can my logistics company integrate with Winniepat?",
       a: <>We&apos;re always open to new courier partners. Email <a href="mailto:support@winipat.com">support@winipat.com</a> with subject line "Logistics partnership" and we&apos;ll send the partner onboarding pack.</>,
     },
   ],

@@ -159,7 +159,7 @@ export default function AdminOverviewPage() {
               <Badge variant="gold" className="text-xs">Admin Dashboard</Badge>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-sora)]">
-              Welcome to Winipat Admin
+              Welcome to Winniepat Admin
             </h1>
             <p className="text-white/60 mt-1 text-sm sm:text-base">
               Manage sellers, products, disputes, and settlements across the platform.

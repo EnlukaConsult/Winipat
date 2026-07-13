@@ -26,7 +26,7 @@ export function WhatsAppButton() {
   }
 
   const message = encodeURIComponent(
-    "Hi Winipat, I have a question about "
+    "Hi Winniepat, I have a question about "
   );
   const href = `https://wa.me/${phone}?text=${message}`;
 
@@ -35,7 +35,7 @@ export function WhatsAppButton() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Chat with Winipat support on WhatsApp"
+      aria-label="Chat with Winniepat support on WhatsApp"
       className="fixed bottom-[8.5rem] md:bottom-[5.5rem] right-4 md:right-6 z-50 flex items-center justify-center w-12 h-12 rounded-full shadow-lg bg-[#25D366] text-white hover:bg-[#1DA851] transition-colors"
     >
       {/* Inline SVG — no extra dep, no Font Awesome */}

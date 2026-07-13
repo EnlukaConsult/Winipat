@@ -295,7 +295,7 @@ export default function WelcomePage() {
               )}
             </span>
             <span className="text-xs text-slate leading-relaxed">
-              I agree to Winipat&apos;s{" "}
+              I agree to Winniepat&apos;s{" "}
               <Link href="/legal/terms" target="_blank" className="text-violet font-semibold hover:underline">
                 Terms &amp; Conditions
               </Link>{" "}
@@ -314,7 +314,7 @@ export default function WelcomePage() {
                   >
                     Seller Agreement
                   </Link>{" "}
-                  — Winipat holds buyer funds in escrow until delivery is
+                  — Winniepat holds buyer funds in escrow until delivery is
                   confirmed.
                 </span>
               )}

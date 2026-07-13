@@ -33,7 +33,7 @@ export function MarketplaceInsights({ trending, loading }: MarketplaceInsightsPr
           </div>
           <div className="min-w-0">
             <h2 className="font-[family-name:var(--font-sora)] text-base font-bold text-midnight">
-              What&apos;s selling on Winipat
+              What&apos;s selling on Winniepat
             </h2>
             <p className="mt-0.5 text-sm text-slate-light">
               Categories buyers are ordering most this fortnight

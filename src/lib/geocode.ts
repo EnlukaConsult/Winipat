@@ -1,6 +1,6 @@
 // Address -> coordinates (server-only).
 //
-// Kwik requires lat/long for pickup + delivery, but Winipat stores text
+// Kwik requires lat/long for pickup + delivery, but Winniepat stores text
 // addresses. Uses Google Geocoding when GOOGLE_MAPS_API_KEY is set (best
 // accuracy), otherwise falls back to the free, no-key OpenStreetMap Nominatim
 // geocoder. Returns null on any failure so callers fall back to the flat fee.
@@ -43,7 +43,7 @@ async function geocodeNominatim(address: string): Promise<Coords | null> {
       `?format=json&limit=1&countrycodes=ng&q=${encodeURIComponent(address)}`;
     // Nominatim usage policy requires an identifying User-Agent.
     const res = await fetch(url, {
-      headers: { "User-Agent": "Winipat/1.0 (https://winipat.com)" },
+      headers: { "User-Agent": "Winniepat/1.0 (https://winipat.com)" },
     });
     const j = (await res.json()) as { lat?: string; lon?: string }[];
     const first = Array.isArray(j) ? j[0] : null;

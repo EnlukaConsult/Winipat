@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Winipat</string>
+        <string>Winniepat</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,8 +48,8 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Winipat uses the camera to scan product barcodes and QR codes.</string>
+	<string>Winniepat uses the camera to scan product barcodes and QR codes.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Winipat saves order and delivery photos to your library.</string>
+	<string>Winniepat saves order and delivery photos to your library.</string>
 </dict>
 </plist>

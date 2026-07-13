@@ -208,7 +208,7 @@ export default function BrowsePage() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 max-w-2xl">
           <Input
-            placeholder="Search Winipat for anything…"
+            placeholder="Search Winniepat for anything…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             icon={<Search size={18} />}

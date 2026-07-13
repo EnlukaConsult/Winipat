@@ -272,7 +272,7 @@ function stageFor(status: OrderStatus): Stage {
         label: "Disputed",
         pillBg: "bg-error/10",
         pillFg: "text-error",
-        bannerText: "Dispute open. Winipat is reviewing — expect a decision within 2–3 business days.",
+        bannerText: "Dispute open. Winniepat is reviewing — expect a decision within 2–3 business days.",
         banner: "bg-error/8 text-error",
       };
     case "cancelled":
