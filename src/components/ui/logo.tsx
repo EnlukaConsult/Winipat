@@ -40,7 +40,7 @@ export function Logo({ className, size = "md", variant = "full", theme = "dark" 
               textColor,
             )}
           >
-            <span className="text-violet">wini</span>
+            <span className="text-violet">winnie</span>
             <span className="text-teal">pat</span>
           </span>
           {size === "lg" && (

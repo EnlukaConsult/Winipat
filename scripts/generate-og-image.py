@@ -108,7 +108,7 @@ def main() -> None:
     sub_font      = find_font("Regular", 32)
 
     pad_left = 90
-    draw.text((pad_left, 180), "WINIPAT", fill=GOLD, font=eyebrow_font, spacing=8)
+    draw.text((pad_left, 180), "WINNIEPAT", fill=GOLD, font=eyebrow_font, spacing=8)
 
     # Headline — two lines
     draw.text((pad_left, 230), "Trust-first commerce",        fill=WHITE, font=headline_font)
